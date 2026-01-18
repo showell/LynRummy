@@ -31,7 +31,7 @@ const rules_of_lyn_rummy = `
     If a player can't get any of their cards out, they can draw from
     the deck for their turn.
 
-    A quick caveat on sets: You cannot have no dups. In other words,
+    A quick caveat on sets: You cannot have duplicates. In other words,
     4H 4S 4H is illegal, because you have dups of 4H. Don't make your
     fellow players scold you with "NO DUPS!".
 `;
