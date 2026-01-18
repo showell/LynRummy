@@ -191,6 +191,7 @@ class CardStack {
             return StackType.INCOMPLETE;
         }
 
+        // Prevent dups within a provisional SET.
         if (provisional_stack_type === StackType.SET) {
             for (let i = 0; i < cards.length; ++i) {
                 for (let j = i + 1; j < cards.length; ++j) {
@@ -201,7 +202,14 @@ class CardStack {
             }
         }
 
-        // TODO: enforce all pairs
+        // Prevent mixing up types of stacks.
+        for (let i = 1; i + 1 < cards.length; ++i) {
+            if (cards[i].with(cards[i+1]) !== provisional_stack_type) {
+                return StackType.BOGUS;
+            }
+        }
+
+        // HAPPY PATH! We have a stack that can stay on the board!
         return provisional_stack_type;
     }
 
