@@ -1,4 +1,4 @@
-const rules_of_lyn_rummy = `
+/*
     Lyn Rummy is a fun game where you attempt to keep the "common
     area" intact with rummy-like stacks of cards:
 
@@ -34,7 +34,7 @@ const rules_of_lyn_rummy = `
     A quick caveat on sets: You cannot have duplicates. In other words,
     4H 4S 4H is illegal, because you have dups of 4H. Don't make your
     fellow players scold you with "NO DUPS!".
-`;
+*/
 
 const enum CardValue {
     ACE = 1,
@@ -203,6 +203,10 @@ class Card {
         }
         return StackType.BOGUS;
     }
+
+    dom(): Node {
+        return document.createTextNode(this.str());
+    }
 }
 
 class CardStack {
@@ -345,6 +349,11 @@ function test() {
     check_stack([s3, d4], StackType.INCOMPLETE);
 
     check_stack([s3, d4, h4], StackType.BOGUS);
+}
+
+function gui() {
+    const s4 = new Card(CardValue.FOUR, Suit.SPADE);
+    document.body.append(s4.dom());
 }
 
 test();
