@@ -121,6 +121,7 @@ function card_color_str(color: CardColor): string {
 }
 
 const enum StackType {
+    INCOMPLETE = "incomplete",
     BOGUS = "bogus",
     DUP = "dup",
     SET = "set",
@@ -144,6 +145,10 @@ class Card {
     }
 
     with(other_card: Card): StackType {
+        // See if the pair is a promising start to a stack.
+        // Do not return INCOMPLETE here. It's obviously
+        // not complete in this context, and our caller will
+        // understand that.
         if (this.value === other_card.value) {
             if (this.suit === other_card.suit) {
                 return StackType.DUP;
@@ -159,6 +164,36 @@ class Card {
             }
         }
         return StackType.BOGUS;
+    }
+}
+
+class CardStack {
+    cards: Card[]; // Order does matter here!
+    stack_type: StackType;
+
+    constructor(cards: Card[]) {
+        this.cards = cards;
+        this.stack_type = this.get_stack_type();
+    }
+
+    get_stack_type(): StackType {
+        const cards = this.cards;
+        if (cards.length <= 1) {
+            return StackType.INCOMPLETE;
+        }
+
+        const provisional_stack_type = cards[0].with(cards[1]);
+
+        if (cards.length === 2) {
+            if (provisional_stack_type === StackType.BOGUS) {
+                return StackType.BOGUS;
+            } else {
+                return StackType.INCOMPLETE;
+            }
+        }
+
+        // TODO: enforce all pairs
+        return provisional_stack_type;
     }
 }
 
