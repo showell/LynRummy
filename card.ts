@@ -120,6 +120,14 @@ function card_color_str(color: CardColor): string {
     return color == CardColor.RED ? "red" : "black";
 }
 
+const enum StackType {
+    BOGUS = "bogus",
+    DUP = "dup",
+    SET = "set",
+    PURE_RUN = "pure run",
+    RED_BLACK_RUN = "red/black alternating",
+}
+
 class Card {
     suit: Suit;
     value: CardValue;
@@ -134,7 +142,31 @@ class Card {
     str(): string {
         return value_str(this.value) + suit_str(this.suit);
     }
+
+    with(other_card: Card): StackType {
+        if (this.value === other_card.value) {
+            if (this.suit === other_card.suit) {
+                return StackType.DUP;
+            }
+            return StackType.SET;
+        }
+
+        if (other_card.value === successor(this.value)) {
+            if (this.suit === other_card.suit) {
+                return StackType.PURE_RUN;
+            } else if (this.color !== other_card.color) {
+                return StackType.RED_BLACK_RUN;
+            }
+        }
+        return StackType.BOGUS;
+    }
 }
 
-const card = new Card(CardValue.THREE, Suit.SPADE);
-console.log(card.str());
+const s3 = new Card(CardValue.THREE, Suit.SPADE);
+const s4 = new Card(CardValue.FOUR, Suit.SPADE);
+const d4 = new Card(CardValue.FOUR, Suit.DIAMOND);
+console.log(s3.with(d4));
+console.log(s4.with(d4));
+console.log(s3.with(s3));
+console.log(s3.with(s4));
+console.log(s4.with(s3));
