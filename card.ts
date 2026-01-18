@@ -286,6 +286,14 @@ class CardStack {
     str() {
         return this.cards.map((card) => card.str()).join(",");
     }
+
+    function dom() {
+        const div = document.createElement("div");
+        for (const card of this.cards) {
+            div.append(card.dom());
+        }
+        return div;
+    }
 }
 
 class Deck {
@@ -359,9 +367,13 @@ class Example {
             console.log(this.stack.stack_type, "is not", expected_type);
         }
     }
+
+    dom(): Node {
+        return self.stack.dom();
+    }
 }
 
-function examples(): Example[] {
+function get_examples(): Example[] {
     const d3 = new Card(CardValue.THREE, Suit.DIAMOND);
     const h3 = new Card(CardValue.THREE, Suit.HEART);
     const s3 = new Card(CardValue.THREE, Suit.SPADE);
@@ -386,14 +398,12 @@ function examples(): Example[] {
 function test() {
     const deck = new Deck({ shuffled: false });
     console.log(deck.str());
-    examples(); // run for side effects
+    get_examples(); // run for side effects
 }
 
 function gui() {
-    const s4 = new Card(CardValue.FOUR, Suit.SPADE);
-    const hj = new Card(CardValue.JACK, Suit.HEART);
-    document.body.append(s4.dom());
-    document.body.append(hj.dom());
+    const examples = get_examples();
+    document.body.append(examples[0].dom());
 }
 
 test();
