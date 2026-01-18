@@ -131,15 +131,18 @@ const enum CardColor {
 }
 
 function suit_str(suit: Suit): string {
+    // The strange numbers here refer to the Unicode
+    // code points for the built-in emojis for the
+    // suits.
     switch (suit) {
         case Suit.CLUB:
-            return "C";
+            return "\u2663";
         case Suit.SPADE:
-            return "S";
+            return "\u2660";
         case Suit.DIAMOND:
-            return "D";
+            return "\u2666";
         case Suit.HEART:
-            return "H";
+            return "\u2665";
     }
 }
 
@@ -353,7 +356,9 @@ function test() {
 
 function gui() {
     const s4 = new Card(CardValue.FOUR, Suit.SPADE);
+    const hj = new Card(CardValue.JACK, Suit.HEART);
     document.body.append(s4.dom());
+    document.body.append(hj.dom());
 }
 
 test();
