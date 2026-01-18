@@ -183,25 +183,62 @@ class CardStack {
         }
 
         const provisional_stack_type = cards[0].with(cards[1]);
+        if (provisional_stack_type === StackType.BOGUS) {
+            return StackType.BOGUS;
+        }
 
         if (cards.length === 2) {
-            if (provisional_stack_type === StackType.BOGUS) {
-                return StackType.BOGUS;
-            } else {
-                return StackType.INCOMPLETE;
+            return StackType.INCOMPLETE;
+        }
+
+        if (provisional_stack_type === StackType.SET) {
+            for (let i = 0; i < cards.length; ++i) {
+                for (let j = i + 1; j < cards.length; ++j) {
+                    if (cards[i].with(cards[j]) === StackType.DUP) {
+                        return StackType.DUP;
+                    }
+                }
             }
         }
 
         // TODO: enforce all pairs
         return provisional_stack_type;
     }
+
+    str() {
+        return this.cards.map((card) => card.str()).join(",");
+    }
 }
 
-const s3 = new Card(CardValue.THREE, Suit.SPADE);
-const s4 = new Card(CardValue.FOUR, Suit.SPADE);
-const d4 = new Card(CardValue.FOUR, Suit.DIAMOND);
-console.log(s3.with(d4));
-console.log(s4.with(d4));
-console.log(s3.with(s3));
-console.log(s3.with(s4));
-console.log(s4.with(s3));
+function test() {
+    function check_stack(cards: Card[], expected: StackType) {
+        const stack = new CardStack(cards);
+        if (stack.stack_type == expected) {
+            return;
+        }
+        console.log("PROBLEM!");
+        console.log(stack.str());
+        console.log(stack.stack_type, "is not", expected);
+    }
+    const d3 = new Card(CardValue.THREE, Suit.DIAMOND);
+    const h3 = new Card(CardValue.THREE, Suit.HEART);
+    const s3 = new Card(CardValue.THREE, Suit.SPADE);
+
+    const d4 = new Card(CardValue.FOUR, Suit.DIAMOND);
+    const h4 = new Card(CardValue.FOUR, Suit.HEART);
+    const s4 = new Card(CardValue.FOUR, Suit.SPADE);
+
+    const s5 = new Card(CardValue.FIVE, Suit.SPADE);
+
+    check_stack([h3, s5, h3], StackType.BOGUS);
+    check_stack([h3, s3, h3], StackType.DUP);
+    check_stack([h3, s3, d3], StackType.SET);
+    check_stack([s3, s4, s5], StackType.PURE_RUN);
+    check_stack([s3, d4, s5], StackType.RED_BLACK_RUN);
+
+    check_stack([s3, d4], StackType.INCOMPLETE);
+
+    check_stack([s3, d4, h4], StackType.BOGUS);
+}
+
+test();
