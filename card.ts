@@ -287,7 +287,7 @@ class CardStack {
         return this.cards.map((card) => card.str()).join(",");
     }
 
-    function dom() {
+    dom() {
         const div = document.createElement("div");
         for (const card of this.cards) {
             div.append(card.dom());
@@ -369,7 +369,7 @@ class Example {
     }
 
     dom(): Node {
-        return self.stack.dom();
+        return this.stack.dom();
     }
 }
 
