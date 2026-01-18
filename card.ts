@@ -247,11 +247,19 @@ class CardStack {
             }
         }
 
-        // Prevent mixing up types of stacks.
-        for (let i = 1; i + 1 < cards.length; ++i) {
-            if (cards[i].with(cards[i + 1]) !== provisional_stack_type) {
-                return StackType.BOGUS;
+        function is_consistent(cards: Card[]) {
+            if (cards.length <= 1) {
+                return true;
             }
+            if (cards[0].with(cards[1]) !== provisional_stack_type) {
+                return false;
+            }
+            return is_consistent(cards.slice(1));
+        }
+
+        // Prevent mixing up types of stacks.
+        if (!is_consistent(this.cards)) {
+            return StackType.BOGUS;
         }
 
         // HAPPY PATH! We have a stack that can stay on the board!
@@ -320,19 +328,23 @@ class Deck {
     }
 }
 
-function test() {
-    const deck = new Deck({ shuffled: false });
-    console.log(deck.str());
+class Example {
+    stack: CardStack;
+    expected_type: StackType;
 
-    function check_stack(cards: Card[], expected: StackType) {
-        const stack = new CardStack(cards);
-        if (stack.stack_type == expected) {
-            return;
+    constructor(cards: Card[], expected_type: StackType) {
+        this.stack = new CardStack(cards);
+        this.expected_type = expected_type;
+        // test it even at runtime
+        if (this.stack.stack_type !== expected_type) {
+            console.log("\n\n----- PROBLEM!\n\n");
+            console.log(this.stack.str());
+            console.log(this.stack.stack_type, "is not", expected_type);
         }
-        console.log("PROBLEM!");
-        console.log(stack.str());
-        console.log(stack.stack_type, "is not", expected);
     }
+}
+
+function examples(): Example[] {
     const d3 = new Card(CardValue.THREE, Suit.DIAMOND);
     const h3 = new Card(CardValue.THREE, Suit.HEART);
     const s3 = new Card(CardValue.THREE, Suit.SPADE);
@@ -343,15 +355,21 @@ function test() {
 
     const s5 = new Card(CardValue.FIVE, Suit.SPADE);
 
-    check_stack([h3, s5, h3], StackType.BOGUS);
-    check_stack([h3, s3, h3], StackType.DUP);
-    check_stack([h3, s3, d3], StackType.SET);
-    check_stack([s3, s4, s5], StackType.PURE_RUN);
-    check_stack([s3, d4, s5], StackType.RED_BLACK_RUN);
+    return [
+        new Example([h3, s5, h3], StackType.BOGUS),
+        new Example([h3, s3, h3], StackType.DUP),
+        new Example([h3, s3, d3], StackType.SET),
+        new Example([s3, s4, s5], StackType.PURE_RUN),
+        new Example([s3, d4, s5], StackType.RED_BLACK_RUN),
+        new Example([s3, d4], StackType.INCOMPLETE),
+        new Example([s3, d4, h4], StackType.BOGUS),
+    ];
+}
 
-    check_stack([s3, d4], StackType.INCOMPLETE);
-
-    check_stack([s3, d4, h4], StackType.BOGUS);
+function test() {
+    const deck = new Deck({ shuffled: false });
+    console.log(deck.str());
+    examples(); // run for side effects
 }
 
 function gui() {
