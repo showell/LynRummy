@@ -457,18 +457,13 @@ class PhysicalExamples {
     }
 
     start(): void {
-        const dom = this.dom();
-        this.area.append(dom);
-    }
-
-    dom(): HTMLElement {
         const div = document.createElement("div");
 
         const h3 = document.createElement("h3");
         h3.innerText = "Examples";
 
         const button = document.createElement("button");
-        button.innerText = "Got it!"
+        button.innerText = "Got it!";
 
         const panel = document.createElement("div");
         panel.style.display = "flex";
@@ -499,7 +494,11 @@ class PhysicalExamples {
         div.append(button);
         div.append(panel);
 
-        return div;
+        button.addEventListener("click", () => {
+            this.area.innerHTML = "";
+        });
+
+        this.area.append(div);
     }
 }
 

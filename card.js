@@ -357,13 +357,12 @@ var PhysicalExamples = /** @class */ (function () {
         this.area = area;
     }
     PhysicalExamples.prototype.start = function () {
-        var dom = this.dom();
-        this.area.append(dom);
-    };
-    PhysicalExamples.prototype.dom = function () {
+        var _this = this;
         var div = document.createElement("div");
         var h3 = document.createElement("h3");
         h3.innerText = "Examples";
+        var button = document.createElement("button");
+        button.innerText = "Got it!";
         var panel = document.createElement("div");
         panel.style.display = "flex";
         panel.style.justifyContent = "space-around";
@@ -388,8 +387,12 @@ var PhysicalExamples = /** @class */ (function () {
         panel.append(good_column);
         panel.append(bad_column);
         div.append(h3);
+        div.append(button);
         div.append(panel);
-        return div;
+        button.addEventListener("click", function () {
+            _this.area.innerHTML = "";
+        });
+        this.area.append(div);
     };
     return PhysicalExamples;
 }());
