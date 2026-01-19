@@ -294,97 +294,6 @@ class CardStack {
     }
 }
 
-class Deck {
-    cards: Card[];
-    shuffled: boolean;
-
-    constructor(info: { shuffled: boolean }) {
-        this.cards = [];
-        this.shuffled = info.shuffled;
-
-        // Do this the non-fancy way.
-        const all_suits = [
-            // 1st deck
-            Suit.HEART,
-            Suit.SPADE,
-            Suit.DIAMOND,
-            Suit.CLUB,
-            // 2nd deck
-            Suit.HEART,
-            Suit.SPADE,
-            Suit.DIAMOND,
-            Suit.CLUB,
-        ];
-
-        const all_card_values = [
-            CardValue.ACE,
-            CardValue.TWO,
-            CardValue.THREE,
-            CardValue.FOUR,
-            CardValue.FIVE,
-            CardValue.SIX,
-            CardValue.SEVEN,
-            CardValue.EIGHT,
-            CardValue.NINE,
-            CardValue.TEN,
-            CardValue.JACK,
-            CardValue.QUEEN,
-            CardValue.KING,
-        ];
-
-        function suit_run(suit: Suit) {
-            return all_card_values.map(
-                (card_value) => new Card(card_value, suit),
-            );
-        }
-
-        const all_runs = all_suits.map((suit) => suit_run(suit));
-
-        // Use the old-school idiom to flatten the array.
-        const all_cards = all_runs.reduce((acc, lst) => acc.concat(lst));
-
-        this.cards = all_cards;
-
-        if (this.shuffled) {
-            // this is random enough for our needs
-            this.cards.sort(() => Math.random() - 0.5);
-        }
-    }
-
-    str(): string {
-        return this.cards.map((card) => card.str()).join(" ");
-    }
-}
-
-class Example {
-    comment: string;
-    stack: CardStack;
-    expected_type: CardStackType;
-
-    constructor(comment: string, cards: Card[], expected_type: CardStackType) {
-        this.comment = comment;
-        this.stack = new CardStack(cards);
-        this.expected_type = expected_type;
-        // test it even at runtime
-        if (this.stack.stack_type !== expected_type) {
-            console.log("\n\n----- PROBLEM!\n\n");
-            console.log(this.stack.str());
-            console.log(this.stack.stack_type, "is not", expected_type);
-        }
-    }
-
-    dom(): Node {
-        const div = document.createElement("div");
-        const h5 = document.createElement("h5");
-        h5.innerText = this.comment;
-        const physical_stack = new PhysicalCardStack(this.stack);
-        h5.style.color = physical_stack.stack_color();
-        div.append(h5);
-        div.append(physical_stack.dom());
-        return div;
-    }
-}
-
 function get_examples(): Example[] {
     const da = new Card(CardValue.ACE, Suit.DIAMOND);
     const sa = new Card(CardValue.ACE, Suit.SPADE);
@@ -460,22 +369,65 @@ function get_examples(): Example[] {
     ];
 }
 
-function test() {
-    const deck = new Deck({ shuffled: true });
-    console.log(deck.str());
-    get_examples(); // run for side effects
-}
+class Deck {
+    cards: Card[];
+    shuffled: boolean;
 
-class Examples {
-    dom(): Node {
-        const div = document.createElement("div");
+    constructor(info: { shuffled: boolean }) {
+        this.cards = [];
+        this.shuffled = info.shuffled;
 
-        const examples = get_examples();
-        for (const example of examples) {
-            div.append(example.dom());
+        // Do this the non-fancy way.
+        const all_suits = [
+            // 1st deck
+            Suit.HEART,
+            Suit.SPADE,
+            Suit.DIAMOND,
+            Suit.CLUB,
+            // 2nd deck
+            Suit.HEART,
+            Suit.SPADE,
+            Suit.DIAMOND,
+            Suit.CLUB,
+        ];
+
+        const all_card_values = [
+            CardValue.ACE,
+            CardValue.TWO,
+            CardValue.THREE,
+            CardValue.FOUR,
+            CardValue.FIVE,
+            CardValue.SIX,
+            CardValue.SEVEN,
+            CardValue.EIGHT,
+            CardValue.NINE,
+            CardValue.TEN,
+            CardValue.JACK,
+            CardValue.QUEEN,
+            CardValue.KING,
+        ];
+
+        function suit_run(suit: Suit) {
+            return all_card_values.map(
+                (card_value) => new Card(card_value, suit),
+            );
         }
 
-        return div;
+        const all_runs = all_suits.map((suit) => suit_run(suit));
+
+        // Use the old-school idiom to flatten the array.
+        const all_cards = all_runs.reduce((acc, lst) => acc.concat(lst));
+
+        this.cards = all_cards;
+
+        if (this.shuffled) {
+            // this is random enough for our needs
+            this.cards.sort(() => Math.random() - 0.5);
+        }
+    }
+
+    str(): string {
+        return this.cards.map((card) => card.str()).join(" ");
     }
 }
 
@@ -486,7 +438,83 @@ class Hand {
         this.cards = [
             new Card(CardValue.TEN, Suit.HEART),
             new Card(CardValue.ACE, Suit.SPADE),
+            new Card(CardValue.JACK, Suit.DIAMOND),
+            new Card(CardValue.FOUR, Suit.CLUB),
+            new Card(CardValue.SIX, Suit.CLUB),
+            new Card(CardValue.EIGHT, Suit.CLUB),
         ];
+    }
+}
+
+class Player {
+    name: string;
+    hand: Hand;
+
+    constructor(name) {
+        this.name = name;
+        this.hand = new Hand();
+    }
+}
+
+class Example {
+    comment: string;
+    stack: CardStack;
+    expected_type: CardStackType;
+
+    constructor(comment: string, cards: Card[], expected_type: CardStackType) {
+        this.comment = comment;
+        this.stack = new CardStack(cards);
+        this.expected_type = expected_type;
+        // test it even at runtime
+        if (this.stack.stack_type !== expected_type) {
+            console.log("\n\n----- PROBLEM!\n\n");
+            console.log(this.stack.str());
+            console.log(this.stack.stack_type, "is not", expected_type);
+        }
+    }
+}
+
+class PhysicalExample {
+    example: Example;
+
+    constructor(example: Example) {
+        this.example = example;
+    }
+
+    dom(): Node {
+        const example = this.example;
+        const physical_stack = new PhysicalCardStack(example.stack);
+
+        const div = document.createElement("div");
+
+        const h6 = document.createElement("h6");
+        h6.innerText = example.comment;
+        h6.style.color = physical_stack.stack_color();
+
+        const card_stack_dom = physical_stack.dom();
+
+        div.append(h6);
+        div.append(card_stack_dom);
+
+        return div;
+    }
+}
+
+class PhysicalExamples {
+    dom(): Node {
+        const div = document.createElement("div");
+
+        const h3 = document.createElement("h3");
+        h3.innerText = "Examples";
+        div.append(h3);
+
+        const examples = get_examples();
+        for (const example of examples) {
+            const physical_example = new PhysicalExample(example);
+            div.append(physical_example.dom());
+        }
+
+        return div;
     }
 }
 
@@ -507,21 +535,21 @@ class PhysicalHand {
     }
 }
 
-class Player {
-    name: string;
-    hand: Hand;
+class PhysicalPlayer {
+    player: Player;
 
-    constructor(name) {
-        this.name = name;
-        this.hand = new Hand();
+    constructor(player: Player) {
+        this.player = player;
     }
 
     dom(): HTMLElement {
+        const player = this.player;
+
         const div = document.createElement("div");
         const h3 = document.createElement("h3");
-        h3.innerText = this.name;
+        h3.innerText = player.name;
         div.append(h3);
-        const physical_hand = new PhysicalHand(this.hand);
+        const physical_hand = new PhysicalHand(player.hand);
         div.append(physical_hand.dom());
 
         return div;
@@ -538,7 +566,10 @@ class Game {
     }
 
     start() {
-        this.player_area.append(this.players[0].dom());
+        const player = this.players[0];
+        const physical_player = new PhysicalPlayer(player);
+
+        this.player_area.append(physical_player.dom());
     }
 }
 
@@ -563,13 +594,13 @@ class PhysicalCard {
         span.append(s_node);
         span.style.color = css_color(card.color);
         span.style.textAlign = "center";
-        span.style.fontSize = "18px";
+        span.style.fontSize = "17px";
         span.style.border = "1px blue solid";
         span.style.padding = "1px";
-        span.style.margin = "2px";
+        span.style.margin = "1px";
         span.style.display = "inline-block";
-        span.style.minWidth = "20px";
-        span.style.minHeight = "42px";
+        span.style.minWidth = "19px";
+        span.style.minHeight = "38px";
         return span;
     }
 }
@@ -626,7 +657,7 @@ class MainPage {
     }
 
     start() {
-        const examples = new Examples();
+        const examples = new PhysicalExamples();
         this.common_area.append(examples.dom());
         document.body.append(this.page);
 
@@ -638,6 +669,12 @@ class MainPage {
 function gui() {
     const ui = new MainPage();
     ui.start();
+}
+
+function test() {
+    const deck = new Deck({ shuffled: true });
+    console.log(deck.str());
+    get_examples(); // run for side effects
 }
 
 test();
