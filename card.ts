@@ -376,10 +376,12 @@ class Deck {
 }
 
 class Example {
+    comment: string;
     stack: CardStack;
     expected_type: StackType;
 
-    constructor(cards: Card[], expected_type: StackType) {
+    constructor(comment: string, cards: Card[], expected_type: StackType) {
+        this.comment = comment;
         this.stack = new CardStack(cards);
         this.expected_type = expected_type;
         // test it even at runtime
@@ -391,7 +393,11 @@ class Example {
     }
 
     dom(): Node {
-        return this.stack.dom();
+        const div = document.createElement("div");
+        div.style.display = "flex";
+        div.append(this.stack.dom());
+        div.append(document.createTextNode(this.comment));
+        return div;
     }
 }
 
@@ -423,16 +429,31 @@ function get_examples(): Example[] {
     const sk = new Card(CardValue.KING, Suit.SPADE);
 
     return [
-        new Example([h3, s3, d3], StackType.SET),
-        new Example([h10, s10, d10, c10], StackType.SET),
-        new Example([h10, hj, hq], StackType.PURE_RUN),
-        new Example([sk, sa, s2, s3, s4, s5], StackType.PURE_RUN),
-        new Example([s3, d4, s5], StackType.RED_BLACK_RUN),
-        new Example([hq, ck, da, s2, d3], StackType.RED_BLACK_RUN),
-        new Example([s3, d4], StackType.INCOMPLETE),
-        new Example([h3, s3, h3], StackType.DUP),
-        new Example([h3, s5, h3], StackType.BOGUS),
-        new Example([s3, d4, h4], StackType.BOGUS),
+        new Example("SET of 3s", [h3, s3, d3], StackType.SET),
+        new Example("SET of 10s", [h10, s10, d10, c10], StackType.SET),
+        new Example("PURE RUN of hearts", [h10, hj, hq], StackType.PURE_RUN),
+        new Example(
+            "PURE RUN around the ace",
+            [sk, sa, s2, s3, s4, s5],
+            StackType.PURE_RUN,
+        ),
+        new Example(
+            "RED-BLACK RUN with three cards",
+            [s3, d4, s5],
+            StackType.RED_BLACK_RUN,
+        ),
+        new Example(
+            "RED-BLACK RUN around the ace",
+            [hq, ck, da, s2, d3],
+            StackType.RED_BLACK_RUN,
+        ),
+        new Example(
+            "INCOMPLETE (but a good start)",
+            [s3, d4],
+            StackType.INCOMPLETE,
+        ),
+        new Example("ILLEGAL! No dups allowed.", [h3, s3, h3], StackType.DUP),
+        new Example("non sensical", [s3, d4, h4], StackType.BOGUS),
     ];
 }
 

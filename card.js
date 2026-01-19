@@ -295,7 +295,8 @@ var Deck = /** @class */ (function () {
     return Deck;
 }());
 var Example = /** @class */ (function () {
-    function Example(cards, expected_type) {
+    function Example(comment, cards, expected_type) {
+        this.comment = comment;
         this.stack = new CardStack(cards);
         this.expected_type = expected_type;
         // test it even at runtime
@@ -306,7 +307,11 @@ var Example = /** @class */ (function () {
         }
     }
     Example.prototype.dom = function () {
-        return this.stack.dom();
+        var div = document.createElement("div");
+        div.style.display = "flex";
+        div.append(this.stack.dom());
+        div.append(document.createTextNode(this.comment));
+        return div;
     };
     return Example;
 }());
@@ -330,16 +335,15 @@ function get_examples() {
     var ck = new Card(13 /* CardValue.KING */, 0 /* Suit.CLUB */);
     var sk = new Card(13 /* CardValue.KING */, 2 /* Suit.SPADE */);
     return [
-        new Example([h3, s3, d3], "set" /* StackType.SET */),
-        new Example([h10, s10, d10, c10], "set" /* StackType.SET */),
-        new Example([h10, hj, hq], "pure run" /* StackType.PURE_RUN */),
-        new Example([sk, sa, s2, s3, s4, s5], "pure run" /* StackType.PURE_RUN */),
-        new Example([s3, d4, s5], "red/black alternating" /* StackType.RED_BLACK_RUN */),
-        new Example([hq, ck, da, s2, d3], "red/black alternating" /* StackType.RED_BLACK_RUN */),
-        new Example([s3, d4], "incomplete" /* StackType.INCOMPLETE */),
-        new Example([h3, s3, h3], "dup" /* StackType.DUP */),
-        new Example([h3, s5, h3], "bogus" /* StackType.BOGUS */),
-        new Example([s3, d4, h4], "bogus" /* StackType.BOGUS */),
+        new Example("SET of 3s", [h3, s3, d3], "set" /* StackType.SET */),
+        new Example("SET of 10s", [h10, s10, d10, c10], "set" /* StackType.SET */),
+        new Example("PURE RUN of hearts", [h10, hj, hq], "pure run" /* StackType.PURE_RUN */),
+        new Example("PURE RUN around the ace", [sk, sa, s2, s3, s4, s5], "pure run" /* StackType.PURE_RUN */),
+        new Example("RED-BLACK RUN with three cards", [s3, d4, s5], "red/black alternating" /* StackType.RED_BLACK_RUN */),
+        new Example("RED-BLACK RUN around the ace", [hq, ck, da, s2, d3], "red/black alternating" /* StackType.RED_BLACK_RUN */),
+        new Example("INCOMPLETE (but a good start)", [s3, d4], "incomplete" /* StackType.INCOMPLETE */),
+        new Example("ILLEGAL! No dups allowed.", [h3, s3, h3], "dup" /* StackType.DUP */),
+        new Example("non sensical", [s3, d4, h4], "bogus" /* StackType.BOGUS */),
     ];
 }
 function test() {
