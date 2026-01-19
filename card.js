@@ -38,6 +38,15 @@
     4H 4S 4H is illegal, because you have dups of 4H. Don't make your
     fellow players scold you with "NO DUPS!".
 */
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 function value_str(val) {
     switch (val) {
         case 1 /* CardValue.ACE */:
@@ -102,6 +111,23 @@ function successor(val) {
             return 1 /* CardValue.ACE */;
     }
 }
+// Do this the non-fancy way.
+var all_suits = [3 /* Suit.HEART */, 2 /* Suit.SPADE */, 1 /* Suit.DIAMOND */, 0 /* Suit.CLUB */];
+var all_card_values = [
+    1 /* CardValue.ACE */,
+    2 /* CardValue.TWO */,
+    3 /* CardValue.THREE */,
+    4 /* CardValue.FOUR */,
+    5 /* CardValue.FIVE */,
+    6 /* CardValue.SIX */,
+    7 /* CardValue.SEVEN */,
+    8 /* CardValue.EIGHT */,
+    9 /* CardValue.NINE */,
+    10 /* CardValue.TEN */,
+    11 /* CardValue.JACK */,
+    12 /* CardValue.QUEEN */,
+    13 /* CardValue.KING */,
+];
 function suit_str(suit) {
     // The strange numbers here refer to the Unicode
     // code points for the built-in emojis for the
@@ -232,38 +258,14 @@ var Deck = /** @class */ (function () {
     function Deck(info) {
         this.cards = [];
         this.shuffled = info.shuffled;
-        // Do this the non-fancy way.
-        var all_suits = [
-            3 /* Suit.HEART */,
-            2 /* Suit.SPADE */,
-            1 /* Suit.DIAMOND */,
-            0 /* Suit.CLUB */,
-            3 /* Suit.HEART */,
-            2 /* Suit.SPADE */,
-            1 /* Suit.DIAMOND */,
-            0 /* Suit.CLUB */,
-        ];
-        var all_card_values = [
-            1 /* CardValue.ACE */,
-            2 /* CardValue.TWO */,
-            3 /* CardValue.THREE */,
-            4 /* CardValue.FOUR */,
-            5 /* CardValue.FIVE */,
-            6 /* CardValue.SIX */,
-            7 /* CardValue.SEVEN */,
-            8 /* CardValue.EIGHT */,
-            9 /* CardValue.NINE */,
-            10 /* CardValue.TEN */,
-            11 /* CardValue.JACK */,
-            12 /* CardValue.QUEEN */,
-            13 /* CardValue.KING */,
-        ];
         function suit_run(suit) {
             return all_card_values.map(function (card_value) { return new Card(card_value, suit); });
         }
         var all_runs = all_suits.map(function (suit) { return suit_run(suit); });
+        // 2 decks
+        var all_runs2 = __spreadArray(__spreadArray([], all_runs, true), all_runs, true);
         // Use the old-school idiom to flatten the array.
-        var all_cards = all_runs.reduce(function (acc, lst) { return acc.concat(lst); });
+        var all_cards = all_runs2.reduce(function (acc, lst) { return acc.concat(lst); });
         this.cards = all_cards;
         if (this.shuffled) {
             // this is random enough for our needs
@@ -303,12 +305,18 @@ var Player = /** @class */ (function () {
 }());
 var Game = /** @class */ (function () {
     function Game() {
-        this.players = [new Player("Player One")];
+        this.players = [
+            new Player("Player One"),
+            new Player("Player Two"),
+        ];
         this.deck = new Deck({ shuffled: true });
     }
     Game.prototype.deal_cards = function () {
-        var cards = this.deck.take_from_top(15);
-        this.players[0].hand.add_cards(cards);
+        for (var _i = 0, _a = this.players; _i < _a.length; _i++) {
+            var player = _a[_i];
+            var cards = this.deck.take_from_top(15);
+            player.hand.add_cards(cards);
+        }
     };
     return Game;
 }());

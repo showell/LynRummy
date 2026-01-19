@@ -133,6 +133,25 @@ const enum CardColor {
     RED = 1,
 }
 
+// Do this the non-fancy way.
+const all_suits = [Suit.HEART, Suit.SPADE, Suit.DIAMOND, Suit.CLUB];
+
+const all_card_values = [
+    CardValue.ACE,
+    CardValue.TWO,
+    CardValue.THREE,
+    CardValue.FOUR,
+    CardValue.FIVE,
+    CardValue.SIX,
+    CardValue.SEVEN,
+    CardValue.EIGHT,
+    CardValue.NINE,
+    CardValue.TEN,
+    CardValue.JACK,
+    CardValue.QUEEN,
+    CardValue.KING,
+];
+
 function suit_str(suit: Suit): string {
     // The strange numbers here refer to the Unicode
     // code points for the built-in emojis for the
@@ -305,36 +324,6 @@ class Deck {
         this.cards = [];
         this.shuffled = info.shuffled;
 
-        // Do this the non-fancy way.
-        const all_suits = [
-            // 1st deck
-            Suit.HEART,
-            Suit.SPADE,
-            Suit.DIAMOND,
-            Suit.CLUB,
-            // 2nd deck
-            Suit.HEART,
-            Suit.SPADE,
-            Suit.DIAMOND,
-            Suit.CLUB,
-        ];
-
-        const all_card_values = [
-            CardValue.ACE,
-            CardValue.TWO,
-            CardValue.THREE,
-            CardValue.FOUR,
-            CardValue.FIVE,
-            CardValue.SIX,
-            CardValue.SEVEN,
-            CardValue.EIGHT,
-            CardValue.NINE,
-            CardValue.TEN,
-            CardValue.JACK,
-            CardValue.QUEEN,
-            CardValue.KING,
-        ];
-
         function suit_run(suit: Suit) {
             return all_card_values.map(
                 (card_value) => new Card(card_value, suit),
@@ -343,8 +332,11 @@ class Deck {
 
         const all_runs = all_suits.map((suit) => suit_run(suit));
 
+        // 2 decks
+        const all_runs2 = [...all_runs, ...all_runs];
+
         // Use the old-school idiom to flatten the array.
-        const all_cards = all_runs.reduce((acc, lst) => acc.concat(lst));
+        const all_cards = all_runs2.reduce((acc, lst) => acc.concat(lst));
 
         this.cards = all_cards;
 
@@ -398,13 +390,15 @@ class Game {
     deck: Deck;
 
     constructor() {
-        this.players = [new Player("Player One")];
+        this.players = [new Player("Player One"), new Player("Player Two")];
         this.deck = new Deck({ shuffled: true });
     }
 
     deal_cards() {
-        const cards = this.deck.take_from_top(15);
-        this.players[0].hand.add_cards(cards);
+        for (const player of this.players) {
+            const cards = this.deck.take_from_top(15);
+            player.hand.add_cards(cards);
+        }
     }
 }
 
