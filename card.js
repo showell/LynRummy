@@ -373,18 +373,31 @@ var PhysicalExamples = /** @class */ (function () {
         var div = document.createElement("div");
         var h3 = document.createElement("h3");
         h3.innerText = "Examples";
-        div.append(h3);
-        var examples = get_examples();
-        for (var _i = 0, _a = examples.good; _i < _a.length; _i++) {
-            var example = _a[_i];
-            var physical_example = new PhysicalExample(example);
-            div.append(physical_example.dom());
+        var panel = document.createElement("div");
+        panel.style.display = "flex";
+        panel.style.justifyContent = "space-around";
+        var good_column = document.createElement("div");
+        var bad_column = document.createElement("div");
+        for (var _i = 0, _a = [good_column, bad_column]; _i < _a.length; _i++) {
+            var column = _a[_i];
+            column.style.paddingLeft = "15px";
+            column.style.paddingRight = "15px";
         }
-        for (var _b = 0, _c = examples.bad; _b < _c.length; _b++) {
+        var examples = get_examples();
+        for (var _b = 0, _c = examples.good; _b < _c.length; _b++) {
             var example = _c[_b];
             var physical_example = new PhysicalExample(example);
-            div.append(physical_example.dom());
+            good_column.append(physical_example.dom());
         }
+        for (var _d = 0, _e = examples.bad; _d < _e.length; _d++) {
+            var example = _e[_d];
+            var physical_example = new PhysicalExample(example);
+            bad_column.append(physical_example.dom());
+        }
+        panel.append(good_column);
+        panel.append(bad_column);
+        div.append(h3);
+        div.append(panel);
         return div;
     };
     return PhysicalExamples;

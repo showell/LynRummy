@@ -516,18 +516,34 @@ class PhysicalExamples {
 
         const h3 = document.createElement("h3");
         h3.innerText = "Examples";
-        div.append(h3);
+
+        const panel = document.createElement("div");
+        panel.style.display = "flex";
+        panel.style.justifyContent = "space-around";
+
+        const good_column = document.createElement("div");
+        const bad_column = document.createElement("div");
+
+        for (const column of [good_column, bad_column]) {
+            column.style.paddingLeft = "15px";
+            column.style.paddingRight = "15px";
+        }
 
         const examples = get_examples();
         for (const example of examples.good) {
             const physical_example = new PhysicalExample(example);
-            div.append(physical_example.dom());
+            good_column.append(physical_example.dom());
         }
 
         for (const example of examples.bad) {
             const physical_example = new PhysicalExample(example);
-            div.append(physical_example.dom());
+            bad_column.append(physical_example.dom());
         }
+
+        panel.append(good_column);
+        panel.append(bad_column);
+        div.append(h3);
+        div.append(panel);
 
         return div;
     }
