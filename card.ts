@@ -216,6 +216,10 @@ class Card {
         const text = document.createTextNode(this.str());
         span.append(text);
         span.style.color = css_color(this.color);
+        span.style.fontSize = "22px";
+        span.style.border = "1px blue solid";
+        span.style.padding = "2px";
+        span.style.margin = "1px";
         return span;
     }
 }
@@ -392,11 +396,16 @@ function get_examples(): Example[] {
 
     const s5 = new Card(CardValue.FIVE, Suit.SPADE);
 
+    const h10 = new Card(CardValue.TEN, Suit.HEART);
+    const hj = new Card(CardValue.JACK, Suit.HEART);
+    const hq = new Card(CardValue.QUEEN, Suit.HEART);
+
     return [
         new Example([h3, s5, h3], StackType.BOGUS),
         new Example([h3, s3, h3], StackType.DUP),
         new Example([h3, s3, d3], StackType.SET),
         new Example([s3, s4, s5], StackType.PURE_RUN),
+        new Example([h10, hj, hq], StackType.PURE_RUN),
         new Example([s3, d4, s5], StackType.RED_BLACK_RUN),
         new Example([s3, d4], StackType.INCOMPLETE),
         new Example([s3, d4, h4], StackType.BOGUS),

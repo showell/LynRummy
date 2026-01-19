@@ -165,6 +165,10 @@ var Card = /** @class */ (function () {
         var text = document.createTextNode(this.str());
         span.append(text);
         span.style.color = css_color(this.color);
+        span.style.fontSize = "22px";
+        span.style.border = "1px blue solid";
+        span.style.padding = "2px";
+        span.style.margin = "1px";
         return span;
     };
     return Card;
@@ -304,11 +308,15 @@ function get_examples() {
     var h4 = new Card(4 /* CardValue.FOUR */, 3 /* Suit.HEART */);
     var s4 = new Card(4 /* CardValue.FOUR */, 2 /* Suit.SPADE */);
     var s5 = new Card(5 /* CardValue.FIVE */, 2 /* Suit.SPADE */);
+    var h10 = new Card(10 /* CardValue.TEN */, 3 /* Suit.HEART */);
+    var hj = new Card(11 /* CardValue.JACK */, 3 /* Suit.HEART */);
+    var hq = new Card(12 /* CardValue.QUEEN */, 3 /* Suit.HEART */);
     return [
         new Example([h3, s5, h3], "bogus" /* StackType.BOGUS */),
         new Example([h3, s3, h3], "dup" /* StackType.DUP */),
         new Example([h3, s3, d3], "set" /* StackType.SET */),
         new Example([s3, s4, s5], "pure run" /* StackType.PURE_RUN */),
+        new Example([h10, hj, hq], "pure run" /* StackType.PURE_RUN */),
         new Example([s3, d4, s5], "red/black alternating" /* StackType.RED_BLACK_RUN */),
         new Example([s3, d4], "incomplete" /* StackType.INCOMPLETE */),
         new Example([s3, d4, h4], "bogus" /* StackType.BOGUS */),
