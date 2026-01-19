@@ -241,6 +241,17 @@ var CardStack = /** @class */ (function () {
     CardStack.prototype.str = function () {
         return this.cards.map(function (card) { return card.str(); }).join(",");
     };
+    CardStack.prototype.stack_color = function () {
+        switch (this.stack_type) {
+            case "dup" /* StackType.DUP */:
+            case "bogus" /* StackType.BOGUS */:
+                return "red";
+            case "incomplete" /* StackType.INCOMPLETE */:
+                return "lightred";
+            default:
+                return "green";
+        }
+    };
     CardStack.prototype.dom = function () {
         var div = document.createElement("div");
         for (var _i = 0, _a = this.cards; _i < _a.length; _i++) {
@@ -308,9 +319,11 @@ var Example = /** @class */ (function () {
     }
     Example.prototype.dom = function () {
         var div = document.createElement("div");
-        div.style.display = "flex";
+        var h5 = document.createElement("h5");
+        h5.innerText = this.comment;
+        h5.style.color = this.stack.stack_color();
+        div.append(h5);
         div.append(this.stack.dom());
-        div.append(document.createTextNode(this.comment));
         return div;
     };
     return Example;
@@ -333,6 +346,7 @@ function get_examples() {
     var hj = new Card(11 /* CardValue.JACK */, 3 /* Suit.HEART */);
     var hq = new Card(12 /* CardValue.QUEEN */, 3 /* Suit.HEART */);
     var ck = new Card(13 /* CardValue.KING */, 0 /* Suit.CLUB */);
+    var hk = new Card(13 /* CardValue.KING */, 3 /* Suit.HEART */);
     var sk = new Card(13 /* CardValue.KING */, 2 /* Suit.SPADE */);
     return [
         new Example("SET of 3s", [h3, s3, d3], "set" /* StackType.SET */),
@@ -341,7 +355,9 @@ function get_examples() {
         new Example("PURE RUN around the ace", [sk, sa, s2, s3, s4, s5], "pure run" /* StackType.PURE_RUN */),
         new Example("RED-BLACK RUN with three cards", [s3, d4, s5], "red/black alternating" /* StackType.RED_BLACK_RUN */),
         new Example("RED-BLACK RUN around the ace", [hq, ck, da, s2, d3], "red/black alternating" /* StackType.RED_BLACK_RUN */),
-        new Example("INCOMPLETE (but a good start)", [s3, d4], "incomplete" /* StackType.INCOMPLETE */),
+        new Example("INCOMPLETE (set of kings)", [ck, sk], "incomplete" /* StackType.INCOMPLETE */),
+        new Example("INCOMPLETE (pure run of hearts)", [hq, hk], "incomplete" /* StackType.INCOMPLETE */),
+        new Example("INCOMPLETE (red-black run)", [s3, d4], "incomplete" /* StackType.INCOMPLETE */),
         new Example("ILLEGAL! No dups allowed.", [h3, s3, h3], "dup" /* StackType.DUP */),
         new Example("non sensical", [s3, d4, h4], "bogus" /* StackType.BOGUS */),
     ];

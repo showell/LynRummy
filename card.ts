@@ -309,6 +309,18 @@ class CardStack {
         return this.cards.map((card) => card.str()).join(",");
     }
 
+    stack_color(): string {
+        switch (this.stack_type) {
+            case StackType.DUP:
+            case StackType.BOGUS:
+                return "red";
+            case StackType.INCOMPLETE:
+                return "lightred";
+            default:
+                return "green";
+        }
+    }
+
     dom() {
         const div = document.createElement("div");
         for (const card of this.cards) {
@@ -394,9 +406,11 @@ class Example {
 
     dom(): Node {
         const div = document.createElement("div");
-        div.style.display = "flex";
+        const h5 = document.createElement("h5");
+        h5.innerText = this.comment;
+        h5.style.color = this.stack.stack_color();
+        div.append(h5);
         div.append(this.stack.dom());
-        div.append(document.createTextNode(this.comment));
         return div;
     }
 }
@@ -426,6 +440,7 @@ function get_examples(): Example[] {
     const hq = new Card(CardValue.QUEEN, Suit.HEART);
 
     const ck = new Card(CardValue.KING, Suit.CLUB);
+    const hk = new Card(CardValue.KING, Suit.HEART);
     const sk = new Card(CardValue.KING, Suit.SPADE);
 
     return [
@@ -448,7 +463,17 @@ function get_examples(): Example[] {
             StackType.RED_BLACK_RUN,
         ),
         new Example(
-            "INCOMPLETE (but a good start)",
+            "INCOMPLETE (set of kings)",
+            [ck, sk],
+            StackType.INCOMPLETE,
+        ),
+        new Example(
+            "INCOMPLETE (pure run of hearts)",
+            [hq, hk],
+            StackType.INCOMPLETE,
+        ),
+        new Example(
+            "INCOMPLETE (red-black run)",
             [s3, d4],
             StackType.INCOMPLETE,
         ),
