@@ -311,6 +311,9 @@ var Example = /** @class */ (function () {
     return Example;
 }());
 function get_examples() {
+    var da = new Card(1 /* CardValue.ACE */, 1 /* Suit.DIAMOND */);
+    var sa = new Card(1 /* CardValue.ACE */, 2 /* Suit.SPADE */);
+    var s2 = new Card(2 /* CardValue.TWO */, 2 /* Suit.SPADE */);
     var d3 = new Card(3 /* CardValue.THREE */, 1 /* Suit.DIAMOND */);
     var h3 = new Card(3 /* CardValue.THREE */, 3 /* Suit.HEART */);
     var s3 = new Card(3 /* CardValue.THREE */, 2 /* Suit.SPADE */);
@@ -318,17 +321,23 @@ function get_examples() {
     var h4 = new Card(4 /* CardValue.FOUR */, 3 /* Suit.HEART */);
     var s4 = new Card(4 /* CardValue.FOUR */, 2 /* Suit.SPADE */);
     var s5 = new Card(5 /* CardValue.FIVE */, 2 /* Suit.SPADE */);
+    var c10 = new Card(10 /* CardValue.TEN */, 0 /* Suit.CLUB */);
+    var d10 = new Card(10 /* CardValue.TEN */, 1 /* Suit.DIAMOND */);
     var h10 = new Card(10 /* CardValue.TEN */, 3 /* Suit.HEART */);
+    var s10 = new Card(10 /* CardValue.TEN */, 2 /* Suit.SPADE */);
     var hj = new Card(11 /* CardValue.JACK */, 3 /* Suit.HEART */);
     var hq = new Card(12 /* CardValue.QUEEN */, 3 /* Suit.HEART */);
+    var ck = new Card(13 /* CardValue.KING */, 0 /* Suit.CLUB */);
     return [
-        new Example([h3, s5, h3], "bogus" /* StackType.BOGUS */),
-        new Example([h3, s3, h3], "dup" /* StackType.DUP */),
         new Example([h3, s3, d3], "set" /* StackType.SET */),
-        new Example([s3, s4, s5], "pure run" /* StackType.PURE_RUN */),
+        new Example([h10, s10, d10, c10], "set" /* StackType.SET */),
+        new Example([sa, s2, s3, s4, s5], "pure run" /* StackType.PURE_RUN */),
         new Example([h10, hj, hq], "pure run" /* StackType.PURE_RUN */),
         new Example([s3, d4, s5], "red/black alternating" /* StackType.RED_BLACK_RUN */),
+        new Example([hq, ck, da, s2, d3], "red/black alternating" /* StackType.RED_BLACK_RUN */),
         new Example([s3, d4], "incomplete" /* StackType.INCOMPLETE */),
+        new Example([h3, s3, h3], "dup" /* StackType.DUP */),
+        new Example([h3, s5, h3], "bogus" /* StackType.BOGUS */),
         new Example([s3, d4, h4], "bogus" /* StackType.BOGUS */),
     ];
 }

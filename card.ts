@@ -396,6 +396,11 @@ class Example {
 }
 
 function get_examples(): Example[] {
+    const da = new Card(CardValue.ACE, Suit.DIAMOND);
+    const sa = new Card(CardValue.ACE, Suit.SPADE);
+
+    const s2 = new Card(CardValue.TWO, Suit.SPADE);
+
     const d3 = new Card(CardValue.THREE, Suit.DIAMOND);
     const h3 = new Card(CardValue.THREE, Suit.HEART);
     const s3 = new Card(CardValue.THREE, Suit.SPADE);
@@ -406,18 +411,26 @@ function get_examples(): Example[] {
 
     const s5 = new Card(CardValue.FIVE, Suit.SPADE);
 
+    const c10 = new Card(CardValue.TEN, Suit.CLUB);
+    const d10 = new Card(CardValue.TEN, Suit.DIAMOND);
     const h10 = new Card(CardValue.TEN, Suit.HEART);
+    const s10 = new Card(CardValue.TEN, Suit.SPADE);
+
     const hj = new Card(CardValue.JACK, Suit.HEART);
     const hq = new Card(CardValue.QUEEN, Suit.HEART);
 
+    const ck = new Card(CardValue.KING, Suit.CLUB);
+
     return [
-        new Example([h3, s5, h3], StackType.BOGUS),
-        new Example([h3, s3, h3], StackType.DUP),
         new Example([h3, s3, d3], StackType.SET),
-        new Example([s3, s4, s5], StackType.PURE_RUN),
+        new Example([h10, s10, d10, c10], StackType.SET),
+        new Example([sa, s2, s3, s4, s5], StackType.PURE_RUN),
         new Example([h10, hj, hq], StackType.PURE_RUN),
         new Example([s3, d4, s5], StackType.RED_BLACK_RUN),
+        new Example([hq, ck, da, s2, d3], StackType.RED_BLACK_RUN),
         new Example([s3, d4], StackType.INCOMPLETE),
+        new Example([h3, s3, h3], StackType.DUP),
+        new Example([h3, s5, h3], StackType.BOGUS),
         new Example([s3, d4, h4], StackType.BOGUS),
     ];
 }
