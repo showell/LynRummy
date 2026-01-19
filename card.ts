@@ -341,8 +341,7 @@ class Deck {
         this.cards = all_cards;
 
         if (this.shuffled) {
-            // this is random enough for our needs
-            this.cards.sort(() => Math.random() - 0.5);
+            this.cards = shuffle(this.cards);
         }
     }
 
@@ -497,10 +496,27 @@ class PhysicalHand {
     }
 
     dom(): HTMLElement {
+        const hand = this.hand;
+
         const div = document.createElement("div");
-        for (const card of this.hand.cards) {
-            const physical_card = new PhysicalCard(card);
-            div.append(physical_card.dom());
+        for (const suit of all_suits) {
+            const suit_cards = [];
+            for (const card of hand.cards) {
+                if (card.suit === suit) {
+                    suit_cards.push(card);
+                }
+            }
+            if (suit_cards.length > 0) {
+                suit_cards.sort((card1, card2) => card1.value - card2.value);
+                console.log(suit_cards);
+                const suit_div = document.createElement("div");
+                suit_div.style.paddingBottom = "3px";
+                for (const card of suit_cards) {
+                    const physical_card = new PhysicalCard(card);
+                    suit_div.append(physical_card.dom());
+                }
+                div.append(suit_div);
+            }
         }
         return div;
     }
@@ -721,6 +737,17 @@ function get_examples(): { good: Example[]; bad: Example[] } {
     ];
 
     return { good, bad };
+}
+
+function shuffle(array: any[]) {
+    for (let i = array.length - 1; i > 0; i--) {
+        // Pick a random index from 0 to i
+        const j = Math.floor(Math.random() * (i + 1));
+
+        // Swap elements at i and j
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
 }
 
 function gui() {

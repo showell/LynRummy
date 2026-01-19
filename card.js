@@ -268,8 +268,7 @@ var Deck = /** @class */ (function () {
         var all_cards = all_runs2.reduce(function (acc, lst) { return acc.concat(lst); });
         this.cards = all_cards;
         if (this.shuffled) {
-            // this is random enough for our needs
-            this.cards.sort(function () { return Math.random() - 0.5; });
+            this.cards = shuffle(this.cards);
         }
     }
     Deck.prototype.str = function () {
@@ -305,10 +304,7 @@ var Player = /** @class */ (function () {
 }());
 var Game = /** @class */ (function () {
     function Game() {
-        this.players = [
-            new Player("Player One"),
-            new Player("Player Two"),
-        ];
+        this.players = [new Player("Player One"), new Player("Player Two")];
         this.deck = new Deck({ shuffled: true });
     }
     Game.prototype.deal_cards = function () {
@@ -397,11 +393,29 @@ var PhysicalHand = /** @class */ (function () {
         this.hand = hand;
     }
     PhysicalHand.prototype.dom = function () {
+        var hand = this.hand;
         var div = document.createElement("div");
-        for (var _i = 0, _a = this.hand.cards; _i < _a.length; _i++) {
-            var card = _a[_i];
-            var physical_card = new PhysicalCard(card);
-            div.append(physical_card.dom());
+        for (var _i = 0, all_suits_1 = all_suits; _i < all_suits_1.length; _i++) {
+            var suit = all_suits_1[_i];
+            var suit_cards = [];
+            for (var _a = 0, _b = hand.cards; _a < _b.length; _a++) {
+                var card = _b[_a];
+                if (card.suit === suit) {
+                    suit_cards.push(card);
+                }
+            }
+            if (suit_cards.length > 0) {
+                suit_cards.sort(function (card1, card2) { return card1.value - card2.value; });
+                console.log(suit_cards);
+                var suit_div = document.createElement("div");
+                suit_div.style.paddingBottom = "3px";
+                for (var _c = 0, suit_cards_1 = suit_cards; _c < suit_cards_1.length; _c++) {
+                    var card = suit_cards_1[_c];
+                    var physical_card = new PhysicalCard(card);
+                    suit_div.append(physical_card.dom());
+                }
+                div.append(suit_div);
+            }
         }
         return div;
     };
@@ -553,6 +567,16 @@ function get_examples() {
         new Example("non sensical", [s3, d4, h4], "bogus" /* CardStackType.BOGUS */),
     ];
     return { good: good, bad: bad };
+}
+function shuffle(array) {
+    var _a;
+    for (var i = array.length - 1; i > 0; i--) {
+        // Pick a random index from 0 to i
+        var j = Math.floor(Math.random() * (i + 1));
+        // Swap elements at i and j
+        _a = [array[j], array[i]], array[i] = _a[0], array[j] = _a[1];
+    }
+    return array;
 }
 function gui() {
     var ui = new MainPage();
