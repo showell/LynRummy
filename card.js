@@ -456,6 +456,9 @@ var MainPage = /** @class */ (function () {
         this.page.style.display = "flex";
         this.page.style.width = "100%";
         this.player_area = document.createElement("div");
+        this.player_area.style.paddingRight = "20px";
+        this.player_area.style.marginRight = "20px";
+        this.player_area.style.borderRight = "1px gray solid";
         this.common_area = document.createElement("div");
         this.page.append(this.player_area);
         this.page.append(this.common_area);
