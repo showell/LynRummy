@@ -299,6 +299,10 @@ var Deck = /** @class */ (function () {
         // Use the old-school idiom to flatten the array.
         var all_cards = all_runs.reduce(function (acc, lst) { return acc.concat(lst); });
         this.cards = all_cards;
+        if (this.shuffled) {
+            // this is random enough for our needs
+            this.cards.sort(function () { return Math.random() - 0.5; });
+        }
     }
     Deck.prototype.str = function () {
         return this.cards.map(function (card) { return card.str(); }).join(" ");
@@ -363,7 +367,7 @@ function get_examples() {
     ];
 }
 function test() {
-    var deck = new Deck({ shuffled: false });
+    var deck = new Deck({ shuffled: true });
     console.log(deck.str());
     get_examples(); // run for side effects
 }

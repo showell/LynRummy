@@ -380,6 +380,11 @@ class Deck {
         const all_cards = all_runs.reduce((acc, lst) => acc.concat(lst));
 
         this.cards = all_cards;
+
+        if (this.shuffled) {
+            // this is random enough for our needs
+            this.cards.sort(() => Math.random() - 0.5);
+        }
     }
 
     str(): string {
@@ -483,7 +488,7 @@ function get_examples(): Example[] {
 }
 
 function test() {
-    const deck = new Deck({ shuffled: false });
+    const deck = new Deck({ shuffled: true });
     console.log(deck.str());
     get_examples(); // run for side effects
 }
