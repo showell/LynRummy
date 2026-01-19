@@ -162,13 +162,23 @@ var Card = /** @class */ (function () {
     };
     Card.prototype.dom = function () {
         var span = document.createElement("span");
-        var text = document.createTextNode(this.str());
-        span.append(text);
+        var v_node = document.createElement("span");
+        var s_node = document.createElement("span");
+        v_node.style.display = "block";
+        s_node.style.display = "block";
+        v_node.innerText = value_str(this.value);
+        s_node.innerText = suit_str(this.suit);
+        span.append(v_node);
+        span.append(s_node);
         span.style.color = css_color(this.color);
-        span.style.fontSize = "22px";
+        span.style.textAlign = "center";
+        span.style.fontSize = "18px";
         span.style.border = "1px blue solid";
-        span.style.padding = "2px";
-        span.style.margin = "1px";
+        span.style.padding = "1px";
+        span.style.margin = "2px";
+        span.style.display = "inline-block";
+        span.style.minWidth = "20px";
+        span.style.minHeight = "42px";
         return span;
     };
     return Card;
