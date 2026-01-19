@@ -160,27 +160,6 @@ var Card = /** @class */ (function () {
         }
         return "bogus" /* StackType.BOGUS */;
     };
-    Card.prototype.dom = function () {
-        var span = document.createElement("span");
-        var v_node = document.createElement("span");
-        var s_node = document.createElement("span");
-        v_node.style.display = "block";
-        s_node.style.display = "block";
-        v_node.innerText = value_str(this.value);
-        s_node.innerText = suit_str(this.suit);
-        span.append(v_node);
-        span.append(s_node);
-        span.style.color = css_color(this.color);
-        span.style.textAlign = "center";
-        span.style.fontSize = "18px";
-        span.style.border = "1px blue solid";
-        span.style.padding = "1px";
-        span.style.margin = "2px";
-        span.style.display = "inline-block";
-        span.style.minWidth = "20px";
-        span.style.minHeight = "42px";
-        return span;
-    };
     return Card;
 }());
 var CardStack = /** @class */ (function () {
@@ -240,25 +219,6 @@ var CardStack = /** @class */ (function () {
     };
     CardStack.prototype.str = function () {
         return this.cards.map(function (card) { return card.str(); }).join(",");
-    };
-    CardStack.prototype.stack_color = function () {
-        switch (this.stack_type) {
-            case "dup" /* StackType.DUP */:
-            case "bogus" /* StackType.BOGUS */:
-                return "red";
-            case "incomplete" /* StackType.INCOMPLETE */:
-                return "lightred";
-            default:
-                return "green";
-        }
-    };
-    CardStack.prototype.dom = function () {
-        var div = document.createElement("div");
-        for (var _i = 0, _a = this.cards; _i < _a.length; _i++) {
-            var card = _a[_i];
-            div.append(card.dom());
-        }
-        return div;
     };
     return CardStack;
 }());
@@ -325,9 +285,10 @@ var Example = /** @class */ (function () {
         var div = document.createElement("div");
         var h5 = document.createElement("h5");
         h5.innerText = this.comment;
-        h5.style.color = this.stack.stack_color();
+        var physical_stack = new PhysicalCardStack(this.stack);
+        h5.style.color = physical_stack.stack_color();
         div.append(h5);
-        div.append(this.stack.dom());
+        div.append(physical_stack.dom());
         return div;
     };
     return Example;
@@ -392,36 +353,96 @@ var Hand = /** @class */ (function () {
             new Card(1 /* CardValue.ACE */, 2 /* Suit.SPADE */),
         ];
     }
-    Hand.prototype.dom = function () {
+    return Hand;
+}());
+var PhysicalHand = /** @class */ (function () {
+    function PhysicalHand(hand) {
+        this.hand = hand;
+    }
+    PhysicalHand.prototype.dom = function () {
         var div = document.createElement("div");
-        for (var _i = 0, _a = this.cards; _i < _a.length; _i++) {
+        for (var _i = 0, _a = this.hand.cards; _i < _a.length; _i++) {
             var card = _a[_i];
-            div.append(card.dom());
+            var physical_card = new PhysicalCard(card);
+            div.append(physical_card.dom());
         }
         return div;
     };
-    return Hand;
+    return PhysicalHand;
 }());
 var Player = /** @class */ (function () {
     function Player() {
         this.hand = new Hand();
     }
     Player.prototype.dom = function () {
-        return this.hand.dom();
+        var physical_hand = new PhysicalHand(this.hand);
+        return physical_hand.dom();
     };
     return Player;
 }());
 var Game = /** @class */ (function () {
     function Game(player_area) {
         this.player_area = player_area;
-        this.players = [
-            new Player(),
-        ];
+        this.players = [new Player()];
     }
     Game.prototype.start = function () {
         this.player_area.append(this.players[0].dom());
     };
     return Game;
+}());
+var PhysicalCard = /** @class */ (function () {
+    function PhysicalCard(card) {
+        this.card = card;
+    }
+    PhysicalCard.prototype.dom = function () {
+        var card = this.card;
+        var span = document.createElement("span");
+        var v_node = document.createElement("span");
+        var s_node = document.createElement("span");
+        v_node.style.display = "block";
+        s_node.style.display = "block";
+        v_node.innerText = value_str(card.value);
+        s_node.innerText = suit_str(card.suit);
+        span.append(v_node);
+        span.append(s_node);
+        span.style.color = css_color(card.color);
+        span.style.textAlign = "center";
+        span.style.fontSize = "18px";
+        span.style.border = "1px blue solid";
+        span.style.padding = "1px";
+        span.style.margin = "2px";
+        span.style.display = "inline-block";
+        span.style.minWidth = "20px";
+        span.style.minHeight = "42px";
+        return span;
+    };
+    return PhysicalCard;
+}());
+var PhysicalCardStack = /** @class */ (function () {
+    function PhysicalCardStack(stack) {
+        this.stack = stack;
+    }
+    PhysicalCardStack.prototype.dom = function () {
+        var div = document.createElement("div");
+        for (var _i = 0, _a = this.stack.cards; _i < _a.length; _i++) {
+            var card = _a[_i];
+            var physical_card = new PhysicalCard(card);
+            div.append(physical_card.dom());
+        }
+        return div;
+    };
+    PhysicalCardStack.prototype.stack_color = function () {
+        switch (this.stack.stack_type) {
+            case "dup" /* StackType.DUP */:
+            case "bogus" /* StackType.BOGUS */:
+                return "red";
+            case "incomplete" /* StackType.INCOMPLETE */:
+                return "lightred";
+            default:
+                return "green";
+        }
+    };
+    return PhysicalCardStack;
 }());
 var MainPage = /** @class */ (function () {
     function MainPage() {

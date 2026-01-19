@@ -210,28 +210,6 @@ class Card {
         }
         return StackType.BOGUS;
     }
-
-    dom(): Node {
-        const span = document.createElement("span");
-        const v_node = document.createElement("span");
-        const s_node = document.createElement("span");
-        v_node.style.display = "block";
-        s_node.style.display = "block";
-        v_node.innerText = value_str(this.value);
-        s_node.innerText = suit_str(this.suit);
-        span.append(v_node);
-        span.append(s_node);
-        span.style.color = css_color(this.color);
-        span.style.textAlign = "center";
-        span.style.fontSize = "18px";
-        span.style.border = "1px blue solid";
-        span.style.padding = "1px";
-        span.style.margin = "2px";
-        span.style.display = "inline-block";
-        span.style.minWidth = "20px";
-        span.style.minHeight = "42px";
-        return span;
-    }
 }
 
 class CardStack {
@@ -307,26 +285,6 @@ class CardStack {
 
     str() {
         return this.cards.map((card) => card.str()).join(",");
-    }
-
-    stack_color(): string {
-        switch (this.stack_type) {
-            case StackType.DUP:
-            case StackType.BOGUS:
-                return "red";
-            case StackType.INCOMPLETE:
-                return "lightred";
-            default:
-                return "green";
-        }
-    }
-
-    dom() {
-        const div = document.createElement("div");
-        for (const card of this.cards) {
-            div.append(card.dom());
-        }
-        return div;
     }
 }
 
@@ -413,9 +371,10 @@ class Example {
         const div = document.createElement("div");
         const h5 = document.createElement("h5");
         h5.innerText = this.comment;
-        h5.style.color = this.stack.stack_color();
+        const physical_stack = new PhysicalCardStack(this.stack);
+        h5.style.color = physical_stack.stack_color();
         div.append(h5);
-        div.append(this.stack.dom());
+        div.append(physical_stack.dom());
         return div;
     }
 }
@@ -515,11 +474,20 @@ class Hand {
             new Card(CardValue.ACE, Suit.SPADE),
         ];
     }
+}
+
+class PhysicalHand {
+    hand: Hand;
+
+    constructor(hand: Hand) {
+        this.hand = hand;
+    }
 
     dom(): HTMLElement {
         const div = document.createElement("div");
-        for (const card of this.cards) {
-            div.append(card.dom());
+        for (const card of this.hand.cards) {
+            const physical_card = new PhysicalCard(card);
+            div.append(physical_card.dom());
         }
         return div;
     }
@@ -533,7 +501,8 @@ class Player {
     }
 
     dom() {
-        return this.hand.dom();
+        const physical_hand = new PhysicalHand(this.hand);
+        return physical_hand.dom();
     }
 }
 
@@ -548,6 +517,67 @@ class Game {
 
     start() {
         this.player_area.append(this.players[0].dom());
+    }
+}
+
+class PhysicalCard {
+    card: Card;
+
+    constructor(card: Card) {
+        this.card = card;
+    }
+
+    dom(): Node {
+        const card = this.card;
+
+        const span = document.createElement("span");
+        const v_node = document.createElement("span");
+        const s_node = document.createElement("span");
+        v_node.style.display = "block";
+        s_node.style.display = "block";
+        v_node.innerText = value_str(card.value);
+        s_node.innerText = suit_str(card.suit);
+        span.append(v_node);
+        span.append(s_node);
+        span.style.color = css_color(card.color);
+        span.style.textAlign = "center";
+        span.style.fontSize = "18px";
+        span.style.border = "1px blue solid";
+        span.style.padding = "1px";
+        span.style.margin = "2px";
+        span.style.display = "inline-block";
+        span.style.minWidth = "20px";
+        span.style.minHeight = "42px";
+        return span;
+    }
+}
+
+class PhysicalCardStack {
+    stack: CardStack;
+
+    constructor(stack: CardStack) {
+        this.stack = stack;
+    }
+
+    dom() {
+        const div = document.createElement("div");
+        for (const card of this.stack.cards) {
+            const physical_card = new PhysicalCard(card);
+            div.append(physical_card.dom());
+        }
+        return div;
+    }
+
+    stack_color(): string {
+        switch (this.stack.stack_type) {
+            case StackType.DUP:
+            case StackType.BOGUS:
+                return "red";
+            case StackType.INCOMPLETE:
+                return "lightred";
+            default:
+                return "green";
+        }
     }
 }
 
