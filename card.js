@@ -510,9 +510,9 @@ var PhysicalCardStack = /** @class */ (function () {
 var PhysicalShelf = /** @class */ (function () {
     function PhysicalShelf(shelf) {
         this.shelf = shelf;
+        this.div = this.make_div();
     }
-    PhysicalShelf.prototype.dom = function () {
-        var shelf = this.shelf;
+    PhysicalShelf.prototype.make_div = function () {
         var div = document.createElement("div");
         div.style.display = "flex";
         div.style.minWidth = "600px";
@@ -522,6 +522,17 @@ var PhysicalShelf = /** @class */ (function () {
         div.style.marginTop = "3px";
         div.style.marginBottom = "10px";
         div.style.minHeight = "40px"; // TODO - make this more accurate
+        return div;
+    };
+    PhysicalShelf.prototype.dom = function () {
+        this.populate();
+        return this.div;
+    };
+    PhysicalShelf.prototype.populate = function () {
+        var div = this.div;
+        var shelf = this.shelf;
+        var card_stacks = shelf.card_stacks;
+        div.innerHTML = "";
         var emoji = document.createElement("span");
         emoji.style.marginRight = "10px";
         emoji.style.marginBottom = "5px";
@@ -532,15 +543,17 @@ var PhysicalShelf = /** @class */ (function () {
             emoji.innerText = "\u274C"; // red crossmark
         }
         div.append(emoji);
-        for (var _i = 0, _a = shelf.card_stacks; _i < _a.length; _i++) {
-            var card_stack = _a[_i];
+        var _loop_2 = function (i) {
+            var card_stack = card_stacks[i];
             var physical_card_stack = new PhysicalCardStack(card_stack);
-            physical_card_stack.set_card_click_callback(function (i) {
-                alert("clicked on card with index ".concat(i));
+            physical_card_stack.set_card_click_callback(function (card_index) {
+                alert("clicked on card with index ".concat(card_index, " for stack ").concat(i));
             });
             div.append(physical_card_stack.dom());
+        };
+        for (var i = 0; i < card_stacks.length; ++i) {
+            _loop_2(i);
         }
-        return div;
     };
     return PhysicalShelf;
 }());

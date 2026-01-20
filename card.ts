@@ -647,14 +647,14 @@ class PhysicalCardStack {
 
 class PhysicalShelf {
     shelf: Shelf;
+    div: HTMLElement;
 
     constructor(shelf: Shelf) {
         this.shelf = shelf;
+        this.div = this.make_div();
     }
 
-    dom(): HTMLElement {
-        const shelf = this.shelf;
-
+    make_div(): HTMLElement {
         const div = document.createElement("div");
         div.style.display = "flex";
         div.style.minWidth = "600px";
@@ -664,6 +664,20 @@ class PhysicalShelf {
         div.style.marginTop = "3px";
         div.style.marginBottom = "10px";
         div.style.minHeight = "40px"; // TODO - make this more accurate
+        return div;
+    }
+
+    dom(): HTMLElement {
+        this.populate();
+        return this.div;
+    }
+
+    populate(): void {
+        const div = this.div;
+        const shelf = this.shelf;
+        const card_stacks = shelf.card_stacks;
+
+        div.innerHTML = "";
 
         const emoji = document.createElement("span");
         emoji.style.marginRight = "10px";
@@ -676,15 +690,16 @@ class PhysicalShelf {
         }
         div.append(emoji);
 
-        for (const card_stack of shelf.card_stacks) {
+        for (let i = 0; i < card_stacks.length; ++i) {
+            const card_stack = card_stacks[i];
             const physical_card_stack = new PhysicalCardStack(card_stack);
-            physical_card_stack.set_card_click_callback((i) => {
-                alert(`clicked on card with index ${i}`);
+            physical_card_stack.set_card_click_callback((card_index) => {
+                alert(
+                    `clicked on card with index ${card_index} for stack ${i}`,
+                );
             });
             div.append(physical_card_stack.dom());
         }
-
-        return div;
     }
 }
 
