@@ -386,6 +386,11 @@ var Shelf = /** @class */ (function () {
     Shelf.prototype.add_singleton_card = function (card) {
         this.card_stacks.push(new CardStack([card]));
     };
+    Shelf.from = function (shorthand) {
+        var sigs = shorthand.split(" | ");
+        var card_stacks = sigs.map(function (sig) { return CardStack.from(sig); });
+        return new Shelf(card_stacks);
+    };
     return Shelf;
 }());
 var BookCase = /** @class */ (function () {
@@ -994,14 +999,7 @@ function gui() {
     ui.start();
 }
 function example_shelf() {
-    return new Shelf([
-        CardStack.from("AH"),
-        CardStack.from("2C"),
-        CardStack.from("5S,6S,7S"),
-        CardStack.from("4D"),
-        CardStack.from("8S,9S"),
-        CardStack.from("6C"),
-    ]);
+    return Shelf.from("AH | 2C | 5S,6S,7S | 4D | 8S,9S | 6C");
 }
 function test_marry() {
     var shelf = example_shelf();

@@ -486,6 +486,12 @@ class Shelf {
     add_singleton_card(card: Card) {
         this.card_stacks.push(new CardStack([card]));
     }
+
+    static from(shorthand: string): Shelf {
+        const sigs = shorthand.split(" | ");
+        const card_stacks = sigs.map((sig) => CardStack.from(sig));
+        return new Shelf(card_stacks);
+    }
 }
 
 class BookCase {
@@ -1278,14 +1284,7 @@ function gui() {
 }
 
 function example_shelf() {
-    return new Shelf([
-        CardStack.from("AH"),
-        CardStack.from("2C"),
-        CardStack.from("5S,6S,7S"),
-        CardStack.from("4D"),
-        CardStack.from("8S,9S"),
-        CardStack.from("6C"),
-    ]);
+    return Shelf.from("AH | 2C | 5S,6S,7S | 4D | 8S,9S | 6C");
 }
 
 function test_marry() {
