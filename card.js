@@ -397,6 +397,9 @@ var BookCase = /** @class */ (function () {
     function BookCase(shelves) {
         this.shelves = shelves;
     }
+    BookCase.prototype.str = function () {
+        return this.shelves.map(function (shelf) { return shelf.str(); }).join("\n");
+    };
     BookCase.prototype.get_cards = function () {
         var shelves = this.shelves;
         var result = [];
@@ -998,29 +1001,28 @@ function gui() {
     var ui = new MainPage();
     ui.start();
 }
-function example_shelf() {
-    return Shelf.from("AH | 2C | 5S,6S,7S | 4D | 8S,9S | 6C");
+function example_book_case() {
+    return new BookCase([
+        Shelf.from("AC"),
+        Shelf.from("AH | 2C | 5S,6S,7S | 4D | 8S,9S | 6C"),
+    ]);
 }
-function test_marry() {
-    var shelf = example_shelf();
-    console.log(shelf.str());
+function test_merge() {
+    var book_case = example_book_case();
+    console.log(book_case.str());
     console.log("------");
-    shelf.merge_internal_stacks(2, 4);
-    console.log(shelf.str());
-    shelf = example_shelf();
-    shelf.merge_internal_stacks(4, 2);
-    console.log(shelf.str());
-    shelf = example_shelf();
-    shelf.merge_internal_stacks(5, 2);
-    console.log(shelf.str());
-    shelf = example_shelf();
-    shelf.merge_internal_stacks(0, 0);
-    console.log(shelf.str());
+    book_case.merge_card_stacks({
+        source_shelf_index: 1,
+        source_stack_index: 4,
+        target_shelf_index: 1,
+        target_stack_index: 2,
+    });
+    console.log(book_case.str());
 }
 function test() {
     var game = new Game();
     console.log("removed", game.book_case.get_cards().length);
     get_examples(); // run for side effects
-    test_marry();
+    test_merge();
 }
 test();
