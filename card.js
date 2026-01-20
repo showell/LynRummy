@@ -358,6 +358,9 @@ var Shelf = /** @class */ (function () {
             card_stacks.splice(stack_index + 1, 0, new_stack);
         }
     };
+    Shelf.prototype.add_singleton_card = function (card) {
+        this.card_stacks.push(new CardStack([card]));
+    };
     return Shelf;
 }());
 var BookCase = /** @class */ (function () {
@@ -429,6 +432,20 @@ var Hand = /** @class */ (function () {
     }
     Hand.prototype.add_cards = function (cards) {
         this.cards = this.cards.concat(cards);
+    };
+    Hand.prototype.remove_card_from_hand = function (card) {
+        var found = false;
+        console.log("removing:", card);
+        for (var i = 0; i < this.cards.length; ++i) {
+            if (this.cards[i].equals(card)) {
+                this.cards.splice(i, 1);
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            throw new Error("Card to be moved is not present in the Hand!");
+        }
     };
     return Hand;
 }());
@@ -624,12 +641,22 @@ var PhysicalShelf = /** @class */ (function () {
         this.shelf.split_card_off_stack(info);
         this.populate();
     };
+    PhysicalShelf.prototype.add_singleton_card = function (card) {
+        this.shelf.add_singleton_card(card);
+        this.populate();
+    };
     return PhysicalShelf;
 }());
 var PhysicalBookCase = /** @class */ (function () {
     function PhysicalBookCase(book_case) {
         this.book_case = book_case;
         this.div = this.make_div();
+        this.physical_shelves = [];
+        for (var _i = 0, _a = book_case.shelves; _i < _a.length; _i++) {
+            var shelf = _a[_i];
+            var physical_shelf = new PhysicalShelf(shelf);
+            this.physical_shelves.push(physical_shelf);
+        }
     }
     PhysicalBookCase.prototype.make_div = function () {
         // no special styling for now
@@ -644,19 +671,25 @@ var PhysicalBookCase = /** @class */ (function () {
         var book_case = this.book_case;
         var heading = document.createElement("h3");
         heading.innerText = "Shelves";
-        div.append(heading);
-        for (var _i = 0, _a = book_case.shelves; _i < _a.length; _i++) {
-            var shelf = _a[_i];
-            var physical_shelf = new PhysicalShelf(shelf);
+        for (var _i = 0, _a = this.physical_shelves; _i < _a.length; _i++) {
+            var physical_shelf = _a[_i];
             div.append(physical_shelf.dom());
         }
+        div.append(heading);
+    };
+    PhysicalBookCase.prototype.add_card_to_top_shelf = function (card) {
+        if (this.physical_shelves.length < 1) {
+            throw new Error("No top shelf");
+        }
+        this.physical_shelves[0].add_singleton_card(card);
     };
     return PhysicalBookCase;
 }());
 var PhysicalHand = /** @class */ (function () {
-    function PhysicalHand(hand) {
+    function PhysicalHand(hand, click_card_callback) {
         this.hand = hand;
         this.div = this.make_div();
+        this.click_card_callback = click_card_callback;
     }
     PhysicalHand.prototype.make_div = function () {
         // no real styling yet
@@ -667,8 +700,10 @@ var PhysicalHand = /** @class */ (function () {
         return this.div;
     };
     PhysicalHand.prototype.populate = function () {
+        var _this = this;
         var div = this.div;
         var hand = this.hand;
+        div.innerHTML = "";
         for (var _i = 0, all_suits_1 = all_suits; _i < all_suits_1.length; _i++) {
             var suit = all_suits_1[_i];
             var suit_cards = [];
@@ -683,20 +718,33 @@ var PhysicalHand = /** @class */ (function () {
                 console.log(suit_cards);
                 var suit_div = document.createElement("div");
                 suit_div.style.paddingBottom = "10px";
+                var _loop_3 = function (card) {
+                    var physical_card = new PhysicalCard(card);
+                    var node = physical_card.dom();
+                    suit_div.append(node);
+                    node.style.cursor = "pointer";
+                    node.addEventListener("click", function () {
+                        return _this.click_card_callback(card);
+                    });
+                };
                 for (var _c = 0, suit_cards_1 = suit_cards; _c < suit_cards_1.length; _c++) {
                     var card = suit_cards_1[_c];
-                    var physical_card = new PhysicalCard(card);
-                    suit_div.append(physical_card.dom());
+                    _loop_3(card);
                 }
                 div.append(suit_div);
             }
         }
     };
+    PhysicalHand.prototype.remove_card_from_hand = function (card) {
+        this.hand.remove_card_from_hand(card);
+        this.populate();
+    };
     return PhysicalHand;
 }());
 var PhysicalPlayer = /** @class */ (function () {
-    function PhysicalPlayer(player) {
+    function PhysicalPlayer(player, callback) {
         this.player = player;
+        this.physical_hand = new PhysicalHand(player.hand, callback);
     }
     PhysicalPlayer.prototype.dom = function () {
         var player = this.player;
@@ -704,32 +752,35 @@ var PhysicalPlayer = /** @class */ (function () {
         var h3 = document.createElement("h3");
         h3.innerText = player.name;
         div.append(h3);
-        var physical_hand = new PhysicalHand(player.hand);
-        div.append(physical_hand.dom());
+        div.append(this.physical_hand.dom());
         return div;
     };
     return PhysicalPlayer;
 }());
 var PhysicalGame = /** @class */ (function () {
     function PhysicalGame(info) {
+        var _this = this;
         this.game = new Game();
         this.game.deal_cards();
         this.player_area = info.player_area;
         this.common_area = info.common_area;
+        var player = this.game.players[0];
+        this.physical_book_case = new PhysicalBookCase(this.game.book_case);
+        this.physical_player = new PhysicalPlayer(player, function (card) {
+            _this.physical_player.physical_hand.remove_card_from_hand(card);
+            _this.physical_book_case.add_card_to_top_shelf(card);
+        });
     }
     PhysicalGame.prototype.start = function () {
         var game = this.game;
-        var player = this.game.players[0];
-        var physical_player = new PhysicalPlayer(player);
         this.player_area.innerHTML = "";
-        this.player_area.append(physical_player.dom());
+        this.player_area.append(this.physical_player.dom());
         // TODO: create PhysicalDeck
         var deck_dom = document.createElement("div");
         deck_dom.innerText = "".concat(game.deck.size(), " cards in deck");
         this.player_area.append(deck_dom);
         // populate common area
-        var physical_book_case = new PhysicalBookCase(game.book_case);
-        this.common_area.replaceWith(physical_book_case.dom());
+        this.common_area.replaceWith(this.physical_book_case.dom());
     };
     return PhysicalGame;
 }());

@@ -451,6 +451,10 @@ class Shelf {
             card_stacks.splice(stack_index + 1, 0, new_stack);
         }
     }
+
+    add_singleton_card(card: Card) {
+        this.card_stacks.push(new CardStack([card]));
+    }
 }
 
 class BookCase {
@@ -549,13 +553,28 @@ class Hand {
     add_cards(cards: Card[]): void {
         this.cards = this.cards.concat(cards);
     }
+
+    remove_card_from_hand(card: Card) {
+        let found = false;
+        console.log("removing:", card);
+        for (let i = 0; i < this.cards.length; ++i) {
+            if (this.cards[i].equals(card)) {
+                this.cards.splice(i, 1);
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            throw new Error("Card to be moved is not present in the Hand!");
+        }
+    }
 }
 
 class Player {
     name: string;
     hand: Hand;
 
-    constructor(name) {
+    constructor(name: string) {
         this.name = name;
         this.hand = new Hand();
     }
@@ -784,15 +803,25 @@ class PhysicalShelf {
         this.shelf.split_card_off_stack(info);
         this.populate();
     }
+
+    add_singleton_card(card: Card) {
+        this.shelf.add_singleton_card(card);
+        this.populate();
+    }
 }
 
 class PhysicalBookCase {
     book_case: BookCase;
     div: HTMLElement;
-
-    constructor(book_case) {
+    physical_shelves: PhysicalShelf[];
+    constructor(book_case: BookCase) {
         this.book_case = book_case;
         this.div = this.make_div();
+        this.physical_shelves = [];
+        for (const shelf of book_case.shelves) {
+            const physical_shelf = new PhysicalShelf(shelf);
+            this.physical_shelves.push(physical_shelf);
+        }
     }
 
     make_div(): HTMLElement {
@@ -812,22 +841,31 @@ class PhysicalBookCase {
         const heading = document.createElement("h3");
         heading.innerText = "Shelves";
 
-        div.append(heading);
-
-        for (const shelf of book_case.shelves) {
-            const physical_shelf = new PhysicalShelf(shelf);
+        for (const physical_shelf of this.physical_shelves) {
             div.append(physical_shelf.dom());
         }
+        div.append(heading);
+    }
+
+    add_card_to_top_shelf(card: Card) {
+        if (this.physical_shelves.length < 1) {
+            throw new Error("No top shelf");
+        }
+        this.physical_shelves[0].add_singleton_card(card);
     }
 }
 
 class PhysicalHand {
     hand: Hand;
     div: HTMLElement;
-
-    constructor(hand: Hand) {
+    click_card_callback: (card: Card) => void;
+    constructor(
+        hand: Hand,
+        click_card_callback: typeof this.click_card_callback,
+    ) {
         this.hand = hand;
         this.div = this.make_div();
+        this.click_card_callback = click_card_callback;
     }
 
     make_div(): HTMLElement {
@@ -839,10 +877,10 @@ class PhysicalHand {
         this.populate();
         return this.div;
     }
-
     populate(): void {
         const div = this.div;
         const hand = this.hand;
+        div.innerHTML = "";
 
         for (const suit of all_suits) {
             const suit_cards = [];
@@ -858,19 +896,30 @@ class PhysicalHand {
                 suit_div.style.paddingBottom = "10px";
                 for (const card of suit_cards) {
                     const physical_card = new PhysicalCard(card);
-                    suit_div.append(physical_card.dom());
+                    const node = physical_card.dom();
+                    suit_div.append(node);
+                    node.style.cursor = "pointer";
+                    node.addEventListener("click", () =>
+                        this.click_card_callback(card),
+                    );
                 }
                 div.append(suit_div);
             }
         }
     }
+
+    remove_card_from_hand(card: Card) {
+        this.hand.remove_card_from_hand(card);
+        this.populate();
+    }
 }
 
 class PhysicalPlayer {
     player: Player;
-
-    constructor(player: Player) {
+    physical_hand: PhysicalHand;
+    constructor(player: Player, callback: (card: Card) => void) {
         this.player = player;
+        this.physical_hand = new PhysicalHand(player.hand, callback);
     }
 
     dom(): HTMLElement {
@@ -880,9 +929,8 @@ class PhysicalPlayer {
         const h3 = document.createElement("h3");
         h3.innerText = player.name;
         div.append(h3);
-        const physical_hand = new PhysicalHand(player.hand);
-        div.append(physical_hand.dom());
 
+        div.append(this.physical_hand.dom());
         return div;
     }
 }
@@ -891,21 +939,27 @@ class PhysicalGame {
     game: Game;
     player_area: HTMLElement;
     common_area: HTMLElement;
+    physical_player: PhysicalPlayer;
+    physical_book_case: PhysicalBookCase;
 
     constructor(info: { player_area: HTMLElement; common_area: HTMLElement }) {
         this.game = new Game();
         this.game.deal_cards();
         this.player_area = info.player_area;
         this.common_area = info.common_area;
+        const player = this.game.players[0];
+        this.physical_book_case = new PhysicalBookCase(this.game.book_case);
+        this.physical_player = new PhysicalPlayer(player, (card: Card) => {
+            this.physical_player.physical_hand.remove_card_from_hand(card);
+            this.physical_book_case.add_card_to_top_shelf(card);
+        });
     }
 
     start() {
         const game = this.game;
-        const player = this.game.players[0];
-        const physical_player = new PhysicalPlayer(player);
 
         this.player_area.innerHTML = "";
-        this.player_area.append(physical_player.dom());
+        this.player_area.append(this.physical_player.dom());
 
         // TODO: create PhysicalDeck
         const deck_dom = document.createElement("div");
@@ -913,8 +967,7 @@ class PhysicalGame {
         this.player_area.append(deck_dom);
 
         // populate common area
-        const physical_book_case = new PhysicalBookCase(game.book_case);
-        this.common_area.replaceWith(physical_book_case.dom());
+        this.common_area.replaceWith(this.physical_book_case.dom());
     }
 }
 
