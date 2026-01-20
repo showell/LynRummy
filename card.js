@@ -272,12 +272,11 @@ var Shelf = /** @class */ (function () {
     Shelf.prototype.split_card_off_stack = function (info) {
         var stack_index = info.stack_index, card_index = info.card_index;
         var card_stacks = this.card_stacks;
-        console.info("card_stacks", card_stacks, stack_index);
         var card_stack = card_stacks[stack_index];
-        console.info("card_stack", card_stack, card_index);
-        var card = card_stack.cards[card_index];
-        console.info(card);
-        var new_stack = new CardStack([card]);
+        var cards = card_stack.cards;
+        var split_card = cards[card_index];
+        cards.splice(card_index, 1);
+        var new_stack = new CardStack([split_card]);
         card_stacks.push(new_stack);
     };
     return Shelf;

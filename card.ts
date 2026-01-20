@@ -354,13 +354,12 @@ class Shelf {
     }): void {
         const { stack_index, card_index } = info;
         const card_stacks = this.card_stacks;
-        console.info("card_stacks", card_stacks, stack_index);
         const card_stack = card_stacks[stack_index];
-        console.info("card_stack", card_stack, card_index);
-        const card = card_stack.cards[card_index];
-        console.info(card);
+        const cards = card_stack.cards;
+        const split_card = cards[card_index];
+        cards.splice(card_index, 1);
 
-        const new_stack = new CardStack([card]);
+        const new_stack = new CardStack([split_card]);
         card_stacks.push(new_stack);
     }
 }
