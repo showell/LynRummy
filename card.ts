@@ -332,6 +332,21 @@ class Shelf {
     constructor(card_stacks: CardStack[]) {
         this.card_stacks = card_stacks;
     }
+
+    is_clean(): boolean {
+        const card_stacks = this.card_stacks;
+
+        for (const card_stack of card_stacks) {
+            if (
+                card_stack.stack_type === CardStackType.DUP ||
+                card_stack.stack_type === CardStackType.INCOMPLETE
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }
 
 class BookCase {
@@ -440,8 +455,9 @@ function initial_bookcase(): BookCase {
         new Card(CardValue.THREE, Suit.DIAMOND),
         new Card(CardValue.FOUR, Suit.CLUB),
         new Card(CardValue.FIVE, Suit.HEART),
-        new Card(CardValue.SIX, Suit.SPADE),
     ]);
+
+    const orphan_six = new CardStack([new Card(CardValue.SIX, Suit.SPADE)]);
 
     const card_stack_seven_set = new CardStack([
         new Card(CardValue.SEVEN, Suit.SPADE),
@@ -449,7 +465,11 @@ function initial_bookcase(): BookCase {
         new Card(CardValue.SEVEN, Suit.CLUB),
     ]);
 
-    const shelf2 = new Shelf([card_stack_seven_set, card_stack_red_black]);
+    const shelf2 = new Shelf([
+        card_stack_seven_set,
+        card_stack_red_black,
+        orphan_six,
+    ]);
 
     const card_stack_face_cards = new CardStack([
         new Card(CardValue.JACK, Suit.DIAMOND),
@@ -502,6 +522,220 @@ class Example {
             console.log(this.stack.str());
             console.log(this.stack.stack_type, "is not", expected_type);
         }
+    }
+}
+
+class PhysicalCard {
+    card: Card;
+
+    constructor(card: Card) {
+        this.card = card;
+    }
+
+    dom(): HTMLElement {
+        const card = this.card;
+
+        const span = document.createElement("span");
+        const v_node = document.createElement("span");
+        const s_node = document.createElement("span");
+        v_node.style.display = "block";
+        s_node.style.display = "block";
+        v_node.innerText = value_str(card.value);
+        s_node.innerText = suit_str(card.suit);
+        span.append(v_node);
+        span.append(s_node);
+        span.style.color = css_color(card.color);
+        span.style.textAlign = "center";
+        span.style.fontSize = "17px";
+        span.style.border = "1px blue solid";
+        span.style.padding = "1px";
+        span.style.margin = "1px";
+        span.style.display = "inline-block";
+        span.style.minWidth = "19px";
+        span.style.minHeight = "38px";
+        return span;
+    }
+}
+
+class PhysicalCardStack {
+    stack: CardStack;
+
+    constructor(stack: CardStack) {
+        this.stack = stack;
+    }
+
+    dom(): HTMLElement {
+        const div = document.createElement("div");
+        div.style.marginRight = "20px";
+        for (const card of this.stack.cards) {
+            const physical_card = new PhysicalCard(card);
+            div.append(physical_card.dom());
+        }
+        return div;
+    }
+
+    stack_color(): string {
+        switch (this.stack.stack_type) {
+            case CardStackType.DUP:
+            case CardStackType.BOGUS:
+                return "red";
+            case CardStackType.INCOMPLETE:
+                return "lightred";
+            default:
+                return "green";
+        }
+    }
+}
+
+class PhysicalShelf {
+    shelf: Shelf;
+
+    constructor(shelf: Shelf) {
+        this.shelf = shelf;
+    }
+
+    dom(): HTMLElement {
+        const shelf = this.shelf;
+
+        const div = document.createElement("div");
+        div.style.display = "flex";
+        div.style.minWidth = "600px";
+        div.style.alignItems = "flex-end";
+        div.style.paddingBottom = "2px";
+        div.style.borderBottom = "3px solid blue";
+        div.style.marginTop = "3px";
+        div.style.marginBottom = "10px";
+        div.style.minHeight = "40px"; // TODO - make this more accurate
+
+        const emoji = document.createElement("span");
+        emoji.style.marginRight = "10px";
+        emoji.style.marginBottom = "5px";
+
+        if (shelf.is_clean()) {
+            emoji.innerText = "\u2705"; // green checkmark
+        } else {
+            emoji.innerText = "\u274C"; // red crossmark
+        }
+        div.append(emoji);
+
+        for (const card_stack of shelf.card_stacks) {
+            const physical_card_stack = new PhysicalCardStack(card_stack);
+            div.append(physical_card_stack.dom());
+        }
+
+        return div;
+    }
+}
+
+class PhysicalBookCase {
+    book_case: BookCase;
+
+    constructor(book_case) {
+        this.book_case = book_case;
+    }
+
+    dom(): HTMLElement {
+        const book_case = this.book_case;
+
+        const div = document.createElement("div");
+
+        const heading = document.createElement("h3");
+        heading.innerText = "Shelves";
+
+        div.append(heading);
+
+        for (const shelf of book_case.shelves) {
+            const physical_shelf = new PhysicalShelf(shelf);
+            div.append(physical_shelf.dom());
+        }
+
+        return div;
+    }
+}
+
+class PhysicalHand {
+    hand: Hand;
+
+    constructor(hand: Hand) {
+        this.hand = hand;
+    }
+
+    dom(): HTMLElement {
+        const hand = this.hand;
+
+        const div = document.createElement("div");
+        for (const suit of all_suits) {
+            const suit_cards = [];
+            for (const card of hand.cards) {
+                if (card.suit === suit) {
+                    suit_cards.push(card);
+                }
+            }
+            if (suit_cards.length > 0) {
+                suit_cards.sort((card1, card2) => card1.value - card2.value);
+                console.log(suit_cards);
+                const suit_div = document.createElement("div");
+                suit_div.style.paddingBottom = "3px";
+                for (const card of suit_cards) {
+                    const physical_card = new PhysicalCard(card);
+                    suit_div.append(physical_card.dom());
+                }
+                div.append(suit_div);
+            }
+        }
+        return div;
+    }
+}
+
+class PhysicalPlayer {
+    player: Player;
+
+    constructor(player: Player) {
+        this.player = player;
+    }
+
+    dom(): HTMLElement {
+        const player = this.player;
+
+        const div = document.createElement("div");
+        const h3 = document.createElement("h3");
+        h3.innerText = player.name;
+        div.append(h3);
+        const physical_hand = new PhysicalHand(player.hand);
+        div.append(physical_hand.dom());
+
+        return div;
+    }
+}
+
+class PhysicalGame {
+    game: Game;
+    player_area: HTMLElement;
+    common_area: HTMLElement;
+
+    constructor(info: { player_area: HTMLElement; common_area: HTMLElement }) {
+        this.game = new Game();
+        this.game.deal_cards();
+        this.player_area = info.player_area;
+        this.common_area = info.common_area;
+    }
+
+    start() {
+        const game = this.game;
+        const player = this.game.players[0];
+        const physical_player = new PhysicalPlayer(player);
+
+        this.player_area.innerHTML = "";
+        this.player_area.append(physical_player.dom());
+
+        // TODO: create PhysicalDeck
+        const deck_dom = document.createElement("div");
+        deck_dom.innerText = `${game.deck.size()} cards in deck`;
+        this.player_area.append(deck_dom);
+
+        // populate common area
+        const physical_book_case = new PhysicalBookCase(game.book_case);
+        this.common_area.replaceWith(physical_book_case.dom());
     }
 }
 
@@ -586,202 +820,6 @@ class PhysicalExamples {
         });
 
         this.area.append(div);
-    }
-}
-
-class PhysicalHand {
-    hand: Hand;
-
-    constructor(hand: Hand) {
-        this.hand = hand;
-    }
-
-    dom(): HTMLElement {
-        const hand = this.hand;
-
-        const div = document.createElement("div");
-        for (const suit of all_suits) {
-            const suit_cards = [];
-            for (const card of hand.cards) {
-                if (card.suit === suit) {
-                    suit_cards.push(card);
-                }
-            }
-            if (suit_cards.length > 0) {
-                suit_cards.sort((card1, card2) => card1.value - card2.value);
-                console.log(suit_cards);
-                const suit_div = document.createElement("div");
-                suit_div.style.paddingBottom = "3px";
-                for (const card of suit_cards) {
-                    const physical_card = new PhysicalCard(card);
-                    suit_div.append(physical_card.dom());
-                }
-                div.append(suit_div);
-            }
-        }
-        return div;
-    }
-}
-
-class PhysicalPlayer {
-    player: Player;
-
-    constructor(player: Player) {
-        this.player = player;
-    }
-
-    dom(): HTMLElement {
-        const player = this.player;
-
-        const div = document.createElement("div");
-        const h3 = document.createElement("h3");
-        h3.innerText = player.name;
-        div.append(h3);
-        const physical_hand = new PhysicalHand(player.hand);
-        div.append(physical_hand.dom());
-
-        return div;
-    }
-}
-
-class PhysicalCard {
-    card: Card;
-
-    constructor(card: Card) {
-        this.card = card;
-    }
-
-    dom(): HTMLElement {
-        const card = this.card;
-
-        const span = document.createElement("span");
-        const v_node = document.createElement("span");
-        const s_node = document.createElement("span");
-        v_node.style.display = "block";
-        s_node.style.display = "block";
-        v_node.innerText = value_str(card.value);
-        s_node.innerText = suit_str(card.suit);
-        span.append(v_node);
-        span.append(s_node);
-        span.style.color = css_color(card.color);
-        span.style.textAlign = "center";
-        span.style.fontSize = "17px";
-        span.style.border = "1px blue solid";
-        span.style.padding = "1px";
-        span.style.margin = "1px";
-        span.style.display = "inline-block";
-        span.style.minWidth = "19px";
-        span.style.minHeight = "38px";
-        return span;
-    }
-}
-
-class PhysicalCardStack {
-    stack: CardStack;
-
-    constructor(stack: CardStack) {
-        this.stack = stack;
-    }
-
-    dom(): HTMLElement {
-        const div = document.createElement("div");
-        div.style.marginRight = "20px";
-        for (const card of this.stack.cards) {
-            const physical_card = new PhysicalCard(card);
-            div.append(physical_card.dom());
-        }
-        return div;
-    }
-
-    stack_color(): string {
-        switch (this.stack.stack_type) {
-            case CardStackType.DUP:
-            case CardStackType.BOGUS:
-                return "red";
-            case CardStackType.INCOMPLETE:
-                return "lightred";
-            default:
-                return "green";
-        }
-    }
-}
-
-class PhysicalShelf {
-    shelf: Shelf;
-
-    constructor(shelf: Shelf) {
-        this.shelf = shelf;
-    }
-
-    dom(): HTMLElement {
-        const shelf = this.shelf;
-
-        const div = document.createElement("div");
-        div.style.display = "flex";
-        div.style.paddingBottom = "2px";
-        div.style.borderBottom = "3px solid blue";
-        div.style.marginTop = "3px";
-        div.style.marginBottom = "10px";
-        div.style.minHeight = "40px"; // TODO - make this more accurate
-
-        for (const card_stack of shelf.card_stacks) {
-            const physical_card_stack = new PhysicalCardStack(card_stack);
-            div.append(physical_card_stack.dom());
-        }
-
-        return div;
-    }
-}
-
-class PhysicalBookCase {
-    book_case: BookCase;
-
-    constructor(book_case) {
-        this.book_case = book_case;
-    }
-
-    dom(): HTMLElement {
-        const book_case = this.book_case;
-
-        const div = document.createElement("div");
-
-        for (const shelf of book_case.shelves) {
-            const physical_shelf = new PhysicalShelf(shelf);
-            div.append(physical_shelf.dom());
-        }
-
-        return div;
-    }
-}
-
-class PhysicalGame {
-    game: Game;
-    player_area: HTMLElement;
-    common_area: HTMLElement;
-
-    constructor(info: { player_area: HTMLElement; common_area: HTMLElement }) {
-        this.game = new Game();
-        this.game.deal_cards();
-        this.player_area = info.player_area;
-        this.common_area = info.common_area;
-    }
-
-    start() {
-        const game = this.game;
-        const player = this.game.players[0];
-        const physical_player = new PhysicalPlayer(player);
-
-        this.player_area.innerHTML = "";
-        this.player_area.append(physical_player.dom());
-
-        // TODO: create PhysicalDeck
-        const deck_dom = document.createElement("div");
-        deck_dom.innerText = `${game.deck.size()} cards in deck`;
-        this.player_area.append(deck_dom);
-
-        // populate common area
-        const physical_book_case = new PhysicalBookCase(game.book_case);
-        this.common_area.replaceWith(physical_book_case.dom());
     }
 }
 
