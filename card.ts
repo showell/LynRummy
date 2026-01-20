@@ -438,9 +438,9 @@ class Shelf {
         return true;
     }
 
-    merge_internal_stacks(stack_index1: number, stack_index2: number): void {
+    merge_internal_stacks(stack_index1: number, stack_index2: number): boolean {
         if (stack_index1 === stack_index2) {
-            return;
+            return false;
         }
 
         // The second stack gets merged **onto** and
@@ -453,12 +453,14 @@ class Shelf {
         // (although it does not have to be complete yet).
         const new_stack = stack1.marry(stack2);
         if (new_stack === undefined) {
-            return;
+            return false;
         }
 
         // execute the merge
         card_stacks[stack_index2] = new_stack;
         card_stacks.splice(stack_index1, 1);
+
+        return true;
     }
 
     split_card_off_stack(info: {
@@ -511,6 +513,52 @@ class BookCase {
         }
 
         return result;
+    }
+
+    merge_card_stacks(info: {
+        source_shelf_index: number;
+        source_stack_index: number;
+        target_shelf_index: number;
+        target_stack_index: number;
+    }): boolean {
+        // UNTESTED!!!
+
+        const {
+            source_shelf_index,
+            source_stack_index,
+            target_shelf_index,
+            target_stack_index,
+        } = info;
+
+        const shelves = this.shelves;
+
+        if (source_shelf_index === target_shelf_index) {
+            const shelf = shelves[target_shelf_index];
+            return shelf.merge_internal_stacks(
+                source_stack_index,
+                target_stack_index,
+            );
+        }
+
+        const source_shelf = shelves[source_shelf_index];
+        const target_shelf = shelves[target_shelf_index];
+
+        const source_stacks = source_shelf.card_stacks;
+        const target_stacks = target_shelf.card_stacks;
+
+        const source_stack = source_stacks[source_stack_index];
+        const target_stack = target_stacks[target_stack_index];
+
+        const merged_stack = source_stack.marry(target_stack);
+
+        if (merged_stack === undefined) {
+            return false;
+        }
+
+        source_stacks.splice(source_stack_index, 1);
+        target_stacks[target_stack_index] = merged_stack;
+
+        return true;
     }
 }
 

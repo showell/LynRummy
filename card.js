@@ -350,7 +350,7 @@ var Shelf = /** @class */ (function () {
     };
     Shelf.prototype.merge_internal_stacks = function (stack_index1, stack_index2) {
         if (stack_index1 === stack_index2) {
-            return;
+            return false;
         }
         // The second stack gets merged **onto** and
         // dictates the position of the merged stack.
@@ -361,11 +361,12 @@ var Shelf = /** @class */ (function () {
         // (although it does not have to be complete yet).
         var new_stack = stack1.marry(stack2);
         if (new_stack === undefined) {
-            return;
+            return false;
         }
         // execute the merge
         card_stacks[stack_index2] = new_stack;
         card_stacks.splice(stack_index1, 1);
+        return true;
     };
     Shelf.prototype.split_card_off_stack = function (info) {
         var stack_index = info.stack_index, card_index = info.card_index;
@@ -405,6 +406,28 @@ var BookCase = /** @class */ (function () {
             }
         }
         return result;
+    };
+    BookCase.prototype.merge_card_stacks = function (info) {
+        // UNTESTED!!!
+        var source_shelf_index = info.source_shelf_index, source_stack_index = info.source_stack_index, target_shelf_index = info.target_shelf_index, target_stack_index = info.target_stack_index;
+        var shelves = this.shelves;
+        if (source_shelf_index === target_shelf_index) {
+            var shelf = shelves[target_shelf_index];
+            return shelf.merge_internal_stacks(source_stack_index, target_stack_index);
+        }
+        var source_shelf = shelves[source_shelf_index];
+        var target_shelf = shelves[target_shelf_index];
+        var source_stacks = source_shelf.card_stacks;
+        var target_stacks = target_shelf.card_stacks;
+        var source_stack = source_stacks[source_stack_index];
+        var target_stack = target_stacks[target_stack_index];
+        var merged_stack = source_stack.marry(target_stack);
+        if (merged_stack === undefined) {
+            return false;
+        }
+        source_stacks.splice(source_stack_index, 1);
+        target_stacks[target_stack_index] = merged_stack;
+        return true;
     };
     return BookCase;
 }());
