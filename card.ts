@@ -1103,17 +1103,21 @@ class MainPage {
         welcome.style.fontWeight = "bold";
         welcome_area.append(welcome);
 
+        function start_actual_game() {
+            welcome_area.innerHTML = "";
+
+            // We get called back one the player dismisses the examples.
+            const physical_game = new PhysicalGame({
+                player_area: player_area,
+                common_area: common_area,
+            });
+            physical_game.start();
+        }
+
         const examples = new PhysicalExamples(examples_area);
         examples.start({
             on_dismiss_callback() {
-                welcome_area.innerHTML = "";
-
-                // We get called back one the player dismisses the examples.
-                const physical_game = new PhysicalGame({
-                    player_area: player_area,
-                    common_area: common_area,
-                });
-                physical_game.start();
+                start_actual_game();
             },
         });
 

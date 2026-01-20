@@ -883,16 +883,19 @@ var MainPage = /** @class */ (function () {
         welcome.style.color = "green";
         welcome.style.fontWeight = "bold";
         welcome_area.append(welcome);
+        function start_actual_game() {
+            welcome_area.innerHTML = "";
+            // We get called back one the player dismisses the examples.
+            var physical_game = new PhysicalGame({
+                player_area: player_area,
+                common_area: common_area,
+            });
+            physical_game.start();
+        }
         var examples = new PhysicalExamples(examples_area);
         examples.start({
             on_dismiss_callback: function () {
-                welcome_area.innerHTML = "";
-                // We get called back one the player dismisses the examples.
-                var physical_game = new PhysicalGame({
-                    player_area: player_area,
-                    common_area: common_area,
-                });
-                physical_game.start();
+                start_actual_game();
             },
         });
         document.body.append(this.page);
