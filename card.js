@@ -333,7 +333,11 @@ var Shelf = /** @class */ (function () {
         this.card_stacks = card_stacks;
     }
     Shelf.prototype.str = function () {
-        return this.card_stacks
+        var card_stacks = this.card_stacks;
+        if (card_stacks.length === 0) {
+            return "(empty)";
+        }
+        return card_stacks
             .map(function (card_stack) { return card_stack.str(); })
             .join(" | ");
     };
@@ -346,26 +350,6 @@ var Shelf = /** @class */ (function () {
                 return false;
             }
         }
-        return true;
-    };
-    Shelf.prototype.merge_internal_stacks = function (stack_index1, stack_index2) {
-        if (stack_index1 === stack_index2) {
-            return false;
-        }
-        // The second stack gets merged **onto** and
-        // dictates the position of the merged stack.
-        var card_stacks = this.card_stacks;
-        var stack1 = card_stacks[stack_index1];
-        var stack2 = card_stacks[stack_index2];
-        // We only marry stacks if the new stack would be valid
-        // (although it does not have to be complete yet).
-        var new_stack = stack1.marry(stack2);
-        if (new_stack === undefined) {
-            return false;
-        }
-        // execute the merge
-        card_stacks[stack_index2] = new_stack;
-        card_stacks.splice(stack_index1, 1);
         return true;
     };
     Shelf.prototype.split_card_off_stack = function (info) {
@@ -416,12 +400,11 @@ var BookCase = /** @class */ (function () {
         return result;
     };
     BookCase.prototype.merge_card_stacks = function (info) {
-        // UNTESTED!!!
         var source_shelf_index = info.source_shelf_index, source_stack_index = info.source_stack_index, target_shelf_index = info.target_shelf_index, target_stack_index = info.target_stack_index;
         var shelves = this.shelves;
-        if (source_shelf_index === target_shelf_index) {
-            var shelf = shelves[target_shelf_index];
-            return shelf.merge_internal_stacks(source_stack_index, target_stack_index);
+        if (source_shelf_index === target_shelf_index &&
+            source_stack_index === target_stack_index) {
+            return false;
         }
         var source_shelf = shelves[source_shelf_index];
         var target_shelf = shelves[target_shelf_index];
@@ -490,7 +473,6 @@ var Hand = /** @class */ (function () {
     };
     Hand.prototype.remove_card_from_hand = function (card) {
         var found = false;
-        console.log("removing:", card);
         for (var i = 0; i < this.cards.length; ++i) {
             if (this.cards[i].equals(card)) {
                 this.cards.splice(i, 1);
@@ -770,7 +752,6 @@ var PhysicalHand = /** @class */ (function () {
             }
             if (suit_cards.length > 0) {
                 suit_cards.sort(function (card1, card2) { return card1.value - card2.value; });
-                console.log(suit_cards);
                 var suit_div = document.createElement("div");
                 suit_div.style.paddingBottom = "10px";
                 var _loop_3 = function (card) {
@@ -1021,7 +1002,6 @@ function test_merge() {
 }
 function test() {
     var game = new Game();
-    console.log("removed", game.book_case.get_cards().length);
     get_examples(); // run for side effects
     test_merge();
 }
