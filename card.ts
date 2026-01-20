@@ -417,6 +417,12 @@ class Shelf {
         this.card_stacks = card_stacks;
     }
 
+    str(): string {
+        return this.card_stacks
+            .map((card_stack) => card_stack.str())
+            .join(" | ");
+    }
+
     is_clean(): boolean {
         const card_stacks = this.card_stacks;
 
@@ -430,6 +436,20 @@ class Shelf {
         }
 
         return true;
+    }
+
+    merge_internal_stacks(stack_index1: number, stack_index2: number): void {
+        // The second stack gets merged **onto** and
+        // dictates the position of the merged stack.
+        const card_stacks = this.card_stacks;
+        const stack1 = card_stacks[stack_index1];
+        const stack2 = card_stacks[stack_index2];
+        const new_stack = stack1.marry(stack2);
+        if (new_stack === undefined) {
+            return;
+        }
+        card_stacks[stack_index2] = new_stack;
+        card_stacks.splice(stack_index1, 1);
     }
 
     split_card_off_stack(info: {
@@ -1200,12 +1220,32 @@ function gui() {
     ui.start();
 }
 
-function test_marry() {
-    const stack1 = CardStack.from("5S,6S,7S");
-    const stack2 = CardStack.from("8S,9S");
+function example_shelf() {
+    return new Shelf([
+        CardStack.from("AH"),
+        CardStack.from("2C"),
+        CardStack.from("5S,6S,7S"),
+        CardStack.from("4D"),
+        CardStack.from("8S,9S"),
+        CardStack.from("6C"),
+    ]);
+}
 
-    console.log(stack1.marry(stack2).str());
-    console.log(stack2.marry(stack1).str());
+function test_marry() {
+    let shelf = example_shelf();
+    console.log(shelf.str());
+    console.log("------");
+
+    shelf.merge_internal_stacks(2, 4);
+    console.log(shelf.str());
+
+    shelf = example_shelf();
+    shelf.merge_internal_stacks(4, 2);
+    console.log(shelf.str());
+
+    shelf = example_shelf();
+    shelf.merge_internal_stacks(5, 2);
+    console.log(shelf.str());
 }
 
 function test() {

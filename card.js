@@ -332,6 +332,11 @@ var Shelf = /** @class */ (function () {
     function Shelf(card_stacks) {
         this.card_stacks = card_stacks;
     }
+    Shelf.prototype.str = function () {
+        return this.card_stacks
+            .map(function (card_stack) { return card_stack.str(); })
+            .join(" | ");
+    };
     Shelf.prototype.is_clean = function () {
         var card_stacks = this.card_stacks;
         for (var _i = 0, card_stacks_1 = card_stacks; _i < card_stacks_1.length; _i++) {
@@ -342,6 +347,19 @@ var Shelf = /** @class */ (function () {
             }
         }
         return true;
+    };
+    Shelf.prototype.merge_internal_stacks = function (stack_index1, stack_index2) {
+        // The second stack gets merged **onto** and
+        // dictates the position of the merged stack.
+        var card_stacks = this.card_stacks;
+        var stack1 = card_stacks[stack_index1];
+        var stack2 = card_stacks[stack_index2];
+        var new_stack = stack1.marry(stack2);
+        if (new_stack === undefined) {
+            return;
+        }
+        card_stacks[stack_index2] = new_stack;
+        card_stacks.splice(stack_index1, 1);
     };
     Shelf.prototype.split_card_off_stack = function (info) {
         var stack_index = info.stack_index, card_index = info.card_index;
@@ -946,11 +964,28 @@ function gui() {
     var ui = new MainPage();
     ui.start();
 }
+function example_shelf() {
+    return new Shelf([
+        CardStack.from("AH"),
+        CardStack.from("2C"),
+        CardStack.from("5S,6S,7S"),
+        CardStack.from("4D"),
+        CardStack.from("8S,9S"),
+        CardStack.from("6C"),
+    ]);
+}
 function test_marry() {
-    var stack1 = CardStack.from("5S,6S,7S");
-    var stack2 = CardStack.from("8S,9S");
-    console.log(stack1.marry(stack2).str());
-    console.log(stack2.marry(stack1).str());
+    var shelf = example_shelf();
+    console.log(shelf.str());
+    console.log("------");
+    shelf.merge_internal_stacks(2, 4);
+    console.log(shelf.str());
+    shelf = example_shelf();
+    shelf.merge_internal_stacks(4, 2);
+    console.log(shelf.str());
+    shelf = example_shelf();
+    shelf.merge_internal_stacks(5, 2);
+    console.log(shelf.str());
 }
 function test() {
     var game = new Game();
