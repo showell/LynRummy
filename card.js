@@ -459,13 +459,17 @@ var PhysicalCard = /** @class */ (function () {
 var PhysicalCardStack = /** @class */ (function () {
     function PhysicalCardStack(stack) {
         this.stack = stack;
+        this.physical_cards = this.stack.cards.map(function (card) {
+            return new PhysicalCard(card);
+        });
     }
     PhysicalCardStack.prototype.dom = function () {
+        // should only be called once
+        var physical_cards = this.physical_cards;
         var div = document.createElement("div");
         div.style.marginRight = "20px";
-        for (var _i = 0, _a = this.stack.cards; _i < _a.length; _i++) {
-            var card = _a[_i];
-            var physical_card = new PhysicalCard(card);
+        for (var _i = 0, _a = this.physical_cards; _i < _a.length; _i++) {
+            var physical_card = _a[_i];
             div.append(physical_card.dom());
         }
         return div;

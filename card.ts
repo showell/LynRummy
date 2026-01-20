@@ -590,18 +590,26 @@ class PhysicalCard {
 
 class PhysicalCardStack {
     stack: CardStack;
+    physical_cards: PhysicalCard[];
 
     constructor(stack: CardStack) {
         this.stack = stack;
+        this.physical_cards = this.stack.cards.map((card) => {
+            return new PhysicalCard(card);
+        });
     }
 
     dom(): HTMLElement {
+        // should only be called once
+        const physical_cards = this.physical_cards;
+
         const div = document.createElement("div");
         div.style.marginRight = "20px";
-        for (const card of this.stack.cards) {
-            const physical_card = new PhysicalCard(card);
+
+        for (const physical_card of this.physical_cards) {
             div.append(physical_card.dom());
         }
+
         return div;
     }
 
