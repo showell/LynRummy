@@ -618,11 +618,18 @@ class PhysicalCardStack {
     set_card_click_callback(callback: (i: number) => void) {
         const physical_card_nodes = this.physical_card_nodes;
 
-        physical_card_nodes.forEach((physical_card_node, i) => {
+        if (physical_card_nodes.length <= 1) {
+            // we want to drag it, not split it off
+            return;
+        }
+
+        for (const i of [0, physical_card_nodes.length - 1]) {
+            const physical_card_node = physical_card_nodes[i];
+            physical_card_node.style.cursor = "pointer";
             physical_card_node.addEventListener("click", () => {
                 callback(i);
             });
-        });
+        }
     }
 
     stack_color(): string {

@@ -478,11 +478,21 @@ var PhysicalCardStack = /** @class */ (function () {
     };
     PhysicalCardStack.prototype.set_card_click_callback = function (callback) {
         var physical_card_nodes = this.physical_card_nodes;
-        physical_card_nodes.forEach(function (physical_card_node, i) {
+        if (physical_card_nodes.length <= 1) {
+            // we want to drag it, not split it off
+            return;
+        }
+        var _loop_1 = function (i) {
+            var physical_card_node = physical_card_nodes[i];
+            physical_card_node.style.cursor = "pointer";
             physical_card_node.addEventListener("click", function () {
                 callback(i);
             });
-        });
+        };
+        for (var _i = 0, _a = [0, physical_card_nodes.length - 1]; _i < _a.length; _i++) {
+            var i = _a[_i];
+            _loop_1(i);
+        }
     };
     PhysicalCardStack.prototype.stack_color = function () {
         switch (this.stack.stack_type) {
