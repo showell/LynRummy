@@ -302,6 +302,11 @@ var CardStack = /** @class */ (function () {
     CardStack.prototype.str = function () {
         return this.cards.map(function (card) { return card.str(); }).join(",");
     };
+    CardStack.from = function (shorthand) {
+        var card_labels = shorthand.split(",");
+        var cards = card_labels.map(function (label) { return Card.from(label); });
+        return new CardStack(cards);
+    };
     return CardStack;
 }());
 var Shelf = /** @class */ (function () {
@@ -419,19 +424,10 @@ function empty_shelf() {
     return new Shelf([]);
 }
 function initial_bookcase() {
-    var card_stack_pure_run = new CardStack([
-        Card.from("KS"),
-        Card.from("AS"),
-        Card.from("2S"),
-        Card.from("3S"),
-        Card.from("4S"),
+    var shelf1 = new Shelf([
+        CardStack.from("KS,AS,2S,3S"),
+        CardStack.from("AC,AD,AH"),
     ]);
-    var card_stack_ace_set = new CardStack([
-        Card.from("AC"),
-        Card.from("AD"),
-        Card.from("AH"),
-    ]);
-    var shelf1 = new Shelf([card_stack_pure_run, card_stack_ace_set]);
     var card_stack_red_black = new CardStack([
         new Card(2 /* CardValue.TWO */, 0 /* Suit.CLUB */),
         new Card(3 /* CardValue.THREE */, 1 /* Suit.DIAMOND */),

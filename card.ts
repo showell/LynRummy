@@ -370,6 +370,12 @@ class CardStack {
     str() {
         return this.cards.map((card) => card.str()).join(",");
     }
+
+    static from(shorthand: string): CardStack {
+        const card_labels = shorthand.split(",");
+        const cards = card_labels.map((label) => Card.from(label));
+        return new CardStack(cards);
+    }
 }
 
 class Shelf {
@@ -536,21 +542,10 @@ function empty_shelf(): Shelf {
 }
 
 function initial_bookcase(): BookCase {
-    const card_stack_pure_run = new CardStack([
-        Card.from("KS"),
-        Card.from("AS"),
-        Card.from("2S"),
-        Card.from("3S"),
-        Card.from("4S"),
+    const shelf1 = new Shelf([
+        CardStack.from("KS,AS,2S,3S"),
+        CardStack.from("AC,AD,AH"),
     ]);
-
-    const card_stack_ace_set = new CardStack([
-        Card.from("AC"),
-        Card.from("AD"),
-        Card.from("AH"),
-    ]);
-
-    const shelf1 = new Shelf([card_stack_pure_run, card_stack_ace_set]);
 
     const card_stack_red_black = new CardStack([
         new Card(CardValue.TWO, Suit.CLUB),
