@@ -277,7 +277,12 @@ var Shelf = /** @class */ (function () {
         var split_card = cards[card_index];
         cards.splice(card_index, 1);
         var new_stack = new CardStack([split_card]);
-        card_stacks.push(new_stack);
+        if (card_index === 0) {
+            card_stacks.splice(stack_index, 0, new_stack);
+        }
+        else {
+            card_stacks.splice(stack_index + 1, 0, new_stack);
+        }
     };
     return Shelf;
 }());

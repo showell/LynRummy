@@ -360,7 +360,12 @@ class Shelf {
         cards.splice(card_index, 1);
 
         const new_stack = new CardStack([split_card]);
-        card_stacks.push(new_stack);
+
+        if (card_index === 0) {
+            card_stacks.splice(stack_index, 0, new_stack);
+        } else {
+            card_stacks.splice(stack_index + 1, 0, new_stack);
+        }
     }
 }
 
