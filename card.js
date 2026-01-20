@@ -438,7 +438,9 @@ var PhysicalCard = /** @class */ (function () {
         var v_node = document.createElement("span");
         var s_node = document.createElement("span");
         v_node.style.display = "block";
+        v_node.style.userSelect = "none";
         s_node.style.display = "block";
+        s_node.style.userSelect = "none";
         v_node.innerText = value_str(card.value);
         s_node.innerText = suit_str(card.suit);
         span.append(v_node);
