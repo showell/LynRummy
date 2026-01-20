@@ -1029,6 +1029,7 @@ class MainPage {
 }
 
 function get_examples(): { good: Example[]; bad: Example[] } {
+    // TODO: Use new CardStack.from() helper
     const da = new Card(CardValue.ACE, Suit.DIAMOND);
     const sa = new Card(CardValue.ACE, Suit.SPADE);
 

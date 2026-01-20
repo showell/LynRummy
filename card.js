@@ -822,6 +822,7 @@ var MainPage = /** @class */ (function () {
     return MainPage;
 }());
 function get_examples() {
+    // TODO: Use new CardStack.from() helper
     var da = new Card(1 /* CardValue.ACE */, 1 /* Suit.DIAMOND */);
     var sa = new Card(1 /* CardValue.ACE */, 2 /* Suit.SPADE */);
     var s2 = new Card(2 /* CardValue.TWO */, 2 /* Suit.SPADE */);
