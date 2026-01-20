@@ -88,6 +88,41 @@ function value_str(val: CardValue): string {
     }
 }
 
+function value_for(label: string): CardValue {
+    if (label === "10") {
+        throw new Error("use T for ten");
+    }
+
+    switch (label) {
+        case "A":
+            return CardValue.ACE;
+        case "2":
+            return CardValue.TWO;
+        case "3":
+            return CardValue.THREE;
+        case "4":
+            return CardValue.FOUR;
+        case "5":
+            return CardValue.FIVE;
+        case "6":
+            return CardValue.SIX;
+        case "7":
+            return CardValue.SEVEN;
+        case "8":
+            return CardValue.EIGHT;
+        case "9":
+            return CardValue.NINE;
+        case "T":
+            return CardValue.TEN;
+        case "J":
+            return CardValue.JACK;
+        case "Q":
+            return CardValue.QUEEN;
+        case "K":
+            return CardValue.KING;
+    }
+}
+
 function successor(val: CardValue): CardValue {
     // This is hopefully straightforward code.  Note
     // K, A, 2 is a valid run in LynRummy, because
@@ -130,6 +165,35 @@ const enum Suit {
     HEART = 3,
 }
 
+function suit_str(suit: Suit): string {
+    // The strange numbers here refer to the Unicode
+    // code points for the built-in emojis for the
+    // suits.
+    switch (suit) {
+        case Suit.CLUB:
+            return "\u2663";
+        case Suit.DIAMOND:
+            return "\u2666";
+        case Suit.HEART:
+            return "\u2665";
+        case Suit.SPADE:
+            return "\u2660";
+    }
+}
+
+function suit_for(label: string): Suit {
+    switch (label) {
+        case "C":
+            return Suit.CLUB;
+        case "D":
+            return Suit.DIAMOND;
+        case "H":
+            return Suit.HEART;
+        case "S":
+            return Suit.SPADE;
+    }
+}
+
 const enum CardColor {
     BLACK = 0,
     RED = 1,
@@ -153,22 +217,6 @@ const all_card_values = [
     CardValue.QUEEN,
     CardValue.KING,
 ];
-
-function suit_str(suit: Suit): string {
-    // The strange numbers here refer to the Unicode
-    // code points for the built-in emojis for the
-    // suits.
-    switch (suit) {
-        case Suit.CLUB:
-            return "\u2663";
-        case Suit.SPADE:
-            return "\u2660";
-        case Suit.DIAMOND:
-            return "\u2666";
-        case Suit.HEART:
-            return "\u2665";
-    }
-}
 
 function card_color(suit: Suit): CardColor {
     switch (suit) {
@@ -239,6 +287,12 @@ class Card {
             }
         }
         return CardStackType.BOGUS;
+    }
+
+    static from(label: string): Card {
+        const value = value_for(label[0]);
+        const suit = suit_for(label[1]);
+        return new Card(value, suit);
     }
 }
 
@@ -483,10 +537,11 @@ function empty_shelf(): Shelf {
 
 function initial_bookcase(): BookCase {
     const card_stack_pure_run = new CardStack([
-        new Card(CardValue.KING, Suit.SPADE),
-        new Card(CardValue.ACE, Suit.SPADE),
-        new Card(CardValue.TWO, Suit.SPADE),
-        new Card(CardValue.THREE, Suit.SPADE),
+        Card.from("KS"),
+        Card.from("AS"),
+        Card.from("2S"),
+        Card.from("3S"),
+        Card.from("4S"),
     ]);
 
     const card_stack_ace_set = new CardStack([

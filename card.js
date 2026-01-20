@@ -77,6 +77,39 @@ function value_str(val) {
             return "K";
     }
 }
+function value_for(label) {
+    if (label === "10") {
+        throw new Error("use T for ten");
+    }
+    switch (label) {
+        case "A":
+            return 1 /* CardValue.ACE */;
+        case "2":
+            return 2 /* CardValue.TWO */;
+        case "3":
+            return 3 /* CardValue.THREE */;
+        case "4":
+            return 4 /* CardValue.FOUR */;
+        case "5":
+            return 5 /* CardValue.FIVE */;
+        case "6":
+            return 6 /* CardValue.SIX */;
+        case "7":
+            return 7 /* CardValue.SEVEN */;
+        case "8":
+            return 8 /* CardValue.EIGHT */;
+        case "9":
+            return 9 /* CardValue.NINE */;
+        case "T":
+            return 10 /* CardValue.TEN */;
+        case "J":
+            return 11 /* CardValue.JACK */;
+        case "Q":
+            return 12 /* CardValue.QUEEN */;
+        case "K":
+            return 13 /* CardValue.KING */;
+    }
+}
 function successor(val) {
     // This is hopefully straightforward code.  Note
     // K, A, 2 is a valid run in LynRummy, because
@@ -111,6 +144,33 @@ function successor(val) {
             return 1 /* CardValue.ACE */;
     }
 }
+function suit_str(suit) {
+    // The strange numbers here refer to the Unicode
+    // code points for the built-in emojis for the
+    // suits.
+    switch (suit) {
+        case 0 /* Suit.CLUB */:
+            return "\u2663";
+        case 1 /* Suit.DIAMOND */:
+            return "\u2666";
+        case 3 /* Suit.HEART */:
+            return "\u2665";
+        case 2 /* Suit.SPADE */:
+            return "\u2660";
+    }
+}
+function suit_for(label) {
+    switch (label) {
+        case "C":
+            return 0 /* Suit.CLUB */;
+        case "D":
+            return 1 /* Suit.DIAMOND */;
+        case "H":
+            return 3 /* Suit.HEART */;
+        case "S":
+            return 2 /* Suit.SPADE */;
+    }
+}
 // Do this the non-fancy way.
 var all_suits = [3 /* Suit.HEART */, 2 /* Suit.SPADE */, 1 /* Suit.DIAMOND */, 0 /* Suit.CLUB */];
 var all_card_values = [
@@ -128,21 +188,6 @@ var all_card_values = [
     12 /* CardValue.QUEEN */,
     13 /* CardValue.KING */,
 ];
-function suit_str(suit) {
-    // The strange numbers here refer to the Unicode
-    // code points for the built-in emojis for the
-    // suits.
-    switch (suit) {
-        case 0 /* Suit.CLUB */:
-            return "\u2663";
-        case 2 /* Suit.SPADE */:
-            return "\u2660";
-        case 1 /* Suit.DIAMOND */:
-            return "\u2666";
-        case 3 /* Suit.HEART */:
-            return "\u2665";
-    }
-}
 function card_color(suit) {
     switch (suit) {
         case 0 /* Suit.CLUB */:
@@ -191,6 +236,11 @@ var Card = /** @class */ (function () {
             }
         }
         return "bogus" /* CardStackType.BOGUS */;
+    };
+    Card.from = function (label) {
+        var value = value_for(label[0]);
+        var suit = suit_for(label[1]);
+        return new Card(value, suit);
     };
     return Card;
 }());
@@ -370,10 +420,11 @@ function empty_shelf() {
 }
 function initial_bookcase() {
     var card_stack_pure_run = new CardStack([
-        new Card(13 /* CardValue.KING */, 2 /* Suit.SPADE */),
-        new Card(1 /* CardValue.ACE */, 2 /* Suit.SPADE */),
-        new Card(2 /* CardValue.TWO */, 2 /* Suit.SPADE */),
-        new Card(3 /* CardValue.THREE */, 2 /* Suit.SPADE */),
+        Card.from("KS"),
+        Card.from("AS"),
+        Card.from("2S"),
+        Card.from("3S"),
+        Card.from("4S"),
     ]);
     var card_stack_ace_set = new CardStack([
         new Card(1 /* CardValue.ACE */, 0 /* Suit.CLUB */),
