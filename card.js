@@ -428,29 +428,12 @@ function initial_bookcase() {
         CardStack.from("KS,AS,2S,3S"),
         CardStack.from("AC,AD,AH"),
     ]);
-    var card_stack_red_black = new CardStack([
-        new Card(2 /* CardValue.TWO */, 0 /* Suit.CLUB */),
-        new Card(3 /* CardValue.THREE */, 1 /* Suit.DIAMOND */),
-        new Card(4 /* CardValue.FOUR */, 0 /* Suit.CLUB */),
-        new Card(5 /* CardValue.FIVE */, 3 /* Suit.HEART */),
-    ]);
-    var orphan_six = new CardStack([new Card(6 /* CardValue.SIX */, 2 /* Suit.SPADE */)]);
-    var card_stack_seven_set = new CardStack([
-        new Card(7 /* CardValue.SEVEN */, 2 /* Suit.SPADE */),
-        new Card(7 /* CardValue.SEVEN */, 1 /* Suit.DIAMOND */),
-        new Card(7 /* CardValue.SEVEN */, 0 /* Suit.CLUB */),
-    ]);
     var shelf2 = new Shelf([
-        card_stack_seven_set,
-        card_stack_red_black,
-        orphan_six,
+        CardStack.from("7S,7D,7C"),
+        CardStack.from("2C,3D,4C,5H"),
+        CardStack.from("6S"),
     ]);
-    var card_stack_face_cards = new CardStack([
-        new Card(11 /* CardValue.JACK */, 1 /* Suit.DIAMOND */),
-        new Card(12 /* CardValue.QUEEN */, 1 /* Suit.DIAMOND */),
-        new Card(13 /* CardValue.KING */, 1 /* Suit.DIAMOND */),
-    ]);
-    var shelf3 = new Shelf([card_stack_face_cards]);
+    var shelf3 = new Shelf([CardStack.from("TD,JD,QD,KD")]);
     var shelves = [empty_shelf(), shelf1, shelf2, shelf3];
     for (var i = 0; i < 20; ++i) {
         shelves.push(empty_shelf());

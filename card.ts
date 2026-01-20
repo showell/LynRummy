@@ -547,34 +547,13 @@ function initial_bookcase(): BookCase {
         CardStack.from("AC,AD,AH"),
     ]);
 
-    const card_stack_red_black = new CardStack([
-        new Card(CardValue.TWO, Suit.CLUB),
-        new Card(CardValue.THREE, Suit.DIAMOND),
-        new Card(CardValue.FOUR, Suit.CLUB),
-        new Card(CardValue.FIVE, Suit.HEART),
-    ]);
-
-    const orphan_six = new CardStack([new Card(CardValue.SIX, Suit.SPADE)]);
-
-    const card_stack_seven_set = new CardStack([
-        new Card(CardValue.SEVEN, Suit.SPADE),
-        new Card(CardValue.SEVEN, Suit.DIAMOND),
-        new Card(CardValue.SEVEN, Suit.CLUB),
-    ]);
-
     const shelf2 = new Shelf([
-        card_stack_seven_set,
-        card_stack_red_black,
-        orphan_six,
+        CardStack.from("7S,7D,7C"),
+        CardStack.from("2C,3D,4C,5H"),
+        CardStack.from("6S"),
     ]);
 
-    const card_stack_face_cards = new CardStack([
-        new Card(CardValue.JACK, Suit.DIAMOND),
-        new Card(CardValue.QUEEN, Suit.DIAMOND),
-        new Card(CardValue.KING, Suit.DIAMOND),
-    ]);
-
-    const shelf3 = new Shelf([card_stack_face_cards]);
+    const shelf3 = new Shelf([CardStack.from("TD,JD,QD,KD")]);
 
     const shelves = [empty_shelf(), shelf1, shelf2, shelf3];
 
