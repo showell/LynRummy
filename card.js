@@ -580,10 +580,19 @@ var PhysicalShelf = /** @class */ (function () {
 var PhysicalBookCase = /** @class */ (function () {
     function PhysicalBookCase(book_case) {
         this.book_case = book_case;
+        this.div = this.make_div();
     }
+    PhysicalBookCase.prototype.make_div = function () {
+        // no special styling for now
+        return document.createElement("div");
+    };
     PhysicalBookCase.prototype.dom = function () {
+        this.populate();
+        return this.div;
+    };
+    PhysicalBookCase.prototype.populate = function () {
+        var div = this.div;
         var book_case = this.book_case;
-        var div = document.createElement("div");
         var heading = document.createElement("h3");
         heading.innerText = "Shelves";
         div.append(heading);
@@ -592,7 +601,6 @@ var PhysicalBookCase = /** @class */ (function () {
             var physical_shelf = new PhysicalShelf(shelf);
             div.append(physical_shelf.dom());
         }
-        return div;
     };
     return PhysicalBookCase;
 }());

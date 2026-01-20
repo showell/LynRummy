@@ -731,15 +731,26 @@ class PhysicalShelf {
 
 class PhysicalBookCase {
     book_case: BookCase;
+    div: HTMLElement;
 
     constructor(book_case) {
         this.book_case = book_case;
+        this.div = this.make_div();
+    }
+
+    make_div(): HTMLElement {
+        // no special styling for now
+        return document.createElement("div");
     }
 
     dom(): HTMLElement {
-        const book_case = this.book_case;
+        this.populate();
+        return this.div;
+    }
 
-        const div = document.createElement("div");
+    populate(): void {
+        const div = this.div;
+        const book_case = this.book_case;
 
         const heading = document.createElement("h3");
         heading.innerText = "Shelves";
@@ -750,8 +761,6 @@ class PhysicalBookCase {
             const physical_shelf = new PhysicalShelf(shelf);
             div.append(physical_shelf.dom());
         }
-
-        return div;
     }
 }
 
