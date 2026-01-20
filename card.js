@@ -856,6 +856,7 @@ var MainPage = /** @class */ (function () {
         this.page = document.createElement("div");
         this.page.style.display = "flex";
         this.page.style.width = "100%";
+        this.welcome_area = document.createElement("div");
         this.player_area = document.createElement("div");
         this.player_area.style.paddingRight = "20px";
         this.player_area.style.marginRight = "20px";
@@ -863,22 +864,29 @@ var MainPage = /** @class */ (function () {
         this.examples_area = document.createElement("div");
         this.examples_area.style.paddingLeft = "20px";
         this.common_area = document.createElement("div");
+        var left_panel = document.createElement("div");
+        left_panel.append(this.welcome_area);
+        left_panel.append(this.player_area);
         var right_panel = document.createElement("div");
         right_panel.append(this.examples_area);
         right_panel.append(this.common_area);
-        this.page.append(this.player_area);
+        this.page.append(left_panel);
         this.page.append(right_panel);
     }
     MainPage.prototype.start = function () {
+        var welcome_area = this.welcome_area;
+        var examples_area = this.examples_area;
         var player_area = this.player_area;
         var common_area = this.common_area;
         var welcome = document.createElement("div");
         welcome.innerText = "Welcome to Lyn Rummy!";
-        player_area.innerHTML = "";
-        player_area.append(welcome);
-        var examples = new PhysicalExamples(this.examples_area);
+        welcome.style.color = "green";
+        welcome.style.fontWeight = "bold";
+        welcome_area.append(welcome);
+        var examples = new PhysicalExamples(examples_area);
         examples.start({
             on_dismiss_callback: function () {
+                welcome_area.innerHTML = "";
                 // We get called back one the player dismisses the examples.
                 var physical_game = new PhysicalGame({
                     player_area: player_area,

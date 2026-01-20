@@ -1057,6 +1057,7 @@ class PhysicalExamples {
 
 class MainPage {
     page: HTMLElement;
+    welcome_area: HTMLElement;
     player_area: HTMLElement;
     examples_area: HTMLElement;
     common_area: HTMLElement;
@@ -1065,6 +1066,8 @@ class MainPage {
         this.page = document.createElement("div");
         this.page.style.display = "flex";
         this.page.style.width = "100%";
+
+        this.welcome_area = document.createElement("div");
 
         this.player_area = document.createElement("div");
         this.player_area.style.paddingRight = "20px";
@@ -1076,26 +1079,35 @@ class MainPage {
 
         this.common_area = document.createElement("div");
 
+        const left_panel = document.createElement("div");
+        left_panel.append(this.welcome_area);
+        left_panel.append(this.player_area);
+
         const right_panel = document.createElement("div");
         right_panel.append(this.examples_area);
         right_panel.append(this.common_area);
 
-        this.page.append(this.player_area);
+        this.page.append(left_panel);
         this.page.append(right_panel);
     }
 
-    start() {
+    start(): void {
+        const welcome_area = this.welcome_area;
+        const examples_area = this.examples_area;
         const player_area = this.player_area;
         const common_area = this.common_area;
 
         const welcome = document.createElement("div");
         welcome.innerText = "Welcome to Lyn Rummy!";
-        player_area.innerHTML = "";
-        player_area.append(welcome);
+        welcome.style.color = "green";
+        welcome.style.fontWeight = "bold";
+        welcome_area.append(welcome);
 
-        const examples = new PhysicalExamples(this.examples_area);
+        const examples = new PhysicalExamples(examples_area);
         examples.start({
             on_dismiss_callback() {
+                welcome_area.innerHTML = "";
+
                 // We get called back one the player dismisses the examples.
                 const physical_game = new PhysicalGame({
                     player_area: player_area,
