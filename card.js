@@ -599,10 +599,19 @@ var PhysicalBookCase = /** @class */ (function () {
 var PhysicalHand = /** @class */ (function () {
     function PhysicalHand(hand) {
         this.hand = hand;
+        this.div = this.make_div();
     }
+    PhysicalHand.prototype.make_div = function () {
+        // no real styling yet
+        return document.createElement("div");
+    };
     PhysicalHand.prototype.dom = function () {
+        this.populate();
+        return this.div;
+    };
+    PhysicalHand.prototype.populate = function () {
+        var div = this.div;
         var hand = this.hand;
-        var div = document.createElement("div");
         for (var _i = 0, all_suits_1 = all_suits; _i < all_suits_1.length; _i++) {
             var suit = all_suits_1[_i];
             var suit_cards = [];
@@ -616,7 +625,7 @@ var PhysicalHand = /** @class */ (function () {
                 suit_cards.sort(function (card1, card2) { return card1.value - card2.value; });
                 console.log(suit_cards);
                 var suit_div = document.createElement("div");
-                suit_div.style.paddingBottom = "3px";
+                suit_div.style.paddingBottom = "10px";
                 for (var _c = 0, suit_cards_1 = suit_cards; _c < suit_cards_1.length; _c++) {
                     var card = suit_cards_1[_c];
                     var physical_card = new PhysicalCard(card);
@@ -625,7 +634,6 @@ var PhysicalHand = /** @class */ (function () {
                 div.append(suit_div);
             }
         }
-        return div;
     };
     return PhysicalHand;
 }());

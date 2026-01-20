@@ -757,15 +757,27 @@ class PhysicalBookCase {
 
 class PhysicalHand {
     hand: Hand;
+    div: HTMLElement;
 
     constructor(hand: Hand) {
         this.hand = hand;
+        this.div = this.make_div();
+    }
+
+    make_div(): HTMLElement {
+        // no real styling yet
+        return document.createElement("div");
     }
 
     dom(): HTMLElement {
+        this.populate();
+        return this.div;
+    }
+
+    populate(): void {
+        const div = this.div;
         const hand = this.hand;
 
-        const div = document.createElement("div");
         for (const suit of all_suits) {
             const suit_cards = [];
             for (const card of hand.cards) {
@@ -777,7 +789,7 @@ class PhysicalHand {
                 suit_cards.sort((card1, card2) => card1.value - card2.value);
                 console.log(suit_cards);
                 const suit_div = document.createElement("div");
-                suit_div.style.paddingBottom = "3px";
+                suit_div.style.paddingBottom = "10px";
                 for (const card of suit_cards) {
                     const physical_card = new PhysicalCard(card);
                     suit_div.append(physical_card.dom());
@@ -785,7 +797,6 @@ class PhysicalHand {
                 div.append(suit_div);
             }
         }
-        return div;
     }
 }
 
