@@ -529,6 +529,7 @@ var PhysicalShelf = /** @class */ (function () {
         return this.div;
     };
     PhysicalShelf.prototype.populate = function () {
+        var _this = this;
         var div = this.div;
         var shelf = this.shelf;
         var card_stacks = shelf.card_stacks;
@@ -548,6 +549,7 @@ var PhysicalShelf = /** @class */ (function () {
             var physical_card_stack = new PhysicalCardStack(card_stack);
             physical_card_stack.set_card_click_callback(function (card_index) {
                 alert("clicked on card with index ".concat(card_index, " for stack ").concat(i));
+                _this.populate();
             });
             div.append(physical_card_stack.dom());
         };

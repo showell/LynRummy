@@ -697,6 +697,7 @@ class PhysicalShelf {
                 alert(
                     `clicked on card with index ${card_index} for stack ${i}`,
                 );
+                this.populate();
             });
             div.append(physical_card_stack.dom());
         }
