@@ -1097,14 +1097,9 @@ class MainPage {
         const player_area = this.player_area;
         const common_area = this.common_area;
 
-        const welcome = document.createElement("div");
-        welcome.innerText = "Welcome to Lyn Rummy!";
-        welcome.style.color = "green";
-        welcome.style.fontWeight = "bold";
-        welcome_area.append(welcome);
-
         function start_actual_game() {
             welcome_area.innerHTML = "";
+            examples_area.innerHTML = "";
 
             // We get called back one the player dismisses the examples.
             const physical_game = new PhysicalGame({
@@ -1113,6 +1108,25 @@ class MainPage {
             });
             physical_game.start();
         }
+
+        const welcome = document.createElement("div");
+        welcome.innerText = "Welcome to Lyn Rummy!";
+        welcome.style.color = "green";
+        welcome.style.fontWeight = "bold";
+
+        const welcome_button = document.createElement("button");
+        welcome_button.style.background = "white";
+        welcome_button.style.color = "green";
+        welcome_button.style.padding = "3px";
+        welcome_button.style.margin = "10px";
+        welcome_button.style.fontSize = "30px";
+        welcome_button.innerText = "BEGIN GAME";
+        welcome_button.addEventListener("click", () => {
+            start_actual_game();
+        });
+
+        welcome_area.append(welcome);
+        welcome_area.append(welcome_button);
 
         const examples = new PhysicalExamples(examples_area);
         examples.start({

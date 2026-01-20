@@ -878,13 +878,9 @@ var MainPage = /** @class */ (function () {
         var examples_area = this.examples_area;
         var player_area = this.player_area;
         var common_area = this.common_area;
-        var welcome = document.createElement("div");
-        welcome.innerText = "Welcome to Lyn Rummy!";
-        welcome.style.color = "green";
-        welcome.style.fontWeight = "bold";
-        welcome_area.append(welcome);
         function start_actual_game() {
             welcome_area.innerHTML = "";
+            examples_area.innerHTML = "";
             // We get called back one the player dismisses the examples.
             var physical_game = new PhysicalGame({
                 player_area: player_area,
@@ -892,6 +888,22 @@ var MainPage = /** @class */ (function () {
             });
             physical_game.start();
         }
+        var welcome = document.createElement("div");
+        welcome.innerText = "Welcome to Lyn Rummy!";
+        welcome.style.color = "green";
+        welcome.style.fontWeight = "bold";
+        var welcome_button = document.createElement("button");
+        welcome_button.style.background = "white";
+        welcome_button.style.color = "green";
+        welcome_button.style.padding = "3px";
+        welcome_button.style.margin = "10px";
+        welcome_button.style.fontSize = "30px";
+        welcome_button.innerText = "BEGIN GAME";
+        welcome_button.addEventListener("click", function () {
+            start_actual_game();
+        });
+        welcome_area.append(welcome);
+        welcome_area.append(welcome_button);
         var examples = new PhysicalExamples(examples_area);
         examples.start({
             on_dismiss_callback: function () {
