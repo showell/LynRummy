@@ -47,6 +47,22 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     }
     return to.concat(ar || Array.prototype.slice.call(from));
 };
+var ShelfCardLocation = /** @class */ (function () {
+    function ShelfCardLocation(info) {
+        this.shelf_index = info.shelf_index;
+        this.stack_index = info.stack_index;
+        this.card_index = info.card_index;
+        this.card_position = info.card_position;
+    }
+    return ShelfCardLocation;
+}());
+var StackLocation = /** @class */ (function () {
+    function StackLocation(info) {
+        this.shelf_index = info.shelf_index;
+        this.stack_index = info.stack_index;
+    }
+    return StackLocation;
+}());
 function value_str(val) {
     switch (val) {
         case 1 /* CardValue.ACE */:
@@ -573,22 +589,6 @@ var PhysicalCard = /** @class */ (function () {
         return span;
     };
     return PhysicalCard;
-}());
-var ShelfCardLocation = /** @class */ (function () {
-    function ShelfCardLocation(info) {
-        this.shelf_index = info.shelf_index;
-        this.stack_index = info.stack_index;
-        this.card_index = info.card_index;
-        this.card_position = info.card_position;
-    }
-    return ShelfCardLocation;
-}());
-var StackLocation = /** @class */ (function () {
-    function StackLocation(info) {
-        this.shelf_index = info.shelf_index;
-        this.stack_index = info.stack_index;
-    }
-    return StackLocation;
 }());
 var PhysicalShelfCard = /** @class */ (function () {
     function PhysicalShelfCard(card_location, physical_card) {

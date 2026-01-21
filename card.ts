@@ -57,6 +57,62 @@ const enum CardValue {
     KING = 13,
 }
 
+const enum Suit {
+    CLUB = 0,
+    DIAMOND = 1,
+    SPADE = 2,
+    HEART = 3,
+}
+
+const enum CardColor {
+    BLACK = 0,
+    RED = 1,
+}
+
+const enum CardStackType {
+    INCOMPLETE = "incomplete",
+    BOGUS = "bogus",
+    DUP = "dup",
+    SET = "set",
+    PURE_RUN = "pure run",
+    RED_BLACK_RUN = "red/black alternating",
+}
+
+const enum CardPositionType {
+    LONER = 0,
+    AT_END = 1,
+    IN_MIDDLE = 2,
+}
+
+class ShelfCardLocation {
+    shelf_index: number;
+    stack_index: number;
+    card_index: number;
+    card_position: CardPositionType;
+
+    constructor(info: {
+        shelf_index: number;
+        stack_index: number;
+        card_index: number;
+        card_position: CardPositionType;
+    }) {
+        this.shelf_index = info.shelf_index;
+        this.stack_index = info.stack_index;
+        this.card_index = info.card_index;
+        this.card_position = info.card_position;
+    }
+}
+
+class StackLocation {
+    shelf_index: number;
+    stack_index: number;
+
+    constructor(info: { shelf_index: number; stack_index: number }) {
+        this.shelf_index = info.shelf_index;
+        this.stack_index = info.stack_index;
+    }
+}
+
 function value_str(val: CardValue): string {
     switch (val) {
         case CardValue.ACE:
@@ -158,13 +214,6 @@ function successor(val: CardValue): CardValue {
     }
 }
 
-const enum Suit {
-    CLUB = 0,
-    DIAMOND = 1,
-    SPADE = 2,
-    HEART = 3,
-}
-
 function suit_str(suit: Suit): string {
     // The strange numbers here refer to the Unicode
     // code points for the built-in emojis for the
@@ -192,11 +241,6 @@ function suit_for(label: string): Suit {
         case "S":
             return Suit.SPADE;
     }
-}
-
-const enum CardColor {
-    BLACK = 0,
-    RED = 1,
 }
 
 // Do this the non-fancy way.
@@ -235,15 +279,6 @@ function css_color(card_color: CardColor): string {
 
 function card_color_str(color: CardColor): string {
     return color == CardColor.RED ? "red" : "black";
-}
-
-const enum CardStackType {
-    INCOMPLETE = "incomplete",
-    BOGUS = "bogus",
-    DUP = "dup",
-    SET = "set",
-    PURE_RUN = "pure run",
-    RED_BLACK_RUN = "red/black alternating",
 }
 
 class Card {
@@ -745,41 +780,6 @@ class PhysicalCard {
         span.style.minWidth = "19px";
         span.style.minHeight = "38px";
         return span;
-    }
-}
-
-const enum CardPositionType {
-    LONER = 0,
-    AT_END = 1,
-    IN_MIDDLE = 2,
-}
-
-class ShelfCardLocation {
-    shelf_index: number;
-    stack_index: number;
-    card_index: number;
-    card_position: CardPositionType;
-
-    constructor(info: {
-        shelf_index: number;
-        stack_index: number;
-        card_index: number;
-        card_position: CardPositionType;
-    }) {
-        this.shelf_index = info.shelf_index;
-        this.stack_index = info.stack_index;
-        this.card_index = info.card_index;
-        this.card_position = info.card_position;
-    }
-}
-
-class StackLocation {
-    shelf_index: number;
-    stack_index: number;
-
-    constructor(info: { shelf_index: number; stack_index: number }) {
-        this.shelf_index = info.shelf_index;
-        this.stack_index = info.stack_index;
     }
 }
 
