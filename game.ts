@@ -675,6 +675,11 @@ class HandCard {
     }
 }
 
+function new_card_color(): string {
+    // kind of a pale yellow
+    return "rgba(255, 255, 0, 0.4)";
+}
+
 class PhysicalHandCard {
     hand_card: HandCard;
     card_div: HTMLElement;
@@ -689,7 +694,7 @@ class PhysicalHandCard {
     dom() {
         this.card_div.style.cursor = "pointer";
         if (this.hand_card.is_new) {
-            this.card_div.style.backgroundColor = "rgba(0, 128, 0, 0.18)";
+            this.card_div.style.backgroundColor = new_card_color();
         } else {
             this.card_div.style.backgroundColor = "transparent";
         }

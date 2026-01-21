@@ -506,6 +506,10 @@ var HandCard = /** @class */ (function () {
     }
     return HandCard;
 }());
+function new_card_color() {
+    // kind of a pale yellow
+    return "rgba(255, 255, 0, 0.4)";
+}
 var PhysicalHandCard = /** @class */ (function () {
     function PhysicalHandCard(info) {
         this.hand_card = info.hand_card;
@@ -515,7 +519,7 @@ var PhysicalHandCard = /** @class */ (function () {
     PhysicalHandCard.prototype.dom = function () {
         this.card_div.style.cursor = "pointer";
         if (this.hand_card.is_new) {
-            this.card_div.style.backgroundColor = "rgba(0, 128, 0, 0.18)";
+            this.card_div.style.backgroundColor = new_card_color();
         }
         else {
             this.card_div.style.backgroundColor = "transparent";
