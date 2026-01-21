@@ -630,6 +630,46 @@ function remove_card_from_array(cards: Card[], card: Card): void {
     }
 }
 
+class PhysicalDeck {
+    deck: Deck;
+    div: HTMLElement;
+
+    constructor(deck: Deck) {
+        this.deck = deck;
+        this.div = this.make_div();
+    }
+
+    make_div(): HTMLElement {
+        // no real styling yet
+        return document.createElement("div");
+    }
+
+    dom(): HTMLElement {
+        this.populate();
+        return this.div;
+    }
+
+    populate(): void {
+        this.div.innerHTML = "";
+        const deck = this.deck;
+        const img = document.createElement("img");
+        img.src = "deck.png";
+        img.style.height = "200px";
+        this.div.append(img);
+
+        const span = document.createElement("span");
+        span.innerText = `${deck.cards.length} in deck`;
+        this.div.append(span);
+    }
+
+    take_from_top(cnt: number): Card[] {
+        const cards = this.deck.take_from_top(cnt);
+        this.populate();
+        console.log(cards);
+        return cards;
+    }
+}
+
 class Hand {
     cards: Card[];
 
@@ -1155,6 +1195,11 @@ class PhysicalHand {
         this.hand.remove_card_from_hand(card);
         this.populate();
     }
+
+    add_card_to_hand(card: Card) {
+        this.hand.add_cards([card]);
+        this.populate();
+    }
 }
 
 class PhysicalPlayer {
@@ -1177,6 +1222,13 @@ class PhysicalPlayer {
         div.append(h3);
 
         div.append(this.physical_hand.dom());
+
+        const pick_card_button = document.createElement("button");
+        pick_card_button.innerText = "Pick new card";
+        pick_card_button.addEventListener("click", () => {
+            this.physical_game.move_card_from_deck_to_hand();
+        });
+        div.append(pick_card_button);
         return div;
     }
 }
@@ -1187,7 +1239,7 @@ class PhysicalGame {
     book_case_area: HTMLElement;
     physical_player: PhysicalPlayer;
     physical_book_case: PhysicalBookCase;
-
+    physical_deck: PhysicalDeck;
     constructor(info: {
         player_area: HTMLElement;
         book_case_area: HTMLElement;
@@ -1197,6 +1249,7 @@ class PhysicalGame {
         this.game.deal_cards();
         this.player_area = info.player_area;
         this.book_case_area = info.book_case_area;
+        this.physical_deck = new PhysicalDeck(this.game.deck);
         const player = this.game.players[0];
         this.physical_book_case = new PhysicalBookCase(
             physical_game,
@@ -1217,15 +1270,18 @@ class PhysicalGame {
         this.physical_book_case.add_card_to_top_shelf(card);
     }
 
+    move_card_from_deck_to_hand(): void {
+        const card = this.physical_deck.take_from_top(1)[0];
+        this.physical_player.physical_hand.add_card_to_hand(card);
+    }
+
     start() {
         const game = this.game;
 
         this.player_area.innerHTML = "";
         this.player_area.append(this.physical_player.dom());
 
-        // TODO: create PhysicalDeck
-        const deck_dom = document.createElement("div");
-        deck_dom.innerText = `${game.deck.size()} cards in deck`;
+        const deck_dom = this.physical_deck.dom();
         this.player_area.append(deck_dom);
 
         // populate common area

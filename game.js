@@ -471,6 +471,38 @@ function remove_card_from_array(cards, card) {
         throw new Error("Card to be removed is not present in the array!");
     }
 }
+var PhysicalDeck = /** @class */ (function () {
+    function PhysicalDeck(deck) {
+        this.deck = deck;
+        this.div = this.make_div();
+    }
+    PhysicalDeck.prototype.make_div = function () {
+        // no real styling yet
+        return document.createElement("div");
+    };
+    PhysicalDeck.prototype.dom = function () {
+        this.populate();
+        return this.div;
+    };
+    PhysicalDeck.prototype.populate = function () {
+        this.div.innerHTML = "";
+        var deck = this.deck;
+        var img = document.createElement("img");
+        img.src = "deck.png";
+        img.style.height = "200px";
+        this.div.append(img);
+        var span = document.createElement("span");
+        span.innerText = "".concat(deck.cards.length, " in deck");
+        this.div.append(span);
+    };
+    PhysicalDeck.prototype.take_from_top = function (cnt) {
+        var cards = this.deck.take_from_top(cnt);
+        this.populate();
+        console.log(cards);
+        return cards;
+    };
+    return PhysicalDeck;
+}());
 var Hand = /** @class */ (function () {
     function Hand() {
         this.cards = [];
@@ -860,6 +892,10 @@ var PhysicalHand = /** @class */ (function () {
         this.hand.remove_card_from_hand(card);
         this.populate();
     };
+    PhysicalHand.prototype.add_card_to_hand = function (card) {
+        this.hand.add_cards([card]);
+        this.populate();
+    };
     return PhysicalHand;
 }());
 var PhysicalPlayer = /** @class */ (function () {
@@ -869,12 +905,19 @@ var PhysicalPlayer = /** @class */ (function () {
         this.physical_hand = new PhysicalHand(physical_game, player.hand);
     }
     PhysicalPlayer.prototype.dom = function () {
+        var _this = this;
         var player = this.player;
         var div = document.createElement("div");
         var h3 = document.createElement("h3");
         h3.innerText = player.name;
         div.append(h3);
         div.append(this.physical_hand.dom());
+        var pick_card_button = document.createElement("button");
+        pick_card_button.innerText = "Pick new card";
+        pick_card_button.addEventListener("click", function () {
+            _this.physical_game.move_card_from_deck_to_hand();
+        });
+        div.append(pick_card_button);
         return div;
     };
     return PhysicalPlayer;
@@ -886,6 +929,7 @@ var PhysicalGame = /** @class */ (function () {
         this.game.deal_cards();
         this.player_area = info.player_area;
         this.book_case_area = info.book_case_area;
+        this.physical_deck = new PhysicalDeck(this.game.deck);
         var player = this.game.players[0];
         this.physical_book_case = new PhysicalBookCase(physical_game, this.game.book_case);
         this.physical_player = new PhysicalPlayer(physical_game, player);
@@ -900,13 +944,15 @@ var PhysicalGame = /** @class */ (function () {
         this.physical_player.physical_hand.remove_card_from_hand(card);
         this.physical_book_case.add_card_to_top_shelf(card);
     };
+    PhysicalGame.prototype.move_card_from_deck_to_hand = function () {
+        var card = this.physical_deck.take_from_top(1)[0];
+        this.physical_player.physical_hand.add_card_to_hand(card);
+    };
     PhysicalGame.prototype.start = function () {
         var game = this.game;
         this.player_area.innerHTML = "";
         this.player_area.append(this.physical_player.dom());
-        // TODO: create PhysicalDeck
-        var deck_dom = document.createElement("div");
-        deck_dom.innerText = "".concat(game.deck.size(), " cards in deck");
+        var deck_dom = this.physical_deck.dom();
         this.player_area.append(deck_dom);
         // populate common area
         this.book_case_area.replaceWith(this.physical_book_case.dom());
