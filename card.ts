@@ -1350,6 +1350,18 @@ class PhysicalExamples {
     }
 }
 
+function create_welcome_button(): HTMLElement {
+    // TODO: This is badly in need of better styling!
+    const welcome_button = document.createElement("button");
+    welcome_button.style.background = "white";
+    welcome_button.style.color = "green";
+    welcome_button.style.padding = "3px";
+    welcome_button.style.margin = "10px";
+    welcome_button.style.fontSize = "30px";
+    welcome_button.innerText = "Begin Game!";
+    return welcome_button;
+}
+
 class MainPage {
     page: HTMLElement;
     welcome_area: HTMLElement;
@@ -1409,13 +1421,7 @@ class MainPage {
         welcome.style.color = "green";
         welcome.style.fontWeight = "bold";
 
-        const welcome_button = document.createElement("button");
-        welcome_button.style.background = "white";
-        welcome_button.style.color = "green";
-        welcome_button.style.padding = "3px";
-        welcome_button.style.margin = "10px";
-        welcome_button.style.fontSize = "30px";
-        welcome_button.innerText = "BEGIN GAME";
+        const welcome_button = create_welcome_button();
         welcome_button.addEventListener("click", () => {
             start_actual_game();
         });

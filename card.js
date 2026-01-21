@@ -1019,6 +1019,17 @@ var PhysicalExamples = /** @class */ (function () {
     };
     return PhysicalExamples;
 }());
+function create_welcome_button() {
+    // TODO: This is badly in need of better styling!
+    var welcome_button = document.createElement("button");
+    welcome_button.style.background = "white";
+    welcome_button.style.color = "green";
+    welcome_button.style.padding = "3px";
+    welcome_button.style.margin = "10px";
+    welcome_button.style.fontSize = "30px";
+    welcome_button.innerText = "Begin Game!";
+    return welcome_button;
+}
 var MainPage = /** @class */ (function () {
     function MainPage() {
         this.page = document.createElement("div");
@@ -1060,13 +1071,7 @@ var MainPage = /** @class */ (function () {
         welcome.innerText = "Welcome to Lyn Rummy!";
         welcome.style.color = "green";
         welcome.style.fontWeight = "bold";
-        var welcome_button = document.createElement("button");
-        welcome_button.style.background = "white";
-        welcome_button.style.color = "green";
-        welcome_button.style.padding = "3px";
-        welcome_button.style.margin = "10px";
-        welcome_button.style.fontSize = "30px";
-        welcome_button.innerText = "BEGIN GAME";
+        var welcome_button = create_welcome_button();
         welcome_button.addEventListener("click", function () {
             start_actual_game();
         });
