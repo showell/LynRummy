@@ -670,6 +670,16 @@ class PhysicalDeck {
     }
 }
 
+class HandCard {
+    card: Card;
+    is_new: boolean;
+
+    constructor(info: { card: Card; is_new: boolean }) {
+        this.card = info.card;
+        this.is_new = info.is_new;
+    }
+}
+
 class Hand {
     cards: Card[];
 
