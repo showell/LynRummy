@@ -916,7 +916,7 @@ var PhysicalGame = /** @class */ (function () {
         this.game = new Game();
         this.game.deal_cards();
         this.player_area = info.player_area;
-        this.common_area = info.common_area;
+        this.book_case_area = info.book_case_area;
         var player = this.game.players[0];
         this.physical_book_case = new PhysicalBookCase(this.game.book_case);
         this.physical_player = new PhysicalPlayer(player, function (card) {
@@ -933,7 +933,7 @@ var PhysicalGame = /** @class */ (function () {
         deck_dom.innerText = "".concat(game.deck.size(), " cards in deck");
         this.player_area.append(deck_dom);
         // populate common area
-        this.common_area.replaceWith(this.physical_book_case.dom());
+        this.book_case_area.replaceWith(this.physical_book_case.dom());
     };
     return PhysicalGame;
 }());
@@ -1021,13 +1021,13 @@ var MainPage = /** @class */ (function () {
         this.player_area.style.borderRight = "1px gray solid";
         this.examples_area = document.createElement("div");
         this.examples_area.style.paddingLeft = "20px";
-        this.common_area = document.createElement("div");
+        this.book_case_area = document.createElement("div");
         var left_panel = document.createElement("div");
         left_panel.append(this.welcome_area);
         left_panel.append(this.player_area);
         var right_panel = document.createElement("div");
         right_panel.append(this.examples_area);
-        right_panel.append(this.common_area);
+        right_panel.append(this.book_case_area);
         this.page.append(left_panel);
         this.page.append(right_panel);
     }
@@ -1035,14 +1035,14 @@ var MainPage = /** @class */ (function () {
         var welcome_area = this.welcome_area;
         var examples_area = this.examples_area;
         var player_area = this.player_area;
-        var common_area = this.common_area;
+        var book_case_area = this.book_case_area;
         function start_actual_game() {
             welcome_area.innerHTML = "";
             examples_area.innerHTML = "";
             // We get called back one the player dismisses the examples.
             var physical_game = new PhysicalGame({
                 player_area: player_area,
-                common_area: common_area,
+                book_case_area: book_case_area,
             });
             physical_game.start();
         }

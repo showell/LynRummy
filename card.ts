@@ -1208,15 +1208,18 @@ class PhysicalPlayer {
 class PhysicalGame {
     game: Game;
     player_area: HTMLElement;
-    common_area: HTMLElement;
+    book_case_area: HTMLElement;
     physical_player: PhysicalPlayer;
     physical_book_case: PhysicalBookCase;
 
-    constructor(info: { player_area: HTMLElement; common_area: HTMLElement }) {
+    constructor(info: {
+        player_area: HTMLElement;
+        book_case_area: HTMLElement;
+    }) {
         this.game = new Game();
         this.game.deal_cards();
         this.player_area = info.player_area;
-        this.common_area = info.common_area;
+        this.book_case_area = info.book_case_area;
         const player = this.game.players[0];
         this.physical_book_case = new PhysicalBookCase(this.game.book_case);
         this.physical_player = new PhysicalPlayer(player, (card: Card) => {
@@ -1237,7 +1240,7 @@ class PhysicalGame {
         this.player_area.append(deck_dom);
 
         // populate common area
-        this.common_area.replaceWith(this.physical_book_case.dom());
+        this.book_case_area.replaceWith(this.physical_book_case.dom());
     }
 }
 
@@ -1338,7 +1341,7 @@ class MainPage {
     welcome_area: HTMLElement;
     player_area: HTMLElement;
     examples_area: HTMLElement;
-    common_area: HTMLElement;
+    book_case_area: HTMLElement;
 
     constructor() {
         this.page = document.createElement("div");
@@ -1355,7 +1358,7 @@ class MainPage {
         this.examples_area = document.createElement("div");
         this.examples_area.style.paddingLeft = "20px";
 
-        this.common_area = document.createElement("div");
+        this.book_case_area = document.createElement("div");
 
         const left_panel = document.createElement("div");
         left_panel.append(this.welcome_area);
@@ -1363,7 +1366,7 @@ class MainPage {
 
         const right_panel = document.createElement("div");
         right_panel.append(this.examples_area);
-        right_panel.append(this.common_area);
+        right_panel.append(this.book_case_area);
 
         this.page.append(left_panel);
         this.page.append(right_panel);
@@ -1373,7 +1376,7 @@ class MainPage {
         const welcome_area = this.welcome_area;
         const examples_area = this.examples_area;
         const player_area = this.player_area;
-        const common_area = this.common_area;
+        const book_case_area = this.book_case_area;
 
         function start_actual_game() {
             welcome_area.innerHTML = "";
@@ -1382,7 +1385,7 @@ class MainPage {
             // We get called back one the player dismisses the examples.
             const physical_game = new PhysicalGame({
                 player_area: player_area,
-                common_area: common_area,
+                book_case_area: book_case_area,
             });
             physical_game.start();
         }
