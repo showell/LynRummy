@@ -681,18 +681,22 @@ class HandCard {
 }
 
 class Hand {
-    cards: Card[];
+    hand_cards: HandCard[];
 
     constructor() {
-        this.cards = [];
+        this.hand_cards = [];
     }
 
-    add_cards(cards: Card[]): void {
-        this.cards = this.cards.concat(cards);
+    add_cards(cards: HandCard[]): void {
+        this.hand_cards = this.hand_cards.concat(cards);
     }
 
     remove_card_from_hand(card: Card): void {
-        remove_card_from_array(this.cards, card);
+        const idx = this.hand_cards.findIndex((hc) => hc.card.equals(card));
+        if (idx === -1) {
+            throw new Error("Card to remove doesn't exist in hand");
+        }
+        this.hand_cards.splice(idx, 1);
     }
 }
 
@@ -751,7 +755,9 @@ class Game {
     deal_cards() {
         for (const player of this.players) {
             const cards = this.deck.take_from_top(15);
-            player.hand.add_cards(cards);
+            player.hand.add_cards(
+                cards.map((c) => new HandCard({ card: c, is_new: false })),
+            );
         }
     }
 }
@@ -1160,19 +1166,23 @@ class PhysicalBookCase {
     }
 }
 
-function get_sorted_cards_for_suit(suit: Suit, cards: Card[]): Card[] {
+function get_sorted_cards_for_suit(
+    suit: Suit,
+    hand_cards: HandCard[],
+): HandCard[] {
     const suit_cards = [];
-    for (const card of cards) {
+    for (const hand_card of hand_cards) {
+        const card = hand_card.card;
         if (card.suit === suit) {
-            suit_cards.push(card);
+            suit_cards.push(hand_card);
         }
     }
-    suit_cards.sort((card1, card2) => card1.value - card2.value);
+    suit_cards.sort((card1, card2) => card1.card.value - card2.card.value);
     return suit_cards;
 }
 
 function row_of_cards_in_hand(
-    cards: Card[],
+    hand_cards: HandCard[],
     physical_game: PhysicalGame,
 ): HTMLElement {
     /*
@@ -1184,12 +1194,12 @@ function row_of_cards_in_hand(
     */
     const div = document.createElement("div");
     div.style.paddingBottom = "10px";
-    for (const card of cards) {
-        const physical_card = new PhysicalCard(card);
+    for (const hand_card of hand_cards) {
+        const physical_card = new PhysicalCard(hand_card.card);
         const node = physical_card.dom();
         node.style.cursor = "pointer";
         node.addEventListener("click", () =>
-            physical_game.move_card_from_hand_to_top_shelf(card),
+            physical_game.move_card_from_hand_to_top_shelf(hand_card.card),
         );
 
         div.append(node);
@@ -1221,7 +1231,7 @@ class PhysicalHand {
     populate(): void {
         const physical_game = this.physical_game;
         const div = this.div;
-        const cards = this.hand.cards;
+        const cards = this.hand.hand_cards;
         div.innerHTML = "";
 
         for (const suit of all_suits) {
@@ -1240,7 +1250,7 @@ class PhysicalHand {
     }
 
     add_card_to_hand(card: Card) {
-        this.hand.add_cards([card]);
+        this.hand.add_cards([new HandCard({ card, is_new: true })]);
         this.populate();
     }
 }
