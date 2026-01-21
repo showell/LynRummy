@@ -519,7 +519,7 @@ var Player = /** @class */ (function () {
 function empty_shelf() {
     return new Shelf([]);
 }
-function initial_bookcase() {
+function initial_book_case() {
     var shelf1 = new Shelf([
         CardStack.from("KS,AS,2S,3S"),
         CardStack.from("AC,AD,AH"),
@@ -540,7 +540,7 @@ var Game = /** @class */ (function () {
     function Game() {
         this.players = [new Player("Player One"), new Player("Player Two")];
         this.deck = new Deck();
-        this.book_case = initial_bookcase();
+        this.book_case = initial_book_case();
         for (var _i = 0, _a = this.book_case.get_cards(); _i < _a.length; _i++) {
             var card = _a[_i];
             this.deck.pull_card_from_deck(card);
@@ -702,7 +702,7 @@ function create_shelf_is_clean_or_not_emoji(shelf) {
 }
 var PhysicalShelf = /** @class */ (function () {
     function PhysicalShelf(info) {
-        this.physical_bookcase = info.physical_bookcase;
+        this.physical_book_case = info.physical_book_case;
         this.shelf_index = info.shelf_index;
         this.shelf = info.shelf;
         this.div = this.make_div();
@@ -740,7 +740,7 @@ var PhysicalShelf = /** @class */ (function () {
             });
             var physical_card_stack = new PhysicalCardStack(stack_location, card_stack);
             physical_card_stack.set_up_clicks_handlers_for_cards(function (card_location) {
-                self_1.physical_bookcase.split_card_off_end(card_location);
+                self_1.physical_book_case.split_card_off_end(card_location);
             });
             div.append(physical_card_stack.dom());
         };
@@ -768,7 +768,7 @@ var PhysicalBookCase = /** @class */ (function () {
         for (var shelf_index = 0; shelf_index < shelves.length; ++shelf_index) {
             var shelf = shelves[shelf_index];
             var physical_shelf = new PhysicalShelf({
-                physical_bookcase: this,
+                physical_book_case: this,
                 shelf_index: shelf_index,
                 shelf: shelf,
             });

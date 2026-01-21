@@ -688,7 +688,7 @@ function empty_shelf(): Shelf {
     return new Shelf([]);
 }
 
-function initial_bookcase(): BookCase {
+function initial_book_case(): BookCase {
     const shelf1 = new Shelf([
         CardStack.from("KS,AS,2S,3S"),
         CardStack.from("AC,AD,AH"),
@@ -719,7 +719,7 @@ class Game {
     constructor() {
         this.players = [new Player("Player One"), new Player("Player Two")];
         this.deck = new Deck();
-        this.book_case = initial_bookcase();
+        this.book_case = initial_book_case();
 
         for (const card of this.book_case.get_cards()) {
             this.deck.pull_card_from_deck(card);
@@ -935,17 +935,17 @@ function create_shelf_is_clean_or_not_emoji(shelf: Shelf): HTMLElement {
 }
 
 class PhysicalShelf {
-    physical_bookcase: PhysicalBookCase;
+    physical_book_case: PhysicalBookCase;
     shelf_index: number;
     shelf: Shelf;
     div: HTMLElement;
 
     constructor(info: {
-        physical_bookcase: PhysicalBookCase;
+        physical_book_case: PhysicalBookCase;
         shelf_index: number;
         shelf: Shelf;
     }) {
-        this.physical_bookcase = info.physical_bookcase;
+        this.physical_book_case = info.physical_book_case;
         this.shelf_index = info.shelf_index;
         this.shelf = info.shelf;
         this.div = this.make_div();
@@ -998,7 +998,7 @@ class PhysicalShelf {
 
             physical_card_stack.set_up_clicks_handlers_for_cards(
                 (card_location: ShelfCardLocation) => {
-                    self.physical_bookcase.split_card_off_end(card_location);
+                    self.physical_book_case.split_card_off_end(card_location);
                 },
             );
 
@@ -1034,7 +1034,7 @@ class PhysicalBookCase {
         for (let shelf_index = 0; shelf_index < shelves.length; ++shelf_index) {
             const shelf = shelves[shelf_index];
             const physical_shelf = new PhysicalShelf({
-                physical_bookcase: this,
+                physical_book_case: this,
                 shelf_index,
                 shelf,
             });
