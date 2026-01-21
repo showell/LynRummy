@@ -656,17 +656,26 @@ var PhysicalCardStack = /** @class */ (function () {
         this.stack_location = stack_location;
         this.stack = stack;
         this.physical_shelf_cards = build_physical_shelf_cards(stack_location, stack.cards);
+        this.div = this.make_div();
     }
+    PhysicalCardStack.prototype.make_div = function () {
+        var div = document.createElement("div");
+        div.style.marginRight = "20px";
+        return div;
+    };
     PhysicalCardStack.prototype.dom = function () {
         // should only be called once
         var physical_shelf_cards = this.physical_shelf_cards;
-        var div = document.createElement("div");
-        div.style.marginRight = "20px";
+        this.populate();
+        return this.div;
+    };
+    PhysicalCardStack.prototype.populate = function () {
+        var div = this.div;
+        var physical_shelf_cards = this.physical_shelf_cards;
         for (var _i = 0, physical_shelf_cards_1 = physical_shelf_cards; _i < physical_shelf_cards_1.length; _i++) {
             var physical_shelf_card = physical_shelf_cards_1[_i];
             div.append(physical_shelf_card.dom());
         }
-        return div;
     };
     PhysicalCardStack.prototype.set_up_clicks_handlers_for_cards = function () {
         var physical_game = this.physical_game;

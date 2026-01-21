@@ -877,6 +877,7 @@ class PhysicalCardStack {
     stack_location: StackLocation;
     stack: CardStack;
     physical_shelf_cards: PhysicalShelfCard[];
+    div: HTMLElement;
 
     constructor(
         physical_game: PhysicalGame,
@@ -890,20 +891,30 @@ class PhysicalCardStack {
             stack_location,
             stack.cards,
         );
+        this.div = this.make_div();
+    }
+
+    make_div(): HTMLElement {
+        const div = document.createElement("div");
+        div.style.marginRight = "20px";
+
+        return div;
     }
 
     dom(): HTMLElement {
         // should only be called once
         const physical_shelf_cards = this.physical_shelf_cards;
+        this.populate();
+        return this.div;
+    }
 
-        const div = document.createElement("div");
-        div.style.marginRight = "20px";
+    populate(): void {
+        const div = this.div;
+        const physical_shelf_cards = this.physical_shelf_cards;
 
         for (const physical_shelf_card of physical_shelf_cards) {
             div.append(physical_shelf_card.dom());
         }
-
-        return div;
     }
 
     set_up_clicks_handlers_for_cards(): void {
