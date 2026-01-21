@@ -826,7 +826,7 @@ function get_sorted_cards_for_suit(suit, cards) {
     suit_cards.sort(function (card1, card2) { return card1.value - card2.value; });
     return suit_cards;
 }
-function row_of_cards_in_hand(cards, physical_hand) {
+function row_of_cards_in_hand(cards, physical_game) {
     /*
         This can be a pure function, because even though
         users can mutate our row (by clicking a card to put it
@@ -841,7 +841,7 @@ function row_of_cards_in_hand(cards, physical_hand) {
         var node = physical_card.dom();
         node.style.cursor = "pointer";
         node.addEventListener("click", function () {
-            return physical_hand.click_card_callback(card);
+            return physical_game.move_card_from_hand_to_top_shelf(card);
         });
         div.append(node);
     };
@@ -852,10 +852,10 @@ function row_of_cards_in_hand(cards, physical_hand) {
     return div;
 }
 var PhysicalHand = /** @class */ (function () {
-    function PhysicalHand(hand, click_card_callback) {
+    function PhysicalHand(physical_game, hand) {
+        this.physical_game = physical_game;
         this.hand = hand;
         this.div = this.make_div();
-        this.click_card_callback = click_card_callback;
     }
     PhysicalHand.prototype.make_div = function () {
         // no real styling yet
@@ -866,7 +866,7 @@ var PhysicalHand = /** @class */ (function () {
         return this.div;
     };
     PhysicalHand.prototype.populate = function () {
-        var physical_hand = this;
+        var physical_game = this.physical_game;
         var div = this.div;
         var cards = this.hand.cards;
         div.innerHTML = "";
@@ -874,7 +874,7 @@ var PhysicalHand = /** @class */ (function () {
             var suit = all_suits_1[_i];
             var suit_cards = get_sorted_cards_for_suit(suit, cards);
             if (suit_cards.length > 0) {
-                var row = row_of_cards_in_hand(suit_cards, physical_hand);
+                var row = row_of_cards_in_hand(suit_cards, physical_game);
                 div.append(row);
             }
         }
@@ -886,9 +886,10 @@ var PhysicalHand = /** @class */ (function () {
     return PhysicalHand;
 }());
 var PhysicalPlayer = /** @class */ (function () {
-    function PhysicalPlayer(player, callback) {
+    function PhysicalPlayer(physical_game, player) {
+        this.physical_game = physical_game;
         this.player = player;
-        this.physical_hand = new PhysicalHand(player.hand, callback);
+        this.physical_hand = new PhysicalHand(physical_game, player.hand);
     }
     PhysicalPlayer.prototype.dom = function () {
         var player = this.player;
@@ -903,18 +904,21 @@ var PhysicalPlayer = /** @class */ (function () {
 }());
 var PhysicalGame = /** @class */ (function () {
     function PhysicalGame(info) {
-        var _this = this;
+        var physical_game = this;
         this.game = new Game();
         this.game.deal_cards();
         this.player_area = info.player_area;
         this.book_case_area = info.book_case_area;
         var player = this.game.players[0];
         this.physical_book_case = new PhysicalBookCase(this.game.book_case);
-        this.physical_player = new PhysicalPlayer(player, function (card) {
-            _this.physical_player.physical_hand.remove_card_from_hand(card);
-            _this.physical_book_case.add_card_to_top_shelf(card);
-        });
+        this.physical_player = new PhysicalPlayer(physical_game, player);
     }
+    // ACTION! (We will need to broadcast this when we
+    // get to multi-player.)
+    PhysicalGame.prototype.move_card_from_hand_to_top_shelf = function (card) {
+        this.physical_player.physical_hand.remove_card_from_hand(card);
+        this.physical_book_case.add_card_to_top_shelf(card);
+    };
     PhysicalGame.prototype.start = function () {
         var game = this.game;
         this.player_area.innerHTML = "";

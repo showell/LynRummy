@@ -1104,7 +1104,7 @@ function get_sorted_cards_for_suit(suit: Suit, cards: Card[]): Card[] {
 
 function row_of_cards_in_hand(
     cards: Card[],
-    physical_hand: PhysicalHand,
+    physical_game: PhysicalGame,
 ): HTMLElement {
     /*
         This can be a pure function, because even though
@@ -1120,7 +1120,7 @@ function row_of_cards_in_hand(
         const node = physical_card.dom();
         node.style.cursor = "pointer";
         node.addEventListener("click", () =>
-            physical_hand.click_card_callback(card),
+            physical_game.move_card_from_hand_to_top_shelf(card),
         );
 
         div.append(node);
@@ -1129,16 +1129,14 @@ function row_of_cards_in_hand(
 }
 
 class PhysicalHand {
+    physical_game: PhysicalGame;
     hand: Hand;
     div: HTMLElement;
-    click_card_callback: (card: Card) => void;
-    constructor(
-        hand: Hand,
-        click_card_callback: typeof this.click_card_callback,
-    ) {
+
+    constructor(physical_game: PhysicalGame, hand: Hand) {
+        this.physical_game = physical_game;
         this.hand = hand;
         this.div = this.make_div();
-        this.click_card_callback = click_card_callback;
     }
 
     make_div(): HTMLElement {
@@ -1152,7 +1150,7 @@ class PhysicalHand {
     }
 
     populate(): void {
-        const physical_hand = this;
+        const physical_game = this.physical_game;
         const div = this.div;
         const cards = this.hand.cards;
         div.innerHTML = "";
@@ -1161,7 +1159,7 @@ class PhysicalHand {
             const suit_cards = get_sorted_cards_for_suit(suit, cards);
 
             if (suit_cards.length > 0) {
-                const row = row_of_cards_in_hand(suit_cards, physical_hand);
+                const row = row_of_cards_in_hand(suit_cards, physical_game);
                 div.append(row);
             }
         }
@@ -1174,11 +1172,14 @@ class PhysicalHand {
 }
 
 class PhysicalPlayer {
+    physical_game: PhysicalGame;
     player: Player;
     physical_hand: PhysicalHand;
-    constructor(player: Player, callback: (card: Card) => void) {
+
+    constructor(physical_game: PhysicalGame, player: Player) {
+        this.physical_game = physical_game;
         this.player = player;
-        this.physical_hand = new PhysicalHand(player.hand, callback);
+        this.physical_hand = new PhysicalHand(physical_game, player.hand);
     }
 
     dom(): HTMLElement {
@@ -1205,16 +1206,21 @@ class PhysicalGame {
         player_area: HTMLElement;
         book_case_area: HTMLElement;
     }) {
+        const physical_game = this;
         this.game = new Game();
         this.game.deal_cards();
         this.player_area = info.player_area;
         this.book_case_area = info.book_case_area;
         const player = this.game.players[0];
         this.physical_book_case = new PhysicalBookCase(this.game.book_case);
-        this.physical_player = new PhysicalPlayer(player, (card: Card) => {
-            this.physical_player.physical_hand.remove_card_from_hand(card);
-            this.physical_book_case.add_card_to_top_shelf(card);
-        });
+        this.physical_player = new PhysicalPlayer(physical_game, player);
+    }
+
+    // ACTION! (We will need to broadcast this when we
+    // get to multi-player.)
+    move_card_from_hand_to_top_shelf(card: Card): void {
+        this.physical_player.physical_hand.remove_card_from_hand(card);
+        this.physical_book_case.add_card_to_top_shelf(card);
     }
 
     start() {
