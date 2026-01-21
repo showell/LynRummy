@@ -870,8 +870,9 @@ class PhysicalShelfCard {
 
         div.style.cursor = "pointer";
 
-        div.addEventListener("click", () => {
+        div.addEventListener("click", (e) => {
             physical_game.handle_shelf_card_click(self.card_location);
+            e.stopPropagation();
         });
     }
 }
@@ -944,13 +945,14 @@ class PhysicalCardStack {
     }
 
     make_div(): HTMLElement {
-        const self = this;
+        const physical_game = this.physical_game;
+        const stack_location = this.stack_location;
         const div = document.createElement("div");
 
         div.style.marginRight = "20px";
 
         div.addEventListener("click", () => {
-            self.toggle();
+            physical_game.handle_stack_click(stack_location);
         });
 
         return div;
@@ -1028,6 +1030,7 @@ function create_shelf_is_clean_or_not_emoji(shelf: Shelf): HTMLElement {
 class PhysicalShelf {
     physical_game: PhysicalGame;
     physical_book_case: PhysicalBookCase;
+    physical_card_stacks: PhysicalCardStack[];
     shelf_index: number;
     shelf: Shelf;
     div: HTMLElement;
@@ -1072,9 +1075,9 @@ class PhysicalShelf {
         const emoji = create_shelf_is_clean_or_not_emoji(shelf);
         div.append(emoji);
 
-        const physical_card_stacks = this.build_physical_card_stacks();
+        this.physical_card_stacks = this.build_physical_card_stacks();
 
-        for (const physical_card_stack of physical_card_stacks) {
+        for (const physical_card_stack of this.physical_card_stacks) {
             div.append(physical_card_stack.dom());
         }
     }
@@ -1155,6 +1158,14 @@ class PhysicalBookCase {
         }
 
         return physical_shelves;
+    }
+
+    handle_stack_click(stack_location: StackLocation): void {
+        const { shelf_index, stack_index } = stack_location;
+        const physical_shelf = this.physical_shelves[shelf_index];
+        const physical_card_stack =
+            physical_shelf.physical_card_stacks[stack_index];
+        physical_card_stack.toggle();
     }
 
     handle_shelf_card_click(card_location: ShelfCardLocation) {
@@ -1361,9 +1372,15 @@ class PhysicalGame {
         this.physical_book_case.add_card_to_top_shelf(card);
     }
 
+    // ACTION!
     move_card_from_deck_to_hand(): void {
         const card = this.physical_deck.take_from_top(1)[0];
         this.physical_player.physical_hand.add_card_to_hand(card);
+    }
+
+    // ACTION!
+    handle_stack_click(stack_location: StackLocation): void {
+        this.physical_book_case.handle_stack_click(stack_location);
     }
 
     start() {

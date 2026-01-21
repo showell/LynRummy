@@ -661,8 +661,9 @@ var PhysicalShelfCard = /** @class */ (function () {
         var div = this.card_div;
         var self = this;
         div.style.cursor = "pointer";
-        div.addEventListener("click", function () {
+        div.addEventListener("click", function (e) {
             physical_game.handle_shelf_card_click(self.card_location);
+            e.stopPropagation();
         });
     };
     return PhysicalShelfCard;
@@ -703,11 +704,12 @@ var PhysicalCardStack = /** @class */ (function () {
         this.selected = false;
     }
     PhysicalCardStack.prototype.make_div = function () {
-        var self = this;
+        var physical_game = this.physical_game;
+        var stack_location = this.stack_location;
         var div = document.createElement("div");
         div.style.marginRight = "20px";
         div.addEventListener("click", function () {
-            self.toggle();
+            physical_game.handle_stack_click(stack_location);
         });
         return div;
     };
@@ -802,9 +804,9 @@ var PhysicalShelf = /** @class */ (function () {
         div.innerHTML = "";
         var emoji = create_shelf_is_clean_or_not_emoji(shelf);
         div.append(emoji);
-        var physical_card_stacks = this.build_physical_card_stacks();
-        for (var _i = 0, physical_card_stacks_1 = physical_card_stacks; _i < physical_card_stacks_1.length; _i++) {
-            var physical_card_stack = physical_card_stacks_1[_i];
+        this.physical_card_stacks = this.build_physical_card_stacks();
+        for (var _i = 0, _a = this.physical_card_stacks; _i < _a.length; _i++) {
+            var physical_card_stack = _a[_i];
             div.append(physical_card_stack.dom());
         }
     };
@@ -859,6 +861,12 @@ var PhysicalBookCase = /** @class */ (function () {
             physical_shelves.push(physical_shelf);
         }
         return physical_shelves;
+    };
+    PhysicalBookCase.prototype.handle_stack_click = function (stack_location) {
+        var shelf_index = stack_location.shelf_index, stack_index = stack_location.stack_index;
+        var physical_shelf = this.physical_shelves[shelf_index];
+        var physical_card_stack = physical_shelf.physical_card_stacks[stack_index];
+        physical_card_stack.toggle();
     };
     PhysicalBookCase.prototype.handle_shelf_card_click = function (card_location) {
         var shelf_index = card_location.shelf_index, stack_index = card_location.stack_index, card_index = card_location.card_index;
@@ -1017,9 +1025,14 @@ var PhysicalGame = /** @class */ (function () {
         this.physical_player.physical_hand.remove_card_from_hand(card);
         this.physical_book_case.add_card_to_top_shelf(card);
     };
+    // ACTION!
     PhysicalGame.prototype.move_card_from_deck_to_hand = function () {
         var card = this.physical_deck.take_from_top(1)[0];
         this.physical_player.physical_hand.add_card_to_hand(card);
+    };
+    // ACTION!
+    PhysicalGame.prototype.handle_stack_click = function (stack_location) {
+        this.physical_book_case.handle_stack_click(stack_location);
     };
     PhysicalGame.prototype.start = function () {
         var game = this.game;
