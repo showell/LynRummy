@@ -542,11 +542,14 @@ var Hand = /** @class */ (function () {
         this.hand_cards = this.hand_cards.concat(cards);
     };
     Hand.prototype.remove_card_from_hand = function (card) {
-        var idx = this.hand_cards.findIndex(function (hc) { return hc.card.equals(card); });
-        if (idx === -1) {
-            throw new Error("Card to remove doesn't exist in hand");
+        var hand_cards = this.hand_cards;
+        for (var i = 0; i < hand_cards.length; ++i) {
+            if (hand_cards[i].card.equals(card)) {
+                hand_cards.splice(i, 1);
+                return;
+            }
         }
-        this.hand_cards.splice(idx, 1);
+        throw new Error("Card to be removed is not present in the array!");
     };
     return Hand;
 }());

@@ -720,11 +720,15 @@ class Hand {
     }
 
     remove_card_from_hand(card: Card): void {
-        const idx = this.hand_cards.findIndex((hc) => hc.card.equals(card));
-        if (idx === -1) {
-            throw new Error("Card to remove doesn't exist in hand");
+        const hand_cards = this.hand_cards;
+
+        for (let i = 0; i < hand_cards.length; ++i) {
+            if (hand_cards[i].card.equals(card)) {
+                hand_cards.splice(i, 1);
+                return;
+            }
         }
-        this.hand_cards.splice(idx, 1);
+        throw new Error("Card to be removed is not present in the array!");
     }
 }
 
