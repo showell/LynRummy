@@ -777,14 +777,14 @@ class PhysicalShelfCard {
         return this.card_div;
     }
 
-    add_click_listener(callback: (card_location: ShelfCardLocation) => void) {
+    add_click_listener(physical_game: PhysicalGame): void {
         const div = this.card_div;
         const self = this;
 
         div.style.cursor = "pointer";
 
         div.addEventListener("click", () => {
-            callback(self.card_location);
+            physical_game.handle_shelf_card_click(self.card_location);
         });
     }
 }
@@ -866,21 +866,21 @@ class PhysicalCardStack {
         return div;
     }
 
-    set_up_clicks_handlers_for_cards(
-        callback: (card_location: ShelfCardLocation) => void,
-    ) {
+    set_up_clicks_handlers_for_cards(): void {
+        const physical_game = this.physical_game;
         const physical_shelf_cards = this.physical_shelf_cards;
 
         for (const physical_shelf_card of physical_shelf_cards) {
             const card_position =
                 physical_shelf_card.card_location.card_position;
 
-            // We may soon support other clicks, but for now, when you
-            // click at a card at either end of a stack, it gets split off
-            // the stack so that the player can then move that single card
-            // to some other stack. (This is part of what makes the game fun.)
+            // We may soon support other clicks, but for now,
+            // when you click at a card at either end of a stack,
+            // it gets split off the stack so that the player
+            // can then move that single card to some other stack.
+            // (This is part of what makes the game fun.)
             if (card_position === CardPositionType.AT_END) {
-                physical_shelf_card.add_click_listener(callback);
+                physical_shelf_card.add_click_listener(physical_game);
             }
         }
     }
@@ -978,11 +978,7 @@ class PhysicalShelf {
                 card_stack,
             );
 
-            physical_card_stack.set_up_clicks_handlers_for_cards(
-                (card_location: ShelfCardLocation) => {
-                    self.physical_game.split_card_off_end(card_location);
-                },
-            );
+            physical_card_stack.set_up_clicks_handlers_for_cards();
             physical_card_stacks.push(physical_card_stack);
         }
 
@@ -1036,12 +1032,16 @@ class PhysicalBookCase {
         return physical_shelves;
     }
 
-    split_card_off_end(card_location: ShelfCardLocation) {
+    handle_shelf_card_click(card_location: ShelfCardLocation) {
+        const { shelf_index, stack_index, card_index } = card_location;
+
         const physical_shelves = this.physical_shelves;
 
-        physical_shelves[card_location.shelf_index].split_card_off_end({
-            stack_index: card_location.stack_index,
-            card_index: card_location.card_index,
+        // Right now the only action when you click on a shelf card
+        // is to split it from the end of its stack.
+        physical_shelves[shelf_index].split_card_off_end({
+            stack_index,
+            card_index,
         });
     }
 
@@ -1206,8 +1206,8 @@ class PhysicalGame {
     }
 
     // ACTION - we would send this over wire for multi-player game
-    split_card_off_end(card_location: ShelfCardLocation) {
-        this.physical_book_case.split_card_off_end(card_location);
+    handle_shelf_card_click(card_location: ShelfCardLocation) {
+        this.physical_book_case.handle_shelf_card_click(card_location);
     }
 
     // ACTION! (We will need to broadcast this when we

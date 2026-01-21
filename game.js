@@ -582,12 +582,12 @@ var PhysicalShelfCard = /** @class */ (function () {
     PhysicalShelfCard.prototype.dom = function () {
         return this.card_div;
     };
-    PhysicalShelfCard.prototype.add_click_listener = function (callback) {
+    PhysicalShelfCard.prototype.add_click_listener = function (physical_game) {
         var div = this.card_div;
         var self = this;
         div.style.cursor = "pointer";
         div.addEventListener("click", function () {
-            callback(self.card_location);
+            physical_game.handle_shelf_card_click(self.card_location);
         });
     };
     return PhysicalShelfCard;
@@ -636,17 +636,19 @@ var PhysicalCardStack = /** @class */ (function () {
         }
         return div;
     };
-    PhysicalCardStack.prototype.set_up_clicks_handlers_for_cards = function (callback) {
+    PhysicalCardStack.prototype.set_up_clicks_handlers_for_cards = function () {
+        var physical_game = this.physical_game;
         var physical_shelf_cards = this.physical_shelf_cards;
         for (var _i = 0, physical_shelf_cards_2 = physical_shelf_cards; _i < physical_shelf_cards_2.length; _i++) {
             var physical_shelf_card = physical_shelf_cards_2[_i];
             var card_position = physical_shelf_card.card_location.card_position;
-            // We may soon support other clicks, but for now, when you
-            // click at a card at either end of a stack, it gets split off
-            // the stack so that the player can then move that single card
-            // to some other stack. (This is part of what makes the game fun.)
+            // We may soon support other clicks, but for now,
+            // when you click at a card at either end of a stack,
+            // it gets split off the stack so that the player
+            // can then move that single card to some other stack.
+            // (This is part of what makes the game fun.)
             if (card_position === 1 /* CardPositionType.AT_END */) {
-                physical_shelf_card.add_click_listener(callback);
+                physical_shelf_card.add_click_listener(physical_game);
             }
         }
     };
@@ -705,22 +707,16 @@ var PhysicalShelf = /** @class */ (function () {
         var shelf_index = this.shelf_index;
         var card_stacks = this.shelf.card_stacks;
         var physical_card_stacks = [];
-        var _loop_1 = function (stack_index) {
-            var self_1 = this_1;
+        for (var stack_index = 0; stack_index < card_stacks.length; ++stack_index) {
+            var self_1 = this;
             var card_stack = card_stacks[stack_index];
             var stack_location = new StackLocation({
                 shelf_index: shelf_index,
                 stack_index: stack_index,
             });
             var physical_card_stack = new PhysicalCardStack(physical_game, stack_location, card_stack);
-            physical_card_stack.set_up_clicks_handlers_for_cards(function (card_location) {
-                self_1.physical_game.split_card_off_end(card_location);
-            });
+            physical_card_stack.set_up_clicks_handlers_for_cards();
             physical_card_stacks.push(physical_card_stack);
-        };
-        var this_1 = this;
-        for (var stack_index = 0; stack_index < card_stacks.length; ++stack_index) {
-            _loop_1(stack_index);
         }
         return physical_card_stacks;
     };
@@ -758,11 +754,14 @@ var PhysicalBookCase = /** @class */ (function () {
         }
         return physical_shelves;
     };
-    PhysicalBookCase.prototype.split_card_off_end = function (card_location) {
+    PhysicalBookCase.prototype.handle_shelf_card_click = function (card_location) {
+        var shelf_index = card_location.shelf_index, stack_index = card_location.stack_index, card_index = card_location.card_index;
         var physical_shelves = this.physical_shelves;
-        physical_shelves[card_location.shelf_index].split_card_off_end({
-            stack_index: card_location.stack_index,
-            card_index: card_location.card_index,
+        // Right now the only action when you click on a shelf card
+        // is to split it from the end of its stack.
+        physical_shelves[shelf_index].split_card_off_end({
+            stack_index: stack_index,
+            card_index: card_index,
         });
     };
     PhysicalBookCase.prototype.make_div = function () {
@@ -814,7 +813,7 @@ function row_of_cards_in_hand(cards, physical_game) {
     */
     var div = document.createElement("div");
     div.style.paddingBottom = "10px";
-    var _loop_2 = function (card) {
+    var _loop_1 = function (card) {
         var physical_card = new PhysicalCard(card);
         var node = physical_card.dom();
         node.style.cursor = "pointer";
@@ -825,7 +824,7 @@ function row_of_cards_in_hand(cards, physical_game) {
     };
     for (var _i = 0, cards_2 = cards; _i < cards_2.length; _i++) {
         var card = cards_2[_i];
-        _loop_2(card);
+        _loop_1(card);
     }
     return div;
 }
@@ -892,8 +891,8 @@ var PhysicalGame = /** @class */ (function () {
         this.physical_player = new PhysicalPlayer(physical_game, player);
     }
     // ACTION - we would send this over wire for multi-player game
-    PhysicalGame.prototype.split_card_off_end = function (card_location) {
-        this.physical_book_case.split_card_off_end(card_location);
+    PhysicalGame.prototype.handle_shelf_card_click = function (card_location) {
+        this.physical_book_case.handle_shelf_card_click(card_location);
     };
     // ACTION! (We will need to broadcast this when we
     // get to multi-player.)
