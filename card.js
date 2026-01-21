@@ -675,17 +675,6 @@ var PhysicalCardStack = /** @class */ (function () {
             }
         }
     };
-    PhysicalCardStack.prototype.stack_color = function () {
-        switch (this.stack.stack_type) {
-            case "dup" /* CardStackType.DUP */:
-            case "bogus" /* CardStackType.BOGUS */:
-                return "red";
-            case "incomplete" /* CardStackType.INCOMPLETE */:
-                return "lightred";
-            default:
-                return "green";
-        }
-    };
     return PhysicalCardStack;
 }());
 function create_shelf_is_clean_or_not_emoji(shelf) {
@@ -937,29 +926,50 @@ var PhysicalGame = /** @class */ (function () {
     };
     return PhysicalGame;
 }());
+function heading_for_example_card_stack(opts) {
+    var comment = opts.comment, color = opts.color;
+    var heading = document.createElement("div");
+    heading.innerText = comment;
+    heading.style.color = color;
+    heading.style.fontSize = "17px";
+    heading.style.fontWeight = "bold";
+    heading.style.paddingBottom = "2px";
+    return heading;
+}
+function div_for_example_card_stack(stack) {
+    // TODO: stop using PhysicalCardStack and just render manually
+    var fake_stack_location = new StackLocation({
+        shelf_index: 0,
+        stack_index: 0,
+    });
+    var physical_stack = new PhysicalCardStack(fake_stack_location, stack);
+    return physical_stack.dom();
+}
+function color_for_example_stack(stack) {
+    switch (stack.stack_type) {
+        case "dup" /* CardStackType.DUP */:
+        case "bogus" /* CardStackType.BOGUS */:
+            return "red";
+        case "incomplete" /* CardStackType.INCOMPLETE */:
+            return "lightred";
+        default:
+            return "green";
+    }
+}
 var PhysicalExample = /** @class */ (function () {
     function PhysicalExample(example) {
         this.example = example;
     }
     PhysicalExample.prototype.dom = function () {
-        var example = this.example;
-        // TODO: stop using PhysicalCardStack and just render manually
-        var fake_stack_location = new StackLocation({
-            shelf_index: 0,
-            stack_index: 0,
-        });
-        var physical_stack = new PhysicalCardStack(fake_stack_location, example.stack);
+        var stack = this.example.stack;
+        var comment = this.example.comment;
+        var card_stack_div = div_for_example_card_stack(stack);
+        var color = color_for_example_stack(stack);
+        var heading = heading_for_example_card_stack({ comment: comment, color: color });
         var div = document.createElement("div");
         div.style.paddingBottom = "11px";
-        var heading = document.createElement("div");
-        heading.innerText = example.comment;
-        heading.style.color = physical_stack.stack_color();
-        heading.style.fontSize = "17px";
-        heading.style.fontWeight = "bold";
-        heading.style.paddingBottom = "2px";
-        var card_stack_dom = physical_stack.dom();
         div.append(heading);
-        div.append(card_stack_dom);
+        div.append(card_stack_div);
         return div;
     };
     return PhysicalExample;

@@ -906,18 +906,6 @@ class PhysicalCardStack {
             }
         }
     }
-
-    stack_color(): string {
-        switch (this.stack.stack_type) {
-            case CardStackType.DUP:
-            case CardStackType.BOGUS:
-                return "red";
-            case CardStackType.INCOMPLETE:
-                return "lightred";
-            default:
-                return "green";
-        }
-    }
 }
 
 function create_shelf_is_clean_or_not_emoji(shelf: Shelf): HTMLElement {
@@ -1244,6 +1232,45 @@ class PhysicalGame {
     }
 }
 
+function heading_for_example_card_stack(opts: {
+    comment: string;
+    color: string;
+}): HTMLElement {
+    const { comment, color } = opts;
+
+    const heading = document.createElement("div");
+    heading.innerText = comment;
+    heading.style.color = color;
+    heading.style.fontSize = "17px";
+    heading.style.fontWeight = "bold";
+    heading.style.paddingBottom = "2px";
+
+    return heading;
+}
+
+function div_for_example_card_stack(stack: CardStack): HTMLElement {
+    // TODO: stop using PhysicalCardStack and just render manually
+    const fake_stack_location = new StackLocation({
+        shelf_index: 0,
+        stack_index: 0,
+    });
+    const physical_stack = new PhysicalCardStack(fake_stack_location, stack);
+
+    return physical_stack.dom();
+}
+
+function color_for_example_stack(stack: CardStack): string {
+    switch (stack.stack_type) {
+        case CardStackType.DUP:
+        case CardStackType.BOGUS:
+            return "red";
+        case CardStackType.INCOMPLETE:
+            return "lightred";
+        default:
+            return "green";
+    }
+}
+
 class PhysicalExample {
     example: Example;
 
@@ -1252,31 +1279,18 @@ class PhysicalExample {
     }
 
     dom(): Node {
-        const example = this.example;
-        // TODO: stop using PhysicalCardStack and just render manually
-        const fake_stack_location = new StackLocation({
-            shelf_index: 0,
-            stack_index: 0,
-        });
-        const physical_stack = new PhysicalCardStack(
-            fake_stack_location,
-            example.stack,
-        );
+        const stack = this.example.stack;
+        const comment = this.example.comment;
+
+        const card_stack_div = div_for_example_card_stack(stack);
+        const color = color_for_example_stack(stack);
+        const heading = heading_for_example_card_stack({ comment, color });
 
         const div = document.createElement("div");
         div.style.paddingBottom = "11px";
 
-        const heading = document.createElement("div");
-        heading.innerText = example.comment;
-        heading.style.color = physical_stack.stack_color();
-        heading.style.fontSize = "17px";
-        heading.style.fontWeight = "bold";
-        heading.style.paddingBottom = "2px";
-
-        const card_stack_dom = physical_stack.dom();
-
         div.append(heading);
-        div.append(card_stack_dom);
+        div.append(card_stack_div);
 
         return div;
     }
