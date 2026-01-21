@@ -1399,22 +1399,9 @@ class MainPage {
     }
 
     start(): void {
+        const self = this;
         const welcome_area = this.welcome_area;
         const examples_area = this.examples_area;
-        const player_area = this.player_area;
-        const book_case_area = this.book_case_area;
-
-        function start_actual_game() {
-            welcome_area.innerHTML = "";
-            examples_area.innerHTML = "";
-
-            // We get called back one the player dismisses the examples.
-            const physical_game = new PhysicalGame({
-                player_area: player_area,
-                book_case_area: book_case_area,
-            });
-            physical_game.start();
-        }
 
         const welcome = document.createElement("div");
         welcome.innerText = "Welcome to Lyn Rummy!";
@@ -1423,7 +1410,7 @@ class MainPage {
 
         const welcome_button = create_welcome_button();
         welcome_button.addEventListener("click", () => {
-            start_actual_game();
+            self.start_actual_game();
         });
 
         welcome_area.append(welcome);
@@ -1432,11 +1419,28 @@ class MainPage {
         const examples = new PhysicalExamples(examples_area);
         examples.start({
             on_dismiss_callback() {
-                start_actual_game();
+                self.start_actual_game();
             },
         });
 
         document.body.append(this.page);
+    }
+
+    start_actual_game(): void {
+        const welcome_area = this.welcome_area;
+        const examples_area = this.examples_area;
+        const player_area = this.player_area;
+        const book_case_area = this.book_case_area;
+
+        welcome_area.innerHTML = "";
+        examples_area.innerHTML = "";
+
+        // We get called back one the player dismisses the examples.
+        const physical_game = new PhysicalGame({
+            player_area: player_area,
+            book_case_area: book_case_area,
+        });
+        physical_game.start();
     }
 }
 

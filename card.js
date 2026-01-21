@@ -1053,37 +1053,40 @@ var MainPage = /** @class */ (function () {
         this.page.append(right_panel);
     }
     MainPage.prototype.start = function () {
+        var self = this;
         var welcome_area = this.welcome_area;
         var examples_area = this.examples_area;
-        var player_area = this.player_area;
-        var book_case_area = this.book_case_area;
-        function start_actual_game() {
-            welcome_area.innerHTML = "";
-            examples_area.innerHTML = "";
-            // We get called back one the player dismisses the examples.
-            var physical_game = new PhysicalGame({
-                player_area: player_area,
-                book_case_area: book_case_area,
-            });
-            physical_game.start();
-        }
         var welcome = document.createElement("div");
         welcome.innerText = "Welcome to Lyn Rummy!";
         welcome.style.color = "green";
         welcome.style.fontWeight = "bold";
         var welcome_button = create_welcome_button();
         welcome_button.addEventListener("click", function () {
-            start_actual_game();
+            self.start_actual_game();
         });
         welcome_area.append(welcome);
         welcome_area.append(welcome_button);
         var examples = new PhysicalExamples(examples_area);
         examples.start({
             on_dismiss_callback: function () {
-                start_actual_game();
+                self.start_actual_game();
             },
         });
         document.body.append(this.page);
+    };
+    MainPage.prototype.start_actual_game = function () {
+        var welcome_area = this.welcome_area;
+        var examples_area = this.examples_area;
+        var player_area = this.player_area;
+        var book_case_area = this.book_case_area;
+        welcome_area.innerHTML = "";
+        examples_area.innerHTML = "";
+        // We get called back one the player dismisses the examples.
+        var physical_game = new PhysicalGame({
+            player_area: player_area,
+            book_case_area: book_case_area,
+        });
+        physical_game.start();
     };
     return MainPage;
 }());
