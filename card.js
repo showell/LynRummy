@@ -824,6 +824,17 @@ var PhysicalBookCase = /** @class */ (function () {
     };
     return PhysicalBookCase;
 }());
+function get_sorted_cards_for_suit(suit, cards) {
+    var suit_cards = [];
+    for (var _i = 0, cards_1 = cards; _i < cards_1.length; _i++) {
+        var card = cards_1[_i];
+        if (card.suit === suit) {
+            suit_cards.push(card);
+        }
+    }
+    suit_cards.sort(function (card1, card2) { return card1.value - card2.value; });
+    return suit_cards;
+}
 var PhysicalHand = /** @class */ (function () {
     function PhysicalHand(hand, click_card_callback) {
         this.hand = hand;
@@ -841,19 +852,12 @@ var PhysicalHand = /** @class */ (function () {
     PhysicalHand.prototype.populate = function () {
         var _this = this;
         var div = this.div;
-        var hand = this.hand;
+        var cards = this.hand.cards;
         div.innerHTML = "";
         for (var _i = 0, all_suits_1 = all_suits; _i < all_suits_1.length; _i++) {
             var suit = all_suits_1[_i];
-            var suit_cards = [];
-            for (var _a = 0, _b = hand.cards; _a < _b.length; _a++) {
-                var card = _b[_a];
-                if (card.suit === suit) {
-                    suit_cards.push(card);
-                }
-            }
+            var suit_cards = get_sorted_cards_for_suit(suit, cards);
             if (suit_cards.length > 0) {
-                suit_cards.sort(function (card1, card2) { return card1.value - card2.value; });
                 var suit_div = document.createElement("div");
                 suit_div.style.paddingBottom = "10px";
                 var _loop_2 = function (card) {
@@ -865,8 +869,8 @@ var PhysicalHand = /** @class */ (function () {
                         return _this.click_card_callback(card);
                     });
                 };
-                for (var _c = 0, suit_cards_1 = suit_cards; _c < suit_cards_1.length; _c++) {
-                    var card = suit_cards_1[_c];
+                for (var _a = 0, suit_cards_1 = suit_cards; _a < suit_cards_1.length; _a++) {
+                    var card = suit_cards_1[_a];
                     _loop_2(card);
                 }
                 div.append(suit_div);

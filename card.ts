@@ -1102,6 +1102,17 @@ class PhysicalBookCase {
     }
 }
 
+function get_sorted_cards_for_suit(suit: Suit, cards: Card[]): Card[] {
+    const suit_cards = [];
+    for (const card of cards) {
+        if (card.suit === suit) {
+            suit_cards.push(card);
+        }
+    }
+    suit_cards.sort((card1, card2) => card1.value - card2.value);
+    return suit_cards;
+}
+
 class PhysicalHand {
     hand: Hand;
     div: HTMLElement;
@@ -1124,20 +1135,15 @@ class PhysicalHand {
         this.populate();
         return this.div;
     }
+
     populate(): void {
         const div = this.div;
-        const hand = this.hand;
+        const cards = this.hand.cards;
         div.innerHTML = "";
 
         for (const suit of all_suits) {
-            const suit_cards = [];
-            for (const card of hand.cards) {
-                if (card.suit === suit) {
-                    suit_cards.push(card);
-                }
-            }
+            const suit_cards = get_sorted_cards_for_suit(suit, cards);
             if (suit_cards.length > 0) {
-                suit_cards.sort((card1, card2) => card1.value - card2.value);
                 const suit_div = document.createElement("div");
                 suit_div.style.paddingBottom = "10px";
                 for (const card of suit_cards) {
