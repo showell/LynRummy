@@ -337,9 +337,7 @@ var Shelf = /** @class */ (function () {
         if (card_stacks.length === 0) {
             return "(empty)";
         }
-        return card_stacks
-            .map(function (card_stack) { return card_stack.str(); })
-            .join(" | ");
+        return card_stacks.map(function (card_stack) { return card_stack.str(); }).join(" | ");
     };
     Shelf.prototype.is_clean = function () {
         var card_stacks = this.card_stacks;
@@ -576,12 +574,49 @@ var PhysicalCard = /** @class */ (function () {
     };
     return PhysicalCard;
 }());
+var ShelfCardLocation = /** @class */ (function () {
+    function ShelfCardLocation(info) {
+        this.shelf_index = info.shelf_index;
+        this.stack_index = info.stack_index;
+        this.card_index = info.card_index;
+    }
+    return ShelfCardLocation;
+}());
+var StackLocation = /** @class */ (function () {
+    function StackLocation(info) {
+        this.shelf_index = info.shelf_index;
+        this.stack_index = info.stack_index;
+    }
+    return StackLocation;
+}());
+var PhysicalShelfCard = /** @class */ (function () {
+    function PhysicalShelfCard(card_location, physical_card) {
+        this.card_location = card_location;
+        this.physical_card = physical_card;
+    }
+    PhysicalShelfCard.prototype.dom = function () {
+        return this.physical_card.dom();
+    };
+    return PhysicalShelfCard;
+}());
 var PhysicalCardStack = /** @class */ (function () {
-    function PhysicalCardStack(stack) {
+    function PhysicalCardStack(stack_location, stack) {
+        this.stack_location = stack_location;
         this.stack = stack;
-        this.physical_card_nodes = this.stack.cards.map(function (card) {
-            return new PhysicalCard(card).dom();
-        });
+        this.physical_card_nodes = [];
+        var cards = stack.cards;
+        var physical_card_nodes = this.physical_card_nodes;
+        for (var card_index = 0; card_index < cards.length; ++card_index) {
+            var card = cards[card_index];
+            var card_location = new ShelfCardLocation({
+                shelf_index: stack_location.shelf_index,
+                stack_index: stack_location.stack_index,
+                card_index: card_index,
+            });
+            var physical_card = new PhysicalCard(card);
+            var node = new PhysicalShelfCard(card_location, physical_card).dom();
+            physical_card_nodes.push(node);
+        }
     }
     PhysicalCardStack.prototype.dom = function () {
         // should only be called once
@@ -596,20 +631,26 @@ var PhysicalCardStack = /** @class */ (function () {
     };
     PhysicalCardStack.prototype.set_card_click_callback = function (callback) {
         var physical_card_nodes = this.physical_card_nodes;
+        var stack_location = this.stack_location;
         if (physical_card_nodes.length <= 1) {
             // we want to drag it, not split it off
             return;
         }
-        var _loop_1 = function (i) {
-            var physical_card_node = physical_card_nodes[i];
+        var _loop_1 = function (card_index) {
+            var physical_card_node = physical_card_nodes[card_index];
             physical_card_node.style.cursor = "pointer";
             physical_card_node.addEventListener("click", function () {
-                callback(i);
+                var card_location = new ShelfCardLocation({
+                    shelf_index: stack_location.shelf_index,
+                    stack_index: stack_location.stack_index,
+                    card_index: card_index,
+                });
+                callback(card_location);
             });
         };
         for (var _i = 0, _a = [0, physical_card_nodes.length - 1]; _i < _a.length; _i++) {
-            var i = _a[_i];
-            _loop_1(i);
+            var card_index = _a[_i];
+            _loop_1(card_index);
         }
     };
     PhysicalCardStack.prototype.stack_color = function () {
@@ -626,7 +667,8 @@ var PhysicalCardStack = /** @class */ (function () {
     return PhysicalCardStack;
 }());
 var PhysicalShelf = /** @class */ (function () {
-    function PhysicalShelf(shelf) {
+    function PhysicalShelf(shelf_index, shelf) {
+        this.shelf_index = shelf_index;
         this.shelf = shelf;
         this.div = this.make_div();
     }
@@ -647,8 +689,8 @@ var PhysicalShelf = /** @class */ (function () {
         return this.div;
     };
     PhysicalShelf.prototype.populate = function () {
-        var _this = this;
         var div = this.div;
+        var shelf_index = this.shelf_index;
         var shelf = this.shelf;
         var card_stacks = shelf.card_stacks;
         div.innerHTML = "";
@@ -662,16 +704,25 @@ var PhysicalShelf = /** @class */ (function () {
             emoji.innerText = "\u274C"; // red crossmark
         }
         div.append(emoji);
-        var _loop_2 = function (i) {
-            var card_stack = card_stacks[i];
-            var physical_card_stack = new PhysicalCardStack(card_stack);
-            physical_card_stack.set_card_click_callback(function (card_index) {
-                _this.split_card_off_stack({ stack_index: i, card_index: card_index });
+        var _loop_2 = function (stack_index) {
+            var self_1 = this_1;
+            var card_stack = card_stacks[stack_index];
+            var stack_location = new StackLocation({
+                shelf_index: shelf_index,
+                stack_index: stack_index,
+            });
+            var physical_card_stack = new PhysicalCardStack(stack_location, card_stack);
+            physical_card_stack.set_card_click_callback(function (card_location) {
+                self_1.split_card_off_stack({
+                    stack_index: card_location.stack_index,
+                    card_index: card_location.card_index,
+                });
             });
             div.append(physical_card_stack.dom());
         };
-        for (var i = 0; i < card_stacks.length; ++i) {
-            _loop_2(i);
+        var this_1 = this;
+        for (var stack_index = 0; stack_index < card_stacks.length; ++stack_index) {
+            _loop_2(stack_index);
         }
     };
     PhysicalShelf.prototype.split_card_off_stack = function (info) {
@@ -689,9 +740,10 @@ var PhysicalBookCase = /** @class */ (function () {
         this.book_case = book_case;
         this.div = this.make_div();
         this.physical_shelves = [];
-        for (var _i = 0, _a = book_case.shelves; _i < _a.length; _i++) {
-            var shelf = _a[_i];
-            var physical_shelf = new PhysicalShelf(shelf);
+        var shelves = book_case.shelves;
+        for (var shelf_index = 0; shelf_index < shelves.length; ++shelf_index) {
+            var shelf = shelves[shelf_index];
+            var physical_shelf = new PhysicalShelf(shelf_index, shelf);
             this.physical_shelves.push(physical_shelf);
         }
     }
@@ -706,11 +758,12 @@ var PhysicalBookCase = /** @class */ (function () {
     PhysicalBookCase.prototype.populate = function () {
         var div = this.div;
         var book_case = this.book_case;
+        var physical_shelves = this.physical_shelves;
         var heading = document.createElement("h3");
         heading.innerText = "Shelves";
         div.append(heading);
-        for (var _i = 0, _a = this.physical_shelves; _i < _a.length; _i++) {
-            var physical_shelf = _a[_i];
+        for (var _i = 0, physical_shelves_1 = physical_shelves; _i < physical_shelves_1.length; _i++) {
+            var physical_shelf = physical_shelves_1[_i];
             div.append(physical_shelf.dom());
         }
     };
@@ -826,7 +879,12 @@ var PhysicalExample = /** @class */ (function () {
     }
     PhysicalExample.prototype.dom = function () {
         var example = this.example;
-        var physical_stack = new PhysicalCardStack(example.stack);
+        // TODO: stop using PhysicalCardStack and just render manually
+        var fake_stack_location = new StackLocation({
+            shelf_index: 0,
+            stack_index: 0,
+        });
+        var physical_stack = new PhysicalCardStack(fake_stack_location, example.stack);
         var div = document.createElement("div");
         div.style.paddingBottom = "11px";
         var heading = document.createElement("div");

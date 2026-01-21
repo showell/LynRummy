@@ -748,15 +748,74 @@ class PhysicalCard {
     }
 }
 
+class ShelfCardLocation {
+    shelf_index: number;
+    stack_index: number;
+    card_index: number;
+
+    constructor(info: {
+        shelf_index: number;
+        stack_index: number;
+        card_index: number;
+    }) {
+        this.shelf_index = info.shelf_index;
+        this.stack_index = info.stack_index;
+        this.card_index = info.card_index;
+    }
+}
+
+class StackLocation {
+    shelf_index: number;
+    stack_index: number;
+
+    constructor(info: { shelf_index: number; stack_index: number }) {
+        this.shelf_index = info.shelf_index;
+        this.stack_index = info.stack_index;
+    }
+}
+
+class PhysicalShelfCard {
+    card_location: ShelfCardLocation;
+    physical_card: PhysicalCard;
+
+    constructor(card_location: ShelfCardLocation, physical_card: PhysicalCard) {
+        this.card_location = card_location;
+        this.physical_card = physical_card;
+    }
+
+    dom(): HTMLElement {
+        return this.physical_card.dom();
+    }
+}
+
 class PhysicalCardStack {
+    stack_location: StackLocation;
     stack: CardStack;
     physical_card_nodes: HTMLElement[];
 
-    constructor(stack: CardStack) {
+    constructor(stack_location: StackLocation, stack: CardStack) {
+        this.stack_location = stack_location;
         this.stack = stack;
-        this.physical_card_nodes = this.stack.cards.map((card) => {
-            return new PhysicalCard(card).dom();
-        });
+        this.physical_card_nodes = [];
+
+        const cards = stack.cards;
+        const physical_card_nodes = this.physical_card_nodes;
+
+        for (let card_index = 0; card_index < cards.length; ++card_index) {
+            const card = cards[card_index];
+            const card_location = new ShelfCardLocation({
+                shelf_index: stack_location.shelf_index,
+                stack_index: stack_location.stack_index,
+                card_index,
+            });
+
+            const physical_card = new PhysicalCard(card);
+            const node = new PhysicalShelfCard(
+                card_location,
+                physical_card,
+            ).dom();
+            physical_card_nodes.push(node);
+        }
     }
 
     dom(): HTMLElement {
@@ -773,19 +832,27 @@ class PhysicalCardStack {
         return div;
     }
 
-    set_card_click_callback(callback: (i: number) => void) {
+    set_card_click_callback(
+        callback: (card_location: ShelfCardLocation) => void,
+    ) {
         const physical_card_nodes = this.physical_card_nodes;
+        const stack_location = this.stack_location;
 
         if (physical_card_nodes.length <= 1) {
             // we want to drag it, not split it off
             return;
         }
 
-        for (const i of [0, physical_card_nodes.length - 1]) {
-            const physical_card_node = physical_card_nodes[i];
+        for (const card_index of [0, physical_card_nodes.length - 1]) {
+            const physical_card_node = physical_card_nodes[card_index];
             physical_card_node.style.cursor = "pointer";
             physical_card_node.addEventListener("click", () => {
-                callback(i);
+                const card_location = new ShelfCardLocation({
+                    shelf_index: stack_location.shelf_index,
+                    stack_index: stack_location.stack_index,
+                    card_index,
+                });
+                callback(card_location);
             });
         }
     }
@@ -804,10 +871,12 @@ class PhysicalCardStack {
 }
 
 class PhysicalShelf {
+    shelf_index: number;
     shelf: Shelf;
     div: HTMLElement;
 
-    constructor(shelf: Shelf) {
+    constructor(shelf_index: number, shelf: Shelf) {
+        this.shelf_index = shelf_index;
         this.shelf = shelf;
         this.div = this.make_div();
     }
@@ -832,6 +901,7 @@ class PhysicalShelf {
 
     populate(): void {
         const div = this.div;
+        const shelf_index = this.shelf_index;
         const shelf = this.shelf;
         const card_stacks = shelf.card_stacks;
 
@@ -848,12 +918,31 @@ class PhysicalShelf {
         }
         div.append(emoji);
 
-        for (let i = 0; i < card_stacks.length; ++i) {
-            const card_stack = card_stacks[i];
-            const physical_card_stack = new PhysicalCardStack(card_stack);
-            physical_card_stack.set_card_click_callback((card_index) => {
-                this.split_card_off_stack({ stack_index: i, card_index });
+        for (
+            let stack_index = 0;
+            stack_index < card_stacks.length;
+            ++stack_index
+        ) {
+            const self = this;
+            const card_stack = card_stacks[stack_index];
+            const stack_location = new StackLocation({
+                shelf_index,
+                stack_index,
             });
+            const physical_card_stack = new PhysicalCardStack(
+                stack_location,
+                card_stack,
+            );
+
+            physical_card_stack.set_card_click_callback(
+                (card_location: ShelfCardLocation) => {
+                    self.split_card_off_stack({
+                        stack_index: card_location.stack_index,
+                        card_index: card_location.card_index,
+                    });
+                },
+            );
+
             div.append(physical_card_stack.dom());
         }
     }
@@ -876,12 +965,16 @@ class PhysicalBookCase {
     book_case: BookCase;
     div: HTMLElement;
     physical_shelves: PhysicalShelf[];
+
     constructor(book_case: BookCase) {
         this.book_case = book_case;
         this.div = this.make_div();
         this.physical_shelves = [];
-        for (const shelf of book_case.shelves) {
-            const physical_shelf = new PhysicalShelf(shelf);
+        const shelves = book_case.shelves;
+
+        for (let shelf_index = 0; shelf_index < shelves.length; ++shelf_index) {
+            const shelf = shelves[shelf_index];
+            const physical_shelf = new PhysicalShelf(shelf_index, shelf);
             this.physical_shelves.push(physical_shelf);
         }
     }
@@ -899,12 +992,13 @@ class PhysicalBookCase {
     populate(): void {
         const div = this.div;
         const book_case = this.book_case;
+        const physical_shelves = this.physical_shelves;
 
         const heading = document.createElement("h3");
         heading.innerText = "Shelves";
 
         div.append(heading);
-        for (const physical_shelf of this.physical_shelves) {
+        for (const physical_shelf of physical_shelves) {
             div.append(physical_shelf.dom());
         }
     }
@@ -1041,7 +1135,15 @@ class PhysicalExample {
 
     dom(): Node {
         const example = this.example;
-        const physical_stack = new PhysicalCardStack(example.stack);
+        // TODO: stop using PhysicalCardStack and just render manually
+        const fake_stack_location = new StackLocation({
+            shelf_index: 0,
+            stack_index: 0,
+        });
+        const physical_stack = new PhysicalCardStack(
+            fake_stack_location,
+            example.stack,
+        );
 
         const div = document.createElement("div");
         div.style.paddingBottom = "11px";
