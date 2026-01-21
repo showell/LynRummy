@@ -1250,14 +1250,16 @@ function heading_for_example_card_stack(opts: {
 }
 
 function div_for_example_card_stack(stack: CardStack): HTMLElement {
-    // TODO: stop using PhysicalCardStack and just render manually
-    const fake_stack_location = new StackLocation({
-        shelf_index: 0,
-        stack_index: 0,
-    });
-    const physical_stack = new PhysicalCardStack(fake_stack_location, stack);
+    const physical_shelf_cards = this.physical_shelf_cards;
 
-    return physical_stack.dom();
+    const div = document.createElement("div");
+
+    for (const card of stack.cards) {
+        const physical_card = new PhysicalCard(card);
+        div.append(physical_card.dom());
+    }
+
+    return div;
 }
 
 function color_for_example_stack(stack: CardStack): string {

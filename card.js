@@ -939,13 +939,14 @@ function heading_for_example_card_stack(opts) {
     return heading;
 }
 function div_for_example_card_stack(stack) {
-    // TODO: stop using PhysicalCardStack and just render manually
-    var fake_stack_location = new StackLocation({
-        shelf_index: 0,
-        stack_index: 0,
-    });
-    var physical_stack = new PhysicalCardStack(fake_stack_location, stack);
-    return physical_stack.dom();
+    var physical_shelf_cards = this.physical_shelf_cards;
+    var div = document.createElement("div");
+    for (var _i = 0, _a = stack.cards; _i < _a.length; _i++) {
+        var card = _a[_i];
+        var physical_card = new PhysicalCard(card);
+        div.append(physical_card.dom());
+    }
+    return div;
 }
 function color_for_example_stack(stack) {
     switch (stack.stack_type) {
