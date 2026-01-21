@@ -707,14 +707,18 @@ var PhysicalCardStack = /** @class */ (function () {
         var div = document.createElement("div");
         div.style.marginRight = "20px";
         div.addEventListener("click", function () {
-            if (self.selected) {
-                self.show_as_un_selected();
-            }
-            else {
-                self.show_as_selected();
-            }
+            self.toggle();
         });
         return div;
+    };
+    PhysicalCardStack.prototype.toggle = function () {
+        // This may soon be modified.
+        if (this.selected) {
+            this.show_as_un_selected();
+        }
+        else {
+            this.show_as_selected();
+        }
     };
     PhysicalCardStack.prototype.show_as_selected = function () {
         this.selected = true;

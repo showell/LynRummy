@@ -950,14 +950,19 @@ class PhysicalCardStack {
         div.style.marginRight = "20px";
 
         div.addEventListener("click", () => {
-            if (self.selected) {
-                self.show_as_un_selected();
-            } else {
-                self.show_as_selected();
-            }
+            self.toggle();
         });
 
         return div;
+    }
+
+    toggle(): void {
+        // This may soon be modified.
+        if (this.selected) {
+            this.show_as_un_selected();
+        } else {
+            this.show_as_selected();
+        }
     }
 
     show_as_selected(): void {
