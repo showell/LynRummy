@@ -344,6 +344,9 @@ var CardStack = /** @class */ (function () {
         var cards = this.cards.concat(other_stack.cards);
         return new CardStack(cards);
     };
+    CardStack.prototype.incomplete = function () {
+        return this.stack_type === "incomplete" /* CardStackType.INCOMPLETE */;
+    };
     CardStack.prototype.problematic = function () {
         return (this.stack_type === "bogus" /* CardStackType.BOGUS */ ||
             this.stack_type === "dup" /* CardStackType.DUP */);
@@ -381,10 +384,8 @@ var Shelf = /** @class */ (function () {
         var card_stacks = this.card_stacks;
         for (var _i = 0, card_stacks_1 = card_stacks; _i < card_stacks_1.length; _i++) {
             var card_stack = card_stacks_1[_i];
-            if (card_stack.stack_type === "dup" /* CardStackType.DUP */ ||
-                card_stack.stack_type === "incomplete" /* CardStackType.INCOMPLETE */ ||
-                card_stack.stack_type === "bogus" /* CardStackType.BOGUS */ // just in case
-            ) {
+            if (card_stack.incomplete() ||
+                card_stack.problematic()) {
                 return false;
             }
         }

@@ -440,6 +440,10 @@ class CardStack {
         return new CardStack(cards);
     }
 
+    incomplete(): boolean {
+        return this.stack_type === CardStackType.INCOMPLETE;
+    }
+
     problematic(): boolean {
         return (
             this.stack_type === CardStackType.BOGUS ||
@@ -495,11 +499,7 @@ class Shelf {
         const card_stacks = this.card_stacks;
 
         for (const card_stack of card_stacks) {
-            if (
-                card_stack.stack_type === CardStackType.DUP ||
-                card_stack.stack_type === CardStackType.INCOMPLETE ||
-                card_stack.stack_type === CardStackType.BOGUS // just in case
-            ) {
+            if (card_stack.incomplete() || card_stack.problematic()) {
                 return false;
             }
         }
