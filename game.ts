@@ -539,6 +539,7 @@ class BookCase {
         return result;
     }
 
+    // TODO: pass in StackLocation mini-objects
     merge_card_stacks(info: {
         source_shelf_index: number;
         source_stack_index: number;
@@ -584,6 +585,9 @@ class BookCase {
 }
 
 class Deck {
+    // The "top" of the deck is the last index, so
+    // we can do the equivalent of pop, not that it
+    // remotely matters at our scale.
     cards: Card[];
 
     constructor() {
@@ -601,21 +605,28 @@ class Deck {
     take_from_top(cnt: number): Card[] {
         const cards = this.cards;
         const offset = cards.length - cnt;
-        const top_cards = cards.slice(offset);
-        this.cards = cards.slice(0, offset);
+        const top_cards = cards.splice(offset, cnt);
         return top_cards;
     }
 
     pull_card_from_deck(card: Card): void {
-        const cards = this.cards;
+        remove_card_from_array(this.cards, card);
+    }
+}
 
-        for (let i = 0; i < cards.length; ++i) {
-            if (cards[i].equals(card)) {
-                cards.splice(i, 1);
-                return;
-            }
+function remove_card_from_array(cards: Card[], card: Card): void {
+    let found = false;
+
+    for (let i = 0; i < cards.length; ++i) {
+        if (cards[i].equals(card)) {
+            cards.splice(i, 1);
+            found = true;
+            break;
         }
-        throw new Error("unexpected");
+    }
+
+    if (!found) {
+        throw new Error("Card to be removed is not present in the array!");
     }
 }
 
@@ -630,18 +641,8 @@ class Hand {
         this.cards = this.cards.concat(cards);
     }
 
-    remove_card_from_hand(card: Card) {
-        let found = false;
-        for (let i = 0; i < this.cards.length; ++i) {
-            if (this.cards[i].equals(card)) {
-                this.cards.splice(i, 1);
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            throw new Error("Card to be moved is not present in the Hand!");
-        }
+    remove_card_from_hand(card: Card): void {
+        remove_card_from_array(this.cards, card);
     }
 }
 

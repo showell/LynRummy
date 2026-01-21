@@ -413,6 +413,7 @@ var BookCase = /** @class */ (function () {
         }
         return result;
     };
+    // TODO: pass in StackLocation mini-objects
     BookCase.prototype.merge_card_stacks = function (info) {
         var source_shelf_index = info.source_shelf_index, source_stack_index = info.source_stack_index, target_shelf_index = info.target_shelf_index, target_stack_index = info.target_stack_index;
         var shelves = this.shelves;
@@ -449,22 +450,27 @@ var Deck = /** @class */ (function () {
     Deck.prototype.take_from_top = function (cnt) {
         var cards = this.cards;
         var offset = cards.length - cnt;
-        var top_cards = cards.slice(offset);
-        this.cards = cards.slice(0, offset);
+        var top_cards = cards.splice(offset, cnt);
         return top_cards;
     };
     Deck.prototype.pull_card_from_deck = function (card) {
-        var cards = this.cards;
-        for (var i = 0; i < cards.length; ++i) {
-            if (cards[i].equals(card)) {
-                cards.splice(i, 1);
-                return;
-            }
-        }
-        throw new Error("unexpected");
+        remove_card_from_array(this.cards, card);
     };
     return Deck;
 }());
+function remove_card_from_array(cards, card) {
+    var found = false;
+    for (var i = 0; i < cards.length; ++i) {
+        if (cards[i].equals(card)) {
+            cards.splice(i, 1);
+            found = true;
+            break;
+        }
+    }
+    if (!found) {
+        throw new Error("Card to be removed is not present in the array!");
+    }
+}
 var Hand = /** @class */ (function () {
     function Hand() {
         this.cards = [];
@@ -473,17 +479,7 @@ var Hand = /** @class */ (function () {
         this.cards = this.cards.concat(cards);
     };
     Hand.prototype.remove_card_from_hand = function (card) {
-        var found = false;
-        for (var i = 0; i < this.cards.length; ++i) {
-            if (this.cards[i].equals(card)) {
-                this.cards.splice(i, 1);
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            throw new Error("Card to be moved is not present in the Hand!");
-        }
+        remove_card_from_array(this.cards, card);
     };
     return Hand;
 }());
@@ -1114,7 +1110,8 @@ function has_duplicate_cards(cards) {
     if (cards.length <= 1) {
         return false;
     }
-    return (any_dup_card(cards[0], cards.slice(1)) || has_duplicate_cards(cards.slice(1)));
+    return (any_dup_card(cards[0], cards.slice(1)) ||
+        has_duplicate_cards(cards.slice(1)));
 }
 function follows_consistent_pattern(cards, stack_type) {
     if (cards.length <= 1) {
