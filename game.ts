@@ -57,6 +57,11 @@ const enum CardValue {
     KING = 13,
 }
 
+const enum OriginDeck {
+    DECK_ONE,
+    DECK_TWO,
+}
+
 const enum Suit {
     CLUB = 0,
     DIAMOND = 1,
@@ -329,19 +334,25 @@ const all_card_values = [
 function build_full_double_deck(): Card[] {
     // Returns a shuffled deck of 2 packs of normal cards.
 
-    function suit_run(suit: Suit) {
+    function suit_run(suit: Suit, origin_deck: OriginDeck) {
         return all_card_values.map(
-            (card_value) => new Card(card_value, suit, CardState.IN_DECK),
+            (card_value) =>
+                new Card(card_value, suit, CardState.IN_DECK, origin_deck),
         );
     }
 
-    const all_runs = all_suits.map((suit) => suit_run(suit));
+    const all_runs1 = all_suits.map((suit) =>
+        suit_run(suit, OriginDeck.DECK_ONE),
+    );
+    const all_runs2 = all_suits.map((suit) =>
+        suit_run(suit, OriginDeck.DECK_TWO),
+    );
 
     // 2 decks
-    const all_runs2 = [...all_runs, ...all_runs];
+    const all_runs = [...all_runs1, ...all_runs2];
 
     // Use the old-school idiom to flatten the array.
-    const all_cards = all_runs2.reduce((acc, lst) => acc.concat(lst));
+    const all_cards = all_runs.reduce((acc, lst) => acc.concat(lst));
 
     return shuffle(all_cards);
 }
@@ -359,12 +370,19 @@ class Card {
     value: CardValue;
     color: CardColor;
     state: CardState;
+    origin_deck: OriginDeck;
 
-    constructor(value: CardValue, suit: Suit, state: CardState) {
+    constructor(
+        value: CardValue,
+        suit: Suit,
+        state: CardState,
+        origin_deck: OriginDeck,
+    ) {
         this.value = value;
         this.suit = suit;
         this.color = card_color(suit);
         this.state = state;
+        this.origin_deck = origin_deck;
     }
 
     str(): string {
@@ -372,6 +390,7 @@ class Card {
     }
 
     // equals doesn't care about the state of the card
+    // and the original deck
     equals(other_card: Card): boolean {
         return this.value === other_card.value && this.suit === other_card.suit;
     }
@@ -400,18 +419,18 @@ class Card {
         return CardStackType.BOGUS;
     }
 
-    static from(label: string, state: CardState): Card {
+    static from(
+        label: string,
+        state: CardState,
+        origin_deck: OriginDeck,
+    ): Card {
         const value = value_for(label[0]);
         const suit = suit_for(label[1]);
-        return new Card(value, suit, state);
+        return new Card(value, suit, state, origin_deck);
     }
 
-    static from_deck(label: string) {
-        return this.from(label, CardState.IN_DECK);
-    }
-
-    static from_board(label: string) {
-        return this.from(label, CardState.FIRMLY_ON_BOARD);
+    static from_board(label: string, origin_deck: OriginDeck) {
+        return this.from(label, CardState.FIRMLY_ON_BOARD, origin_deck);
     }
 }
 
@@ -461,9 +480,11 @@ class CardStack {
         return undefined;
     }
 
-    static from(shorthand: string): CardStack {
+    static from(shorthand: string, origin_deck: OriginDeck): CardStack {
         const card_labels = shorthand.split(",");
-        const cards = card_labels.map((label) => Card.from_board(label));
+        const cards = card_labels.map((label) =>
+            Card.from_board(label, origin_deck),
+        );
         return new CardStack(cards);
     }
 }
@@ -529,9 +550,9 @@ class Shelf {
         this.card_stacks.push(new CardStack([card]));
     }
 
-    static from(shorthand: string): Shelf {
+    static from(shorthand: string, origin_deck: OriginDeck): Shelf {
         const sigs = shorthand.split(" | ");
-        const card_stacks = sigs.map((sig) => CardStack.from(sig));
+        const card_stacks = sigs.map((sig) => CardStack.from(sig, origin_deck));
         return new Shelf(card_stacks);
     }
 }
@@ -768,17 +789,19 @@ function empty_shelf(): Shelf {
 
 function initial_book_case(): BookCase {
     const shelf1 = new Shelf([
-        CardStack.from("KS,AS,2S,3S"),
-        CardStack.from("AC,AD,AH"),
+        CardStack.from("KS,AS,2S,3S", OriginDeck.DECK_ONE),
+        CardStack.from("AC,AD,AH", OriginDeck.DECK_ONE),
     ]);
 
     const shelf2 = new Shelf([
-        CardStack.from("7S,7D,7C"),
-        CardStack.from("2C,3D,4C,5H"),
-        CardStack.from("6S"),
+        CardStack.from("7S,7D,7C", OriginDeck.DECK_ONE),
+        CardStack.from("2C,3D,4C,5H", OriginDeck.DECK_ONE),
+        CardStack.from("6S", OriginDeck.DECK_ONE),
     ]);
 
-    const shelf3 = new Shelf([CardStack.from("TD,JD,QD,KD")]);
+    const shelf3 = new Shelf([
+        CardStack.from("TD,JD,QD,KD", OriginDeck.DECK_ONE),
+    ]);
 
     const shelves = [empty_shelf(), shelf1, shelf2, shelf3];
 
@@ -825,7 +848,7 @@ class Example {
         expected_type: CardStackType,
     ) {
         this.comment = comment;
-        this.stack = CardStack.from(shorthand);
+        this.stack = CardStack.from(shorthand, OriginDeck.DECK_ONE);
         this.expected_type = expected_type;
         // test it even at runtime
         if (this.stack.stack_type !== expected_type) {
@@ -1796,8 +1819,8 @@ function gui() {
 
 function example_book_case() {
     return new BookCase([
-        Shelf.from("AC"),
-        Shelf.from("AH | 2C | 5S,6S,7S | 4D | 8S,9S | 6C"),
+        Shelf.from("AC", OriginDeck.DECK_ONE),
+        Shelf.from("AH | 2C | 5S,6S,7S | 4D | 8S,9S | 6C", OriginDeck.DECK_ONE),
     ]);
 }
 
