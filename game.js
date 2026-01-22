@@ -649,7 +649,8 @@ var PhysicalCard = /** @class */ (function () {
         span.style.display = "inline-block";
         span.style.minWidth = "21px";
         span.style.minHeight = "38px";
-        if (this.card.state === CardState.FRESHLY_DRAWN) {
+        if (this.card.state === CardState.FRESHLY_DRAWN ||
+            this.card.state === CardState.FRESHLY_PLAYED) {
             span.style.backgroundColor = new_card_color();
         }
         else {
