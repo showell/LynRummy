@@ -1174,12 +1174,15 @@ class PhysicalBookCase {
         }
     }
 
-    select_stack(stack_location: StackLocation): void {
-        // TODO: make helper to find stack
+    physical_card_stack_from(stack_location: StackLocation): PhysicalCardStack {
         const { shelf_index, stack_index } = stack_location;
         const physical_shelf = this.physical_shelves[shelf_index];
+        return physical_shelf.physical_card_stacks[stack_index];
+    }
+
+    select_stack(stack_location: StackLocation): void {
         const physical_card_stack =
-            physical_shelf.physical_card_stacks[stack_index];
+            this.physical_card_stack_from(stack_location);
 
         // TODO: turn off card click handlers
         this.selected_stack = stack_location;

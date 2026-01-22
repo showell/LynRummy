@@ -871,11 +871,13 @@ var PhysicalBookCase = /** @class */ (function () {
             this.attempt_stack_merge(stack_location);
         }
     };
-    PhysicalBookCase.prototype.select_stack = function (stack_location) {
-        // TODO: make helper to find stack
+    PhysicalBookCase.prototype.physical_card_stack_from = function (stack_location) {
         var shelf_index = stack_location.shelf_index, stack_index = stack_location.stack_index;
         var physical_shelf = this.physical_shelves[shelf_index];
-        var physical_card_stack = physical_shelf.physical_card_stacks[stack_index];
+        return physical_shelf.physical_card_stacks[stack_index];
+    };
+    PhysicalBookCase.prototype.select_stack = function (stack_location) {
+        var physical_card_stack = this.physical_card_stack_from(stack_location);
         // TODO: turn off card click handlers
         this.selected_stack = stack_location;
         physical_card_stack.show_as_selected();
