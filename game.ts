@@ -849,15 +849,19 @@ class PhysicalCard {
     }
 }
 
+type ClickHandler = (MouseEvent) => void;
+
 class PhysicalShelfCard {
     card_location: ShelfCardLocation;
     physical_card: PhysicalCard;
     card_div: HTMLElement;
+    click_handler: ClickHandler | undefined;
 
     constructor(card_location: ShelfCardLocation, physical_card: PhysicalCard) {
         this.card_location = card_location;
         this.physical_card = physical_card;
         this.card_div = this.physical_card.dom();
+        this.click_handler = undefined;
     }
 
     dom(): HTMLElement {
@@ -870,10 +874,12 @@ class PhysicalShelfCard {
 
         div.style.cursor = "pointer";
 
-        div.addEventListener("click", (e) => {
+        this.click_handler = (e) => {
             physical_game.handle_shelf_card_click(self.card_location);
             e.stopPropagation();
-        });
+        };
+
+        div.addEventListener("click", this.click_handler);
     }
 }
 

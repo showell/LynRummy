@@ -653,6 +653,7 @@ var PhysicalShelfCard = /** @class */ (function () {
         this.card_location = card_location;
         this.physical_card = physical_card;
         this.card_div = this.physical_card.dom();
+        this.click_handler = undefined;
     }
     PhysicalShelfCard.prototype.dom = function () {
         return this.card_div;
@@ -661,10 +662,11 @@ var PhysicalShelfCard = /** @class */ (function () {
         var div = this.card_div;
         var self = this;
         div.style.cursor = "pointer";
-        div.addEventListener("click", function (e) {
+        this.click_handler = function (e) {
             physical_game.handle_shelf_card_click(self.card_location);
             e.stopPropagation();
-        });
+        };
+        div.addEventListener("click", this.click_handler);
     };
     return PhysicalShelfCard;
 }());
