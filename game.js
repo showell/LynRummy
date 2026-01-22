@@ -713,15 +713,6 @@ var PhysicalCardStack = /** @class */ (function () {
         });
         return div;
     };
-    PhysicalCardStack.prototype.toggle = function () {
-        // This may soon be modified.
-        if (this.selected) {
-            this.show_as_un_selected();
-        }
-        else {
-            this.show_as_selected();
-        }
-    };
     PhysicalCardStack.prototype.show_as_selected = function () {
         this.selected = true;
         this.div.style.backgroundColor = "cyan";
@@ -844,6 +835,7 @@ var PhysicalBookCase = /** @class */ (function () {
         this.book_case = book_case;
         this.div = this.make_div();
         this.physical_shelves = this.build_physical_shelves();
+        this.selected_stack = undefined;
     }
     PhysicalBookCase.prototype.build_physical_shelves = function () {
         var physical_game = this.physical_game;
@@ -866,7 +858,32 @@ var PhysicalBookCase = /** @class */ (function () {
         var shelf_index = stack_location.shelf_index, stack_index = stack_location.stack_index;
         var physical_shelf = this.physical_shelves[shelf_index];
         var physical_card_stack = physical_shelf.physical_card_stacks[stack_index];
-        physical_card_stack.toggle();
+        if (this.selected_stack === undefined) {
+            this.selected_stack = stack_location;
+            physical_card_stack.show_as_selected();
+        }
+        else {
+            if (stack_location.equals(this.selected_stack)) {
+                physical_card_stack.show_as_un_selected();
+                this.selected_stack = undefined;
+                return;
+            }
+            var merged = this.book_case.merge_card_stacks({
+                source: this.selected_stack,
+                target: stack_location,
+            });
+            if (merged) {
+                this.populate_shelf(this.selected_stack.shelf_index);
+                this.populate_shelf(shelf_index);
+                this.selected_stack = undefined;
+            }
+            else {
+                alert("Not allowed!");
+            }
+        }
+    };
+    PhysicalBookCase.prototype.populate_shelf = function (shelf_index) {
+        this.physical_shelves[shelf_index].populate();
     };
     PhysicalBookCase.prototype.handle_shelf_card_click = function (card_location) {
         var shelf_index = card_location.shelf_index, stack_index = card_location.stack_index, card_index = card_location.card_index;

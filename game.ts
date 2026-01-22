@@ -958,15 +958,6 @@ class PhysicalCardStack {
         return div;
     }
 
-    toggle(): void {
-        // This may soon be modified.
-        if (this.selected) {
-            this.show_as_un_selected();
-        } else {
-            this.show_as_selected();
-        }
-    }
-
     show_as_selected(): void {
         this.selected = true;
         this.div.style.backgroundColor = "cyan";
@@ -1132,12 +1123,14 @@ class PhysicalBookCase {
     book_case: BookCase;
     div: HTMLElement;
     physical_shelves: PhysicalShelf[];
+    selected_stack: StackLocation | undefined;
 
     constructor(physical_game: PhysicalGame, book_case: BookCase) {
         this.physical_game = physical_game;
         this.book_case = book_case;
         this.div = this.make_div();
         this.physical_shelves = this.build_physical_shelves();
+        this.selected_stack = undefined;
     }
 
     build_physical_shelves(): PhysicalShelf[] {
@@ -1162,10 +1155,38 @@ class PhysicalBookCase {
 
     handle_stack_click(stack_location: StackLocation): void {
         const { shelf_index, stack_index } = stack_location;
+
         const physical_shelf = this.physical_shelves[shelf_index];
         const physical_card_stack =
             physical_shelf.physical_card_stacks[stack_index];
-        physical_card_stack.toggle();
+
+        if (this.selected_stack === undefined) {
+            this.selected_stack = stack_location;
+            physical_card_stack.show_as_selected();
+        } else {
+            if (stack_location.equals(this.selected_stack)) {
+                physical_card_stack.show_as_un_selected();
+                this.selected_stack = undefined;
+                return;
+            }
+
+            const merged = this.book_case.merge_card_stacks({
+                source: this.selected_stack,
+                target: stack_location,
+            });
+
+            if (merged) {
+                this.populate_shelf(this.selected_stack.shelf_index);
+                this.populate_shelf(shelf_index);
+                this.selected_stack = undefined;
+            } else {
+                alert("Not allowed!");
+            }
+        }
+    }
+
+    populate_shelf(shelf_index): void {
+        this.physical_shelves[shelf_index].populate();
     }
 
     handle_shelf_card_click(card_location: ShelfCardLocation) {
