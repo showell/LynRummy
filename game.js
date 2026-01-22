@@ -658,9 +658,19 @@ var PhysicalShelfCard = /** @class */ (function () {
     PhysicalShelfCard.prototype.dom = function () {
         return this.card_div;
     };
+    PhysicalShelfCard.prototype.reset_click_listener = function () {
+        if (this.click_handler === undefined) {
+            return;
+        }
+        this.card_div.removeEventListener("click", this.click_handler);
+        this.click_handler = undefined;
+    };
     PhysicalShelfCard.prototype.add_click_listener = function (physical_game) {
         var div = this.card_div;
         var self = this;
+        this.reset_click_listener(); // there can only be ONE!
+        // TODO: remove this once we make pointers work more at
+        //       the CardStack level
         div.style.cursor = "pointer";
         this.click_handler = function (e) {
             physical_game.handle_shelf_card_click(self.card_location);

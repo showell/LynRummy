@@ -868,10 +868,22 @@ class PhysicalShelfCard {
         return this.card_div;
     }
 
+    reset_click_listener(): void {
+        if (this.click_handler === undefined) {
+            return;
+        }
+        this.card_div.removeEventListener("click", this.click_handler);
+        this.click_handler = undefined;
+    }
+
     add_click_listener(physical_game: PhysicalGame): void {
         const div = this.card_div;
         const self = this;
 
+        this.reset_click_listener(); // there can only be ONE!
+
+        // TODO: remove this once we make pointers work more at
+        //       the CardStack level
         div.style.cursor = "pointer";
 
         this.click_handler = (e) => {
