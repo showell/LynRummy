@@ -227,6 +227,7 @@ function value_for(label: string): CardValue {
         case "K":
             return CardValue.KING;
     }
+    throw new Error("Invalid label");
 }
 
 function successor(val: CardValue): CardValue {
@@ -291,6 +292,7 @@ function suit_for(label: string): Suit {
         case "S":
             return Suit.SPADE;
     }
+    throw new Error("Invalid Suit label");
 }
 
 function card_color(suit: Suit): CardColor {
@@ -576,7 +578,7 @@ class BookCase {
     get_cards(): Card[] {
         const shelves = this.shelves;
 
-        const result = [];
+        const result: Card[] = [];
         for (const shelf of shelves) {
             for (const card_stack of shelf.card_stacks) {
                 for (const card of card_stack.cards) {
@@ -884,7 +886,7 @@ class PhysicalCard {
     }
 }
 
-type ClickHandler = (MouseEvent) => void;
+type ClickHandler = (e: MouseEvent) => void;
 
 class PhysicalShelfCard {
     card_location: ShelfCardLocation;
@@ -958,7 +960,7 @@ function build_physical_shelf_cards(
     stack_location: StackLocation,
     cards: Card[],
 ): PhysicalShelfCard[] {
-    const physical_shelf_cards = [];
+    const physical_shelf_cards: PhysicalShelfCard[] = [];
 
     for (let card_index = 0; card_index < cards.length; ++card_index) {
         let card_position = get_card_position(card_index, cards.length);
@@ -1094,6 +1096,7 @@ class PhysicalShelf {
         this.shelf_index = info.shelf_index;
         this.shelf = info.shelf;
         this.div = this.make_div();
+        this.physical_card_stacks = [];
     }
 
     make_div(): HTMLElement {
@@ -1135,7 +1138,7 @@ class PhysicalShelf {
         const shelf_index = this.shelf_index;
         const card_stacks = this.shelf.card_stacks;
 
-        const physical_card_stacks = [];
+        const physical_card_stacks: PhysicalCardStack[] = [];
 
         for (
             let stack_index = 0;
@@ -1162,7 +1165,7 @@ class PhysicalShelf {
     }
 
     get_all_physical_shelf_cards(): PhysicalShelfCard[] {
-        let physical_cards = [];
+        let physical_cards: PhysicalShelfCard[] = [];
         const physical_card_stacks = this.physical_card_stacks;
 
         for (const physical_card_stack of physical_card_stacks) {
@@ -1206,7 +1209,7 @@ class PhysicalBookCase {
     build_physical_shelves(): PhysicalShelf[] {
         const physical_game = this.physical_game;
         const physical_book_case = this;
-        const physical_shelves = [];
+        const physical_shelves: PhysicalShelf[] = [];
         const shelves = this.book_case.shelves;
 
         for (let shelf_index = 0; shelf_index < shelves.length; ++shelf_index) {
@@ -1224,7 +1227,7 @@ class PhysicalBookCase {
     }
 
     get_all_physical_shelf_cards(): PhysicalShelfCard[] {
-        let physical_cards = [];
+        let physical_cards: PhysicalShelfCard[] = [];
         const physical_shelves = this.physical_shelves;
 
         for (const physical_shelf of physical_shelves) {
@@ -1242,7 +1245,7 @@ class PhysicalBookCase {
 
     handle_stack_click(stack_location: StackLocation): void {
         if (this.in_stack_selection_mode()) {
-            if (stack_location.equals(this.selected_stack)) {
+            if (stack_location.equals(this.selected_stack!)) {
                 this.un_select_stack();
             } else {
                 this.attempt_stack_merge(stack_location);
@@ -1279,7 +1282,7 @@ class PhysicalBookCase {
         }
 
         const physical_card_stack = this.physical_card_stack_from(
-            this.selected_stack,
+            this.selected_stack!,
         );
         physical_card_stack.show_as_un_selected();
         this.selected_stack = undefined;
@@ -1288,7 +1291,7 @@ class PhysicalBookCase {
     attempt_stack_merge(stack_location: StackLocation): void {
         // Our caller ensures that we have a selected stack.
 
-        const selected_stack = this.selected_stack;
+        const selected_stack = this.selected_stack!;
 
         const merged = this.book_case.merge_card_stacks({
             source: selected_stack,
@@ -1304,7 +1307,7 @@ class PhysicalBookCase {
         }
     }
 
-    populate_shelf(shelf_index): void {
+    populate_shelf(shelf_index: number): void {
         this.physical_shelves[shelf_index].populate();
     }
 
@@ -1354,7 +1357,7 @@ class PhysicalBookCase {
 }
 
 function get_sorted_cards_for_suit(suit: Suit, cards: Card[]): Card[] {
-    const suit_cards = [];
+    const suit_cards: Card[] = [];
     for (const card of cards) {
         if (card.suit === suit) {
             suit_cards.push(card);
@@ -1549,8 +1552,6 @@ function heading_for_example_card_stack(opts: {
 }
 
 function div_for_example_card_stack(stack: CardStack): HTMLElement {
-    const physical_shelf_cards = this.physical_shelf_cards;
-
     const div = document.createElement("div");
 
     for (const card of stack.cards) {

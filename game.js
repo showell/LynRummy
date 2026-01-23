@@ -1,3 +1,4 @@
+"use strict";
 /*
     As of January 2026, this is hosted here:
         https://showell.github.io/LynRummy/
@@ -161,6 +162,7 @@ function value_for(label) {
         case "K":
             return 13 /* CardValue.KING */;
     }
+    throw new Error("Invalid label");
 }
 function successor(val) {
     // This is hopefully straightforward code.  Note
@@ -222,6 +224,7 @@ function suit_for(label) {
         case "S":
             return 2 /* Suit.SPADE */;
     }
+    throw new Error("Invalid Suit label");
 }
 function card_color(suit) {
     switch (suit) {
@@ -805,6 +808,7 @@ var PhysicalShelf = /** @class */ (function () {
         this.shelf_index = info.shelf_index;
         this.shelf = info.shelf;
         this.div = this.make_div();
+        this.physical_card_stacks = [];
     }
     PhysicalShelf.prototype.make_div = function () {
         var div = document.createElement("div");
@@ -1151,7 +1155,6 @@ function heading_for_example_card_stack(opts) {
     return heading;
 }
 function div_for_example_card_stack(stack) {
-    var physical_shelf_cards = this.physical_shelf_cards;
     var div = document.createElement("div");
     for (var _i = 0, _a = stack.cards; _i < _a.length; _i++) {
         var card = _a[_i];
