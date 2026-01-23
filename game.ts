@@ -618,8 +618,16 @@ class BookCase {
             return false;
         }
 
+        const is_same_shelf_rightward_merge =
+            source_shelf_index === target_shelf_index &&
+            source_stack_index < target_stack_index;
+
+        const final_index = is_same_shelf_rightward_merge
+            ? target_stack_index - 1
+            : target_stack_index;
+
         source_stacks.splice(source_stack_index, 1);
-        target_stacks[target_stack_index] = merged_stack;
+        target_stacks[final_index] = merged_stack;
 
         return true;
     }
@@ -701,7 +709,6 @@ class PhysicalDeck {
     take_from_top(cnt: number): Card[] {
         const cards = this.deck.take_from_top(cnt);
         this.populate();
-        console.log(cards);
         return cards;
     }
 }
@@ -907,12 +914,22 @@ class PhysicalShelfCard {
     add_click_listener(physical_game: PhysicalGame): void {
         const div = this.card_div;
         const self = this;
+        const card_position = this.card_location.card_position;
+
+        // When you click at a card at either end of a stack,
+        // it gets split off the stack so that the player
+        // can then move that single card to some other stack.
+        // (This is part of what makes the game fun.)
+        //
+        // Other than that, we don't have click handlers on
+        // specific cards (at least for now); instead, users
+        // mostly manipulate full stacks of cards (including
+        // one-card stacks) via PhysicalCardStack.
+        if (card_position !== CardPositionType.AT_END) {
+            return;
+        }
 
         this.reset_click_listener(); // there can only be ONE!
-
-        // TODO: remove this once we make pointers work more at
-        //       the CardStack level
-        div.style.cursor = "pointer";
 
         this.click_handler = (e) => {
             physical_game.handle_shelf_card_click(self.card_location);
@@ -1039,17 +1056,7 @@ class PhysicalCardStack {
         const physical_shelf_cards = this.physical_shelf_cards;
 
         for (const physical_shelf_card of physical_shelf_cards) {
-            const card_position =
-                physical_shelf_card.card_location.card_position;
-
-            // We may soon support other clicks, but for now,
-            // when you click at a card at either end of a stack,
-            // it gets split off the stack so that the player
-            // can then move that single card to some other stack.
-            // (This is part of what makes the game fun.)
-            if (card_position === CardPositionType.AT_END) {
-                physical_shelf_card.add_click_listener(physical_game);
-            }
+            physical_shelf_card.add_click_listener(physical_game);
         }
     }
 }
@@ -1256,14 +1263,21 @@ class PhysicalBookCase {
         const physical_card_stack =
             this.physical_card_stack_from(stack_location);
 
-        console.log(this.get_all_physical_shelf_cards());
-        // TODO: turn off card click handlers
+        for (const physical_shelf_card of this.get_all_physical_shelf_cards()) {
+            physical_shelf_card.reset_click_listener();
+        }
+
         this.selected_stack = stack_location;
         physical_card_stack.show_as_selected();
     }
 
     un_select_stack(): void {
-        // TODO: restore card click handlers
+        const physical_game = this.physical_game;
+
+        for (const physical_shelf_card of this.get_all_physical_shelf_cards()) {
+            physical_shelf_card.add_click_listener(physical_game);
+        }
+
         const physical_card_stack = this.physical_card_stack_from(
             this.selected_stack,
         );
