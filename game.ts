@@ -365,6 +365,7 @@ enum CardState {
     FIRMLY_ON_BOARD,
     FRESHLY_DRAWN,
     FRESHLY_PLAYED,
+    FRESHLY_PLAYED_BY_LAST_PLAYER,
 }
 
 class Card {
@@ -834,14 +835,33 @@ class Game {
 
     // This will age the FRESHLY_DRAWN cards in the current player's hand
     // so that they don't appear FRESHLY_DRAWN on the current player's next turn.
-    age_cards_in_hand() {
+    age_cards_in_hand(): void {
         this.players[this.current_player_index].hand.age_cards();
     }
 
-    complete_turn() {
+    can_finish_turn(): boolean {
+        const did_place_new_cards_on_board = this.book_case
+            .get_cards()
+            .some((card) => card.state === CardState.FRESHLY_PLAYED);
+        if (!did_place_new_cards_on_board) return false;
+
+        return this.book_case.shelves.every((shell) => shell.is_clean());
+    }
+
+    complete_turn(): boolean {
+        if (!this.can_finish_turn()) return false;
         this.age_cards_in_hand();
         this.current_player_index =
             (this.current_player_index + 1) % this.players.length;
+
+        // The freshly played cards by the last player are highlighted
+        // to let the new turn owner know what was done in the previous turn.
+        this.book_case.get_cards().forEach((card) => {
+            if (card.state === CardState.FRESHLY_PLAYED) {
+                card.state = CardState.FRESHLY_PLAYED_BY_LAST_PLAYER;
+            }
+        });
+        return true;
     }
 }
 
@@ -900,7 +920,8 @@ class PhysicalCard {
 
         if (
             this.card.state === CardState.FRESHLY_DRAWN ||
-            this.card.state === CardState.FRESHLY_PLAYED
+            this.card.state === CardState.FRESHLY_PLAYED ||
+            this.card.state === CardState.FRESHLY_PLAYED_BY_LAST_PLAYER
         ) {
             span.style.backgroundColor = new_card_color();
         } else {
@@ -1541,6 +1562,15 @@ class PhysicalGame {
     // ACTION! (We will need to broadcast this when we
     // get to multi-player.)
     move_card_from_hand_to_top_shelf(card: Card): void {
+        // This move will make all the FRESHLY_PLAYED_BY_LAST_PLAYER cards
+        // be FIRMLY_ON_BOARD, which basically means they will lose their highlighting
+        // as the current turn owner has decided to make a "real move" on the board.
+        this.physical_book_case.book_case.get_cards().forEach((card) => {
+            if (card.state === CardState.FRESHLY_PLAYED_BY_LAST_PLAYER) {
+                card.state = CardState.FIRMLY_ON_BOARD;
+            }
+        });
+
         this.current_physical_player().physical_hand.remove_card_from_hand(
             card,
         );
@@ -1562,7 +1592,11 @@ class PhysicalGame {
 
     // ACTION!
     complete_turn() {
-        this.game.complete_turn();
+        if (!this.game.complete_turn()) {
+            alert(
+                "Cannot complete turn! Place at least one card and the keep the board clean; else give up!",
+            );
+        }
         this.populate_player_area();
     }
 

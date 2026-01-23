@@ -284,6 +284,7 @@ var CardState;
     CardState[CardState["FIRMLY_ON_BOARD"] = 2] = "FIRMLY_ON_BOARD";
     CardState[CardState["FRESHLY_DRAWN"] = 3] = "FRESHLY_DRAWN";
     CardState[CardState["FRESHLY_PLAYED"] = 4] = "FRESHLY_PLAYED";
+    CardState[CardState["FRESHLY_PLAYED_BY_LAST_PLAYER"] = 5] = "FRESHLY_PLAYED_BY_LAST_PLAYER";
 })(CardState || (CardState = {}));
 var Card = /** @class */ (function () {
     function Card(value, suit, state, origin_deck) {
@@ -628,10 +629,28 @@ var Game = /** @class */ (function () {
     Game.prototype.age_cards_in_hand = function () {
         this.players[this.current_player_index].hand.age_cards();
     };
+    Game.prototype.can_finish_turn = function () {
+        var did_place_new_cards_on_board = this.book_case
+            .get_cards()
+            .some(function (card) { return card.state === CardState.FRESHLY_PLAYED; });
+        if (!did_place_new_cards_on_board)
+            return false;
+        return this.book_case.shelves.every(function (shell) { return shell.is_clean(); });
+    };
     Game.prototype.complete_turn = function () {
+        if (!this.can_finish_turn())
+            return false;
         this.age_cards_in_hand();
         this.current_player_index =
             (this.current_player_index + 1) % this.players.length;
+        // The freshly played cards by the last player are highlighted
+        // to let the new turn owner know what was done in the previous turn.
+        this.book_case.get_cards().forEach(function (card) {
+            if (card.state === CardState.FRESHLY_PLAYED) {
+                card.state = CardState.FRESHLY_PLAYED_BY_LAST_PLAYER;
+            }
+        });
+        return true;
     };
     return Game;
 }());
@@ -676,7 +695,8 @@ var PhysicalCard = /** @class */ (function () {
         span.style.minWidth = "21px";
         span.style.minHeight = "38px";
         if (this.card.state === CardState.FRESHLY_DRAWN ||
-            this.card.state === CardState.FRESHLY_PLAYED) {
+            this.card.state === CardState.FRESHLY_PLAYED ||
+            this.card.state === CardState.FRESHLY_PLAYED_BY_LAST_PLAYER) {
             span.style.backgroundColor = new_card_color();
         }
         else {
@@ -1146,6 +1166,14 @@ var PhysicalGame = /** @class */ (function () {
     // ACTION! (We will need to broadcast this when we
     // get to multi-player.)
     PhysicalGame.prototype.move_card_from_hand_to_top_shelf = function (card) {
+        // This move will make all the FRESHLY_PLAYED_BY_LAST_PLAYER cards
+        // be FIRMLY_ON_BOARD, which basically means they will lose their highlighting
+        // as the current turn owner has decided to make a "real move" on the board.
+        this.physical_book_case.book_case.get_cards().forEach(function (card) {
+            if (card.state === CardState.FRESHLY_PLAYED_BY_LAST_PLAYER) {
+                card.state = CardState.FIRMLY_ON_BOARD;
+            }
+        });
         this.current_physical_player().physical_hand.remove_card_from_hand(card);
         card.state = CardState.FRESHLY_PLAYED;
         this.physical_book_case.add_card_to_top_shelf(card);
@@ -1162,7 +1190,9 @@ var PhysicalGame = /** @class */ (function () {
     };
     // ACTION!
     PhysicalGame.prototype.complete_turn = function () {
-        this.game.complete_turn();
+        if (!this.game.complete_turn()) {
+            alert("Cannot complete turn! Place at least one card and the keep the board clean; else give up!");
+        }
         this.populate_player_area();
     };
     PhysicalGame.prototype.populate_player_area = function () {
