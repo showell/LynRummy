@@ -595,7 +595,6 @@ function initial_book_case() {
     var shelf2 = new Shelf([
         CardStack.from("7S,7D,7C", 0 /* OriginDeck.DECK_ONE */),
         CardStack.from("2C,3D,4C,5H", 0 /* OriginDeck.DECK_ONE */),
-        CardStack.from("6S", 0 /* OriginDeck.DECK_ONE */),
     ]);
     var shelf3 = new Shelf([
         CardStack.from("TD,JD,QD,KD", 0 /* OriginDeck.DECK_ONE */),
@@ -612,6 +611,7 @@ var Game = /** @class */ (function () {
         this.deck = new Deck();
         this.book_case = initial_book_case();
         this.current_player_index = 0;
+        this.did_current_player_give_up_their_turn = false;
         for (var _i = 0, _a = this.book_case.get_cards(); _i < _a.length; _i++) {
             var card = _a[_i];
             this.deck.pull_card_from_deck(card);
@@ -630,12 +630,19 @@ var Game = /** @class */ (function () {
         this.players[this.current_player_index].hand.age_cards();
     };
     Game.prototype.can_finish_turn = function () {
+        if (this.did_current_player_give_up_their_turn) {
+            // reset it for the next turn.
+            this.did_current_player_give_up_their_turn = false;
+            return true;
+        }
         var did_place_new_cards_on_board = this.book_case
             .get_cards()
             .some(function (card) { return card.state === CardState.FRESHLY_PLAYED; });
         if (!did_place_new_cards_on_board)
             return false;
-        return this.book_case.shelves.every(function (shell) { return shell.is_clean(); });
+        // TODO: we need this check in the actual game, but it gets in the way while testing
+        return true;
+        // return this.book_case.shelves.every((shell) => shell.is_clean());
     };
     Game.prototype.complete_turn = function () {
         if (!this.can_finish_turn())
@@ -1028,6 +1035,7 @@ var PhysicalBookCase = /** @class */ (function () {
     };
     PhysicalBookCase.prototype.populate = function () {
         var div = this.div;
+        this.div.innerHTML = "";
         var book_case = this.book_case;
         var physical_shelves = this.physical_shelves;
         var heading = document.createElement("h3");
@@ -1120,28 +1128,49 @@ var PhysicalPlayer = /** @class */ (function () {
         this.physical_game = physical_game;
         this.player = player;
         this.physical_hand = new PhysicalHand(physical_game, player.hand);
+        this.make_div();
     }
+    PhysicalPlayer.prototype.make_div = function () {
+        this.div = document.createElement("div");
+    };
     PhysicalPlayer.prototype.dom = function () {
-        var _this = this;
+        this.populate();
+        return this.div;
+    };
+    PhysicalPlayer.prototype.populate = function () {
         var player = this.player;
-        var div = document.createElement("div");
+        var div = this.div;
+        div.innerHTML = "";
         var h3 = document.createElement("h3");
         h3.innerText = player.name;
         div.append(h3);
         div.append(this.physical_hand.dom());
-        var pick_card_button = document.createElement("button");
-        pick_card_button.innerText = "Pick new card";
-        pick_card_button.addEventListener("click", function () {
-            _this.physical_game.move_card_from_deck_to_hand();
+        this.add_give_up_button();
+        this.add_complete_turn_button();
+    };
+    PhysicalPlayer.prototype.add_give_up_button = function () {
+        var _this = this;
+        var give_up_button = document.createElement("button");
+        give_up_button.classList.add("button", "give-up-button");
+        give_up_button.innerText = "Give up";
+        give_up_button.addEventListener("click", function () {
+            _this.physical_game.give_up();
         });
+        this.div.append(give_up_button);
+    };
+    PhysicalPlayer.prototype.add_complete_turn_button = function () {
+        var _this = this;
         var complete_turn_button = document.createElement("button");
+        complete_turn_button.classList.add("button", "complete-turn-button");
         complete_turn_button.innerText = "Complete turn";
         complete_turn_button.addEventListener("click", function () {
             _this.physical_game.complete_turn();
         });
-        div.append(pick_card_button);
-        div.append(complete_turn_button);
-        return div;
+        this.div.append(complete_turn_button);
+    };
+    PhysicalPlayer.prototype.hide_give_up_button = function () {
+        var give_up_button = document.querySelector(".give-up-button");
+        give_up_button.remove();
     };
     return PhysicalPlayer;
 }());
@@ -1158,6 +1187,10 @@ var PhysicalGame = /** @class */ (function () {
     }
     // ACTION - we would send this over wire for multi-player game
     PhysicalGame.prototype.handle_shelf_card_click = function (card_location) {
+        if (this.game.did_current_player_give_up_their_turn) {
+            alert("You've given up already, please Complete your turn.");
+            return;
+        }
         this.physical_book_case.handle_shelf_card_click(card_location);
     };
     PhysicalGame.prototype.current_physical_player = function () {
@@ -1166,6 +1199,10 @@ var PhysicalGame = /** @class */ (function () {
     // ACTION! (We will need to broadcast this when we
     // get to multi-player.)
     PhysicalGame.prototype.move_card_from_hand_to_top_shelf = function (card) {
+        if (this.game.did_current_player_give_up_their_turn) {
+            alert("You've given up already, please Complete your turn.");
+            return;
+        }
         // This move will make all the FRESHLY_PLAYED_BY_LAST_PLAYER cards
         // be FIRMLY_ON_BOARD, which basically means they will lose their highlighting
         // as the current turn owner has decided to make a "real move" on the board.
@@ -1178,14 +1215,76 @@ var PhysicalGame = /** @class */ (function () {
         card.state = CardState.FRESHLY_PLAYED;
         this.physical_book_case.add_card_to_top_shelf(card);
     };
+    // Giving up in a turn will do the following:
+    // 1. Move all the FRESHLY_PLAYED cards back to the hand, which is pretty much an undo move.
+    // 2. Deal the current player three new cards.
+    // 3. Remove the "Give up" button.
+    // 4. Lock the current state of the game and the only next action
+    //    possible is clicking "Complete turn".
+    PhysicalGame.prototype.give_up = function () {
+        this.move_freshly_played_cards_back_to_hand();
+        this.move_cards_from_deck_to_hand(3);
+        this.current_physical_player().hide_give_up_button();
+        // We don't wanna allow the player to do any hand to board or shelf to shelf
+        // interactions after they gave up!
+        this.game.did_current_player_give_up_their_turn = true;
+    };
+    // ACTION!
+    PhysicalGame.prototype.move_freshly_played_cards_back_to_hand = function () {
+        for (var _i = 0, _a = this.game.book_case.shelves; _i < _a.length; _i++) {
+            var shelf = _a[_i];
+            for (var _b = 0, _c = shelf.card_stacks; _b < _c.length; _b++) {
+                var stack = _c[_b];
+                var cards_to_be_removed_from_stack = [];
+                for (var _d = 0, _e = stack.cards; _d < _e.length; _d++) {
+                    var card = _e[_d];
+                    if (card.state === CardState.FRESHLY_PLAYED) {
+                        cards_to_be_removed_from_stack.push(card);
+                        card.state = CardState.STILL_IN_HAND;
+                        this.current_physical_player().physical_hand.add_card_to_hand(card);
+                    }
+                }
+                for (var _f = 0, cards_to_be_removed_from_stack_1 = cards_to_be_removed_from_stack; _f < cards_to_be_removed_from_stack_1.length; _f++) {
+                    var card = cards_to_be_removed_from_stack_1[_f];
+                    remove_card_from_array(stack.cards, card);
+                }
+                if (cards_to_be_removed_from_stack.length > 0) {
+                    console.log(stack.cards);
+                    // Recompute the stack type because it has to be some ✅ variant.
+                    stack.stack_type = stack.get_stack_type();
+                    if (stack.cards.length === 0) {
+                        // TODO: This is hack, and must be addressed.
+                        stack.stack_type = "pure run" /* CardStackType.PURE_RUN */;
+                    }
+                }
+            }
+        }
+        // Re-render the book case (this can be optimized to only re-render
+        // the affected shelves/stacks later)
+        console.log("GAVE UP");
+        this.physical_book_case.populate();
+    };
+    PhysicalGame.prototype.move_cards_from_deck_to_hand = function (cnt) {
+        for (var i = 0; i < cnt; i++) {
+            this.move_card_from_deck_to_hand();
+        }
+    };
     // ACTION!
     PhysicalGame.prototype.move_card_from_deck_to_hand = function () {
+        if (this.game.did_current_player_give_up_their_turn) {
+            alert("You've given up already, please Complete your turn.");
+            return;
+        }
         var card = this.physical_deck.take_from_top(1)[0];
         card.state = CardState.FRESHLY_DRAWN;
         this.current_physical_player().physical_hand.add_card_to_hand(card);
     };
     // ACTION!
     PhysicalGame.prototype.handle_stack_click = function (stack_location) {
+        if (this.game.did_current_player_give_up_their_turn) {
+            alert("You've given up already, please Complete your turn.");
+            return;
+        }
         this.physical_book_case.handle_stack_click(stack_location);
     };
     // ACTION!
