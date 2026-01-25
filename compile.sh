@@ -1,1 +1,0 @@
-clear; echo -e "\nTest\n---\n\n"; (npx tsc --lib es2022,dom game.ts && npx prettier game.ts --write && node game.js)

@@ -739,7 +739,7 @@ class PhysicalDeck {
         const deck = this.deck;
         if (this.div.innerHTML === "") {
             const img = document.createElement("img");
-            img.src = "deck.png";
+            img.src = "images/deck.png";
             img.style.height = "200px";
             this.div.append(img);
 

@@ -27,13 +27,12 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
-      - name: Run compile script
-        run: chmod +x ./compile.sh && ./compile.sh
-
       - name: Prepare dist directory
         run: |
           mkdir -p dist
-          cp game.js dist/
+
+      - name: Run compile script
+        run: chmod +x ./scripts/compile.sh && ./scripts/compile.sh
 
       - name: Create index.html
         run: |
