@@ -841,6 +841,19 @@ class Hand {
         this.cards = this.cards.concat(cards);
     }
 
+    serialize(): string {
+        return this.cards.map((card) => card.serialize()).join(",");
+    }
+
+    static deserialize(serialized_hand: string): Hand {
+        const cards = serialized_hand.split(",").map((serialized_card) => {
+            return Card.deserialize(serialized_card);
+        });
+        const hand = new Hand();
+        hand.add_cards(cards);
+        return hand;
+    }
+
     remove_card_from_hand(card: Card): void {
         const cards = this.cards;
         remove_card_from_array(cards, card);
@@ -858,9 +871,22 @@ class Player {
     name: string;
     hand: Hand;
 
-    constructor(name: string) {
-        this.name = name;
-        this.hand = new Hand();
+    constructor(info: { name: string; hand?: Hand }) {
+        this.name = info.name;
+        this.hand = info.hand ?? new Hand();
+    }
+
+    serialize(): string {
+        return this.name + "\n" + this.hand.serialize();
+    }
+
+    static deserialize(serialized_player: string): Player {
+        const [name, serialized_hand] = serialized_player.split("\n");
+        const player = new Player({
+            name,
+            hand: Hand.deserialize(serialized_hand),
+        });
+        return player;
     }
 }
 
@@ -900,7 +926,10 @@ class Game {
     did_current_player_give_up_their_turn: boolean;
 
     constructor() {
-        this.players = [new Player("Player One"), new Player("Player Two")];
+        this.players = [
+            new Player({ name: "Player One" }),
+            new Player({ name: "Player Two" }),
+        ];
         this.deck = new Deck();
         this.book_case = initial_book_case();
         this.current_player_index = 0;
