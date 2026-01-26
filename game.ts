@@ -647,6 +647,19 @@ class BookCase {
         return this.shelves.map((shelf) => shelf.str()).join("\n");
     }
 
+    serialize(): string {
+        return this.shelves.map((shelf) => shelf.serialize()).join("\n");
+    }
+
+    static deserialize(serialized_bookcase: string): BookCase {
+        const shelves = serialized_bookcase
+            .split("\n")
+            .map((serialized_shelf) => {
+                return Shelf.deserialize(serialized_shelf);
+            });
+        return new BookCase(shelves);
+    }
+
     get_cards(): Card[] {
         const shelves = this.shelves;
 
