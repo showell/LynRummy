@@ -1554,8 +1554,6 @@ class PhysicalBookCase {
             this.un_select_stack();
             this.populate_shelf(selected_stack.shelf_index);
             this.populate_shelf(stack_location.shelf_index);
-        } else {
-            alert("Not allowed!");
         }
     }
 
