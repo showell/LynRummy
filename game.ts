@@ -1491,7 +1491,7 @@ class PhysicalBookCase {
         return this.selected_stack !== undefined;
     }
 
-    handle_stack_click(stack_location: StackLocation): void {
+    merge_with_or_select(stack_location:StackLocation) {
         if (this.in_stack_selection_mode()) {
             if (stack_location.equals(this.selected_stack!)) {
                 this.un_select_stack();
@@ -1502,6 +1502,10 @@ class PhysicalBookCase {
             // Start stack selection mode
             this.select_stack(stack_location);
         }
+    }
+
+    handle_stack_click(stack_location: StackLocation): void {
+        this.merge_with_or_select(stack_location)
     }
 
     physical_card_stack_from(stack_location: StackLocation): PhysicalCardStack {
