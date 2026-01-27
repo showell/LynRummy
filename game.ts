@@ -1601,11 +1601,15 @@ class PhysicalBookCase {
         }
     }
 
-    add_card_to_top_shelf(card: Card) {
+    add_card_to_top_shelf(card: Card): StackLocation {
         if (this.physical_shelves.length < 1) {
             throw new Error("No top shelf");
         }
         this.physical_shelves[0].add_singleton_card(card);
+        return new StackLocation({
+            shelf_index: 0,
+            stack_index: this.book_case.shelves[0].card_stacks.length - 1,
+        });
     }
 }
 
@@ -1823,14 +1827,8 @@ class PhysicalGame {
             card,
         );
         card.state = CardState.FRESHLY_PLAYED;
-        this.physical_book_case.add_card_to_top_shelf(card);
-
-        const hand_stack_idx =
-            this.game.book_case.shelves[0].card_stacks.length - 1;
-        const hand_stack_location = new StackLocation({
-            shelf_index: 0,
-            stack_index: hand_stack_idx,
-        });
+        const hand_stack_location =
+            this.physical_book_case.add_card_to_top_shelf(card);
 
         const previously_selected_stack_from_board =
             this.physical_book_case.selected_stack;
