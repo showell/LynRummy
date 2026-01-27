@@ -856,13 +856,11 @@ class Hand {
         return this.cards.map((card) => card.serialize()).join(",");
     }
 
-    static deserialize(serialized_hand: string): Hand {
+    deserialize(serialized_hand: string): void {
         const cards = serialized_hand.split(",").map((serialized_card) => {
             return Card.deserialize(serialized_card);
         });
-        const hand = new Hand();
-        hand.add_cards(cards);
-        return hand;
+        this.cards = cards;
     }
 
     remove_card_from_hand(card: Card): void {
@@ -885,19 +883,6 @@ class Player {
     constructor(info: { name: string; hand?: Hand }) {
         this.name = info.name;
         this.hand = info.hand ?? new Hand();
-    }
-
-    serialize(): string {
-        return this.name + "\n" + this.hand.serialize();
-    }
-
-    static deserialize(serialized_player: string): Player {
-        const [name, serialized_hand] = serialized_player.split("\n");
-        const player = new Player({
-            name,
-            hand: Hand.deserialize(serialized_hand),
-        });
-        return player;
     }
 }
 
@@ -954,10 +939,10 @@ class Game {
     }
 
     serialize(): string {
+        const player = this.players[this.current_player_index];
         const serialized_game = JSON.stringify({
-            players: this.players.map((player) => player.serialize()),
+            hand: player.hand.serialize(),
             book_case: this.book_case.serialize(),
-            current_player_index: this.current_player_index,
             did_current_player_give_up_their_turn:
                 this.did_current_player_give_up_their_turn,
         });
@@ -972,13 +957,11 @@ class Game {
         }
     }
 
-    // Moves are the actions you take **before** "completing" a turn.
     rollback_moves_to_last_clean_state(): void {
         const game_data = JSON.parse(this.snapshot);
-        this.players = game_data.players.map((serialized_player: string) =>
-            Player.deserialize(serialized_player),
-        );
-        this.current_player_index = game_data.current_player_index;
+        const player = this.players[this.current_player_index];
+        console.log(game_data.hand);
+        player.hand.deserialize(game_data.hand);
         this.book_case = BookCase.deserialize(game_data.book_case);
         this.did_current_player_give_up_their_turn =
             game_data.did_current_player_give_up_their_turn;
