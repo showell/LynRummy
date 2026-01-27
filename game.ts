@@ -1491,7 +1491,7 @@ class PhysicalBookCase {
         return this.selected_stack !== undefined;
     }
 
-    merge_with_or_select(stack_location:StackLocation) {
+    merge_with_or_select(stack_location: StackLocation) {
         if (this.in_stack_selection_mode()) {
             if (stack_location.equals(this.selected_stack!)) {
                 this.un_select_stack();
@@ -1505,7 +1505,7 @@ class PhysicalBookCase {
     }
 
     handle_stack_click(stack_location: StackLocation): void {
-        this.merge_with_or_select(stack_location)
+        this.merge_with_or_select(stack_location);
     }
 
     physical_card_stack_from(stack_location: StackLocation): PhysicalCardStack {
@@ -1824,6 +1824,26 @@ class PhysicalGame {
         );
         card.state = CardState.FRESHLY_PLAYED;
         this.physical_book_case.add_card_to_top_shelf(card);
+
+        const hand_stack_idx =
+            this.game.book_case.shelves[0].card_stacks.length - 1;
+        const hand_stack_location = new StackLocation({
+            shelf_index: 0,
+            stack_index: hand_stack_idx,
+        });
+
+        const previously_selected_stack_from_board =
+            this.physical_book_case.selected_stack;
+
+        this.physical_book_case.select_stack(hand_stack_location);
+
+        // We always want to merge the singleton stack from the hand's card
+        // into a selected stack on the board, if it was selected.
+        if (previously_selected_stack_from_board) {
+            this.physical_book_case.merge_with_or_select(
+                previously_selected_stack_from_board,
+            );
+        }
     }
 
     // Giving up in a turn will do the following:
