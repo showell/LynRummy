@@ -739,24 +739,12 @@ class Deck {
     // remotely matters at our scale.
     cards: Card[];
 
-    constructor(cards?: Card[]) {
-        this.cards = cards ?? build_full_double_deck();
+    constructor() {
+        this.cards = build_full_double_deck();
     }
 
     str(): string {
         return this.cards.map((card) => card.str()).join(" ");
-    }
-
-    serialize(): string {
-        return this.cards.map((card) => card.serialize()).join(" ");
-    }
-
-    static deserialize(serialized_deck: string): Deck {
-        return new Deck(
-            serialized_deck
-                .split(" ")
-                .map((serialized_card) => Card.deserialize(serialized_card)),
-        );
     }
 
     size(): number {
@@ -968,7 +956,6 @@ class Game {
     serialize(): string {
         const serialized_game = JSON.stringify({
             players: this.players.map((player) => player.serialize()),
-            deck: this.deck.serialize(),
             book_case: this.book_case.serialize(),
             current_player_index: this.current_player_index,
             did_current_player_give_up_their_turn:
@@ -988,11 +975,9 @@ class Game {
     // Moves are the actions you take **before** "completing" a turn.
     rollback_moves_to_last_clean_state(): void {
         const game_data = JSON.parse(this.snapshot);
-        console.log("new game_data from snapshot", game_data);
         this.players = game_data.players.map((serialized_player: string) =>
             Player.deserialize(serialized_player),
         );
-        this.deck = Deck.deserialize(game_data.deck);
         this.current_player_index = game_data.current_player_index;
         this.book_case = BookCase.deserialize(game_data.book_case);
         this.did_current_player_give_up_their_turn =
