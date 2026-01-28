@@ -526,6 +526,11 @@ class CardStack {
         );
     }
 
+    remove_end_card(card_index: number): void {
+        this.cards.splice(card_index, 1);
+        this.stack_type = this.get_stack_type();
+    }
+
     join(other_stack: CardStack): CardStack {
         const cards = this.cards.concat(other_stack.cards);
         return new CardStack(cards);
@@ -612,6 +617,7 @@ class Shelf {
         const card_stacks = this.card_stacks;
 
         for (const card_stack of card_stacks) {
+            console.log(card_stack);
             if (card_stack.incomplete() || card_stack.problematic()) {
                 return false;
             }
@@ -629,7 +635,7 @@ class Shelf {
         const card_stack = card_stacks[stack_index];
         const cards = card_stack.cards;
         const split_card = cards[card_index];
-        cards.splice(card_index, 1);
+        card_stack.remove_end_card(card_index);
 
         const new_stack = new CardStack([split_card]);
 
