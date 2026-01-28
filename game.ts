@@ -1054,13 +1054,10 @@ class Example {
 
 class PhysicalCard {
     card: Card;
+    span: HTMLElement;
 
     constructor(card: Card) {
         this.card = card;
-    }
-
-    dom(): HTMLElement {
-        const card = this.card;
 
         const span = document.createElement("span");
         const v_node = document.createElement("span");
@@ -1073,6 +1070,7 @@ class PhysicalCard {
         s_node.innerText = suit_emoji_str(card.suit);
         span.append(v_node);
         span.append(s_node);
+
         span.style.color = css_color(card.color);
         span.style.textAlign = "center";
         span.style.fontSize = "17px";
@@ -1083,6 +1081,18 @@ class PhysicalCard {
         span.style.minWidth = "21px";
         span.style.minHeight = "38px";
 
+        this.span = span;
+
+        this.update_state_styles();
+    }
+
+    dom(): HTMLElement {
+        return this.span;
+    }
+
+    update_state_styles(): void {
+        const span = this.span;
+
         if (
             this.card.state === CardState.FRESHLY_DRAWN ||
             this.card.state === CardState.FRESHLY_PLAYED ||
@@ -1092,7 +1102,6 @@ class PhysicalCard {
         } else {
             span.style.backgroundColor = "transparent";
         }
-        return span;
     }
 }
 
@@ -1450,6 +1459,24 @@ class PhysicalBookCase {
         return physical_cards;
     }
 
+    make_old_cards_firmly_on_board(): void {
+        // This move will make all the FRESHLY_PLAYED_BY_LAST_PLAYER cards
+        // be FIRMLY_ON_BOARD, which basically means they will lose their highlighting
+        // as the current turn owner has decided to make a "real move" on the board.
+        this.get_all_physical_shelf_cards().forEach(
+            (physical_shelf_card: PhysicalShelfCard) => {
+                const physical_card = physical_shelf_card.physical_card;
+                const card = physical_card.card;
+
+                if (card.state === CardState.FRESHLY_PLAYED_BY_LAST_PLAYER) {
+                    card.state = CardState.FIRMLY_ON_BOARD;
+                }
+
+                physical_card.update_state_styles();
+            },
+        );
+    }
+
     in_stack_selection_mode(): boolean {
         return this.selected_stack !== undefined;
     }
@@ -1776,14 +1803,7 @@ class PhysicalGame {
     // ACTION! (We will need to broadcast this when we
     // get to multi-player.)
     move_card_from_hand_to_board(card: Card): void {
-        // This move will make all the FRESHLY_PLAYED_BY_LAST_PLAYER cards
-        // be FIRMLY_ON_BOARD, which basically means they will lose their highlighting
-        // as the current turn owner has decided to make a "real move" on the board.
-        this.physical_book_case.book_case.get_cards().forEach((card) => {
-            if (card.state === CardState.FRESHLY_PLAYED_BY_LAST_PLAYER) {
-                card.state = CardState.FIRMLY_ON_BOARD;
-            }
-        });
+        this.physical_book_case.make_old_cards_firmly_on_board();
 
         this.current_physical_player().physical_hand.remove_card_from_hand(
             card,
