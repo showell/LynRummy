@@ -549,7 +549,6 @@ class CardStack {
 
     marry(other_stack: CardStack): CardStack | undefined {
         const stack1 = this.join(other_stack);
-        console.log(stack1.stack_type);
         if (!stack1.problematic()) {
             return stack1;
         }
@@ -617,7 +616,6 @@ class Shelf {
         const card_stacks = this.card_stacks;
 
         for (const card_stack of card_stacks) {
-            console.log(card_stack);
             if (card_stack.incomplete() || card_stack.problematic()) {
                 return false;
             }
@@ -961,7 +959,6 @@ class Game {
 
     rollback_moves_to_last_clean_state(): void {
         const game_data = JSON.parse(this.snapshot);
-        console.log(game_data.hand);
         this.current_hand().deserialize(game_data.hand);
         this.book_case = BookCase.deserialize(game_data.book_case);
     }
