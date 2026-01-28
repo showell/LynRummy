@@ -1653,16 +1653,39 @@ class PhysicalHand {
     }
 }
 
+class CompleteTurnButton {
+    button: HTMLElement;
+
+    constructor(physical_game) {
+        const button = document.createElement("button");
+        button.classList.add("button", "complete-turn-button");
+        button.style.backgroundColor = "#007bff";
+        button.style.color = "white";
+        button.style.marginRight = "5px";
+        button.innerText = "Complete turn";
+        button.addEventListener("click", () => {
+            physical_game.complete_turn();
+        });
+        this.button = button;
+    }
+
+    dom(): HTMLElement {
+        return this.button;
+    }
+}
+
 class PhysicalPlayer {
     physical_game: PhysicalGame;
     player: Player;
     physical_hand: PhysicalHand;
+    complete_turn_button: CompleteTurnButton;
     div: HTMLElement;
 
     constructor(physical_game: PhysicalGame, player: Player) {
         this.physical_game = physical_game;
         this.player = player;
         this.physical_hand = new PhysicalHand(physical_game, player.hand);
+        this.complete_turn_button = new CompleteTurnButton(physical_game);
         this.make_div();
     }
 
@@ -1679,22 +1702,15 @@ class PhysicalPlayer {
         const player = this.player;
         const div = this.div;
         div.innerHTML = "";
+
         const h3 = document.createElement("h3");
         h3.innerText = player.name;
+
         div.append(h3);
         div.append(this.physical_hand.dom());
-        this.add_reset_button();
-        this.add_complete_turn_button();
-    }
+        div.append(this.complete_turn_button.dom());
 
-    add_complete_turn_button() {
-        const complete_turn_button = document.createElement("button");
-        complete_turn_button.classList.add("button", "complete-turn-button");
-        complete_turn_button.innerText = "Complete turn";
-        complete_turn_button.addEventListener("click", () => {
-            this.physical_game.complete_turn();
-        });
-        this.div.append(complete_turn_button);
+        this.add_reset_button();
     }
 
     add_reset_button() {
