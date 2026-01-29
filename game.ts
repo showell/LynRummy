@@ -593,6 +593,10 @@ class Shelf {
         return card_stacks.map((card_stack) => card_stack.str()).join(" | ");
     }
 
+    is_last_stack(stack_location: StackLocation): boolean {
+        return this.card_stacks.length - 1 === stack_location.stack_index;
+    }
+
     serialize(): string {
         const card_stacks = this.card_stacks;
 
@@ -701,6 +705,19 @@ class Board {
         }
 
         return result;
+    }
+
+    move_selected_card_stack_to_end_of_shelf(
+        card_stack_location: StackLocation,
+        new_shelf_idx: number,
+    ) {
+        const old_shelf_idx = card_stack_location.shelf_index;
+        const old_stack_idx = card_stack_location.stack_index;
+        const [stack] = this.shelves[old_shelf_idx].card_stacks.splice(
+            old_stack_idx,
+            1,
+        );
+        this.shelves[new_shelf_idx].card_stacks.push(stack);
     }
 
     merge_card_stacks(info: {
@@ -1246,6 +1263,10 @@ class PhysicalCardStack {
         return this.physical_shelf_cards;
     }
 
+    get_stack_width() {
+        return this.div.clientWidth;
+    }
+
     show_as_selected(): void {
         this.selected = true;
         this.div.style.backgroundColor = "cyan";
@@ -1296,6 +1317,51 @@ function create_shelf_is_clean_or_not_emoji(shelf: Shelf): HTMLElement {
     return emoji;
 }
 
+class PhysicalEmptyShelfSpot {
+    shelf_idx: number;
+    div: HTMLElement;
+    physical_game: PhysicalGame;
+    constructor(shelf_idx: number, physical_game: PhysicalGame) {
+        this.shelf_idx = shelf_idx;
+        this.physical_game = physical_game;
+        this.div = this.make_div();
+        this.add_click_listener();
+    }
+
+    add_click_listener() {
+        this.div.addEventListener("click", (e) => {
+            if (e.currentTarget !== e.target) return;
+            this.physical_game.handle_empty_shelf_space_click(this.shelf_idx);
+        });
+    }
+
+    make_div() {
+        const div = document.createElement("div");
+        div.classList.add("empty-shelf-spot");
+        div.style.width = "40px";
+        div.style.height = "34px";
+        div.style.border = "2px lightgreen dotted";
+        div.style.margin = "auto 0";
+        div.style.order = "1";
+        div.style.backgroundColor = "rgba(0,0,200,0.05)";
+        return div;
+    }
+
+    hide() {
+        this.div.style.display = "none";
+    }
+
+    show(tray_width: number) {
+        this.div.style.display = "block";
+        this.div.style.width = tray_width + "px";
+    }
+
+    dom() {
+        this.hide();
+        return this.div;
+    }
+}
+
 class PhysicalShelf {
     physical_game: PhysicalGame;
     physical_board: PhysicalBoard;
@@ -1303,6 +1369,7 @@ class PhysicalShelf {
     shelf_index: number;
     shelf: Shelf;
     div: HTMLElement;
+    physical_shelf_empty_spot: PhysicalEmptyShelfSpot;
 
     constructor(info: {
         physical_game: PhysicalGame;
@@ -1316,10 +1383,15 @@ class PhysicalShelf {
         this.shelf = info.shelf;
         this.div = this.make_div();
         this.physical_card_stacks = [];
+        this.physical_shelf_empty_spot = new PhysicalEmptyShelfSpot(
+            this.shelf_index,
+            this.physical_game,
+        );
     }
 
     make_div(): HTMLElement {
         const div = document.createElement("div");
+        div.classList.add("shelf");
         div.style.display = "flex";
         div.style.minWidth = "600px";
         div.style.alignItems = "flex-end";
@@ -1336,6 +1408,14 @@ class PhysicalShelf {
         return this.div;
     }
 
+    show_empty_spot(tray_width: number) {
+        this.physical_shelf_empty_spot.show(tray_width);
+    }
+
+    hide_empty_spot() {
+        this.physical_shelf_empty_spot.hide();
+    }
+
     populate(): void {
         const div = this.div;
         const shelf = this.shelf;
@@ -1349,6 +1429,7 @@ class PhysicalShelf {
         for (const physical_card_stack of this.physical_card_stacks) {
             div.append(physical_card_stack.dom());
         }
+        div.append(this.physical_shelf_empty_spot.dom());
     }
 
     build_physical_card_stacks(): PhysicalCardStack[] {
@@ -1446,6 +1527,17 @@ class PhysicalBoard {
         return physical_shelves;
     }
 
+    move_selected_card_stack_to_end_of_shelf(new_shelf_idx: number) {
+        const selected_stack_loc = this.selected_stack!;
+        this.board.move_selected_card_stack_to_end_of_shelf(
+            selected_stack_loc,
+            new_shelf_idx,
+        );
+        this.un_select_stack();
+        this.populate_shelf(selected_stack_loc.shelf_index);
+        this.populate_shelf(new_shelf_idx);
+    }
+
     get_all_physical_shelf_cards(): PhysicalShelfCard[] {
         let physical_cards: PhysicalShelfCard[] = [];
         const physical_shelves = this.physical_shelves;
@@ -1514,6 +1606,24 @@ class PhysicalBoard {
 
         this.selected_stack = stack_location;
         physical_card_stack.show_as_selected();
+        this.display_empty_shelf_spots_for_selected_stack();
+    }
+
+    display_empty_shelf_spots_for_selected_stack() {
+        const stack_location = this.selected_stack!;
+        for (let i = 0; i < this.physical_shelves.length; i++) {
+            const physical_shelf = this.physical_shelves[i];
+            const shelf = physical_shelf.shelf;
+            const shelf_idx = stack_location.shelf_index;
+
+            const is_same_shelf = i === shelf_idx;
+            // Avoid showing an empty spot if the selected stack is the
+            // last stack from its shelf
+            if (is_same_shelf && shelf.is_last_stack(stack_location)) continue;
+            const tray_width =
+                this.physical_card_stack_from(stack_location).get_stack_width();
+            physical_shelf.show_empty_spot(tray_width);
+        }
     }
 
     un_select_stack(): void {
@@ -1528,6 +1638,9 @@ class PhysicalBoard {
         );
         physical_card_stack.show_as_un_selected();
         this.selected_stack = undefined;
+        for (const physical_shelf of this.physical_shelves) {
+            physical_shelf.hide_empty_spot();
+        }
     }
 
     attempt_stack_merge(stack_location: StackLocation): void {
@@ -1792,6 +1905,13 @@ class PhysicalGame {
 
     current_physical_player() {
         return this.physical_players[this.game.current_player_index];
+    }
+
+    handle_empty_shelf_space_click(clicked_shelf_idx: number): void {
+        if (this.physical_board.selected_stack === undefined) return;
+        this.physical_board.move_selected_card_stack_to_end_of_shelf(
+            clicked_shelf_idx,
+        );
     }
 
     // ACTION! (We will need to broadcast this when we
