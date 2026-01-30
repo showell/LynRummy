@@ -1779,6 +1779,12 @@ class PhysicalBoard {
         }
     }
 
+    display_mergeable_stacks_for_card(card: Card): void {
+        const card_stack = new CardStack([card]);
+
+        this.display_mergeable_stacks_for(card_stack);
+    }
+
     select_stack(stack_location: StackLocation): void {
         const card_stack = this.board.get_stack_for(stack_location);
         const physical_card_stack =
@@ -1870,6 +1876,7 @@ class PhysicalBoard {
             SoundEffects.play_ding_sound();
         }
         this.populate_shelf(shelf_index);
+        this.hide_mergeable_stacks();
     }
 
     populate_shelf(shelf_index: number): void {
@@ -2138,10 +2145,12 @@ class PhysicalGame {
 
     start_drag_hand_card(card: Card): void {
         this.dragged_hand_card = card;
+        this.physical_board.display_mergeable_stacks_for_card(card);
     }
 
     end_drag_hand_card(): void {
         this.dragged_hand_card = undefined;
+        this.physical_board.hide_mergeable_stacks();
     }
 
     handle_hand_card_drop(stack_location: StackLocation): void {
