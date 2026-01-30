@@ -1581,7 +1581,7 @@ class PhysicalShelf {
         this.physical_shelf_empty_spot.hide();
     }
 
-    hide_mergeable_cards() {
+    hide_mergeable_stacks() {
         this.physical_card_stacks
             .filter((stack) => stack.mergeable)
             .forEach((stack) => stack.hide_as_mergeable());
@@ -1824,7 +1824,7 @@ class PhysicalBoard {
         physical_card_stack.show_as_un_selected();
         this.selected_stack = undefined;
         this.hide_empty_spots();
-        this.hide_mergeable_cards();
+        this.hide_mergeable_stacks();
     }
 
     hide_empty_spots(): void {
@@ -1833,9 +1833,9 @@ class PhysicalBoard {
         }
     }
 
-    hide_mergeable_cards(): void {
+    hide_mergeable_stacks(): void {
         for (const physical_shelf of this.physical_shelves) {
-            physical_shelf.hide_mergeable_cards();
+            physical_shelf.hide_mergeable_stacks();
         }
     }
 
