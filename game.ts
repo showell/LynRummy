@@ -659,9 +659,18 @@ class Shelf {
     }
 }
 
-class SoundEffects {
-    static play_ding_sound() {
-        new Audio("ding.mp3").play();
+class SoundEffectsSingleton {
+    ding: HTMLAudioElement;
+
+    constructor() {
+        // It might be overkill to pre-load these, but I can't
+        // see how it hurts either.
+        this.ding = document.createElement("audio");
+        this.ding.src = "ding.mp3";
+    }
+
+    play_ding_sound() {
+        this.ding.play();
     }
 }
 
@@ -2302,11 +2311,6 @@ function shuffle(array: any[]) {
     return array;
 }
 
-function gui() {
-    const ui = new MainPage();
-    ui.start();
-}
-
 function example_board() {
     return new Board([
         Shelf.from("AC", OriginDeck.DECK_ONE),
@@ -2357,4 +2361,14 @@ function test_card_serde() {
     }
 }
 
-test();
+test(); // runs in node
+
+// SINGLETONS get initialized in gui().
+let SoundEffects: SoundEffectsSingleton;
+
+// This is the entry point for static/index.html
+function gui() {
+    SoundEffects = new SoundEffectsSingleton();
+    const ui = new MainPage();
+    ui.start();
+}
