@@ -758,29 +758,48 @@ class Board {
         this.shelves[new_shelf_idx].card_stacks.push(stack);
     }
 
-    get_mergeable_stacks_for(stack_location: StackLocation): StackLocation[] {
+    get_stack_locations(): StackLocation[] {
         const shelves = this.shelves;
 
-        const source_stack =
-            shelves[stack_location.shelf_index].card_stacks[
-                stack_location.stack_index
-            ];
+        const locs: StackLocation[] = [];
 
-        const mergeable_stack_locs: StackLocation[] = [];
         for (let i = 0; i < this.shelves.length; i++) {
-            const shelf = this.shelves[i];
+            const shelf = shelves[i];
 
             for (let j = 0; j < shelf.card_stacks.length; j++) {
-                const stack = shelf.card_stacks[j];
-
-                if (stack.is_mergeable_with(source_stack)) {
-                    mergeable_stack_locs.push(
-                        new StackLocation({ shelf_index: i, stack_index: j }),
-                    );
-                }
+                const loc = new StackLocation({
+                    shelf_index: i,
+                    stack_index: j,
+                });
+                locs.push(loc);
             }
         }
-        return mergeable_stack_locs;
+        return locs;
+    }
+
+    get_stack_for(stack_location: StackLocation): CardStack {
+        const { shelf_index, stack_index } = stack_location;
+        const shelf = this.shelves[shelf_index];
+
+        return shelf.card_stacks[stack_index];
+    }
+
+    get_mergeable_stacks_for(stack_location: StackLocation): StackLocation[] {
+        const source_stack = this.get_stack_for(stack_location);
+        const locs = this.get_stack_locations();
+
+        const result: StackLocation[] = [];
+
+        for (const loc of locs) {
+            const stack = this.get_stack_for(loc);
+
+            if (stack.is_mergeable_with(source_stack)) {
+                result.push(loc);
+            }
+        }
+
+        console.log("mergeable", result);
+        return result;
     }
 
     // Returns the merged stack or undefined
