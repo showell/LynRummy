@@ -125,6 +125,31 @@ class StackLocation {
     }
 }
 
+function card_pair_stack_type(card1: Card, card2: Card): CardStackType {
+    // See if the pair is a promising start to a stack.
+    // Do not return INCOMPLETE here. It's obviously
+    // not complete in this context, and our caller will
+    // understand that.
+
+    if (card1.matches(card2)) {
+        return CardStackType.DUP;
+    }
+
+    if (card1.value === card2.value) {
+        return CardStackType.SET;
+    }
+
+    // Order is important for the successor check!
+    if (card2.value === successor(card1.value)) {
+        if (card1.suit === card2.suit) {
+            return CardStackType.PURE_RUN;
+        } else if (card1.color !== card2.color) {
+            return CardStackType.RED_BLACK_RUN;
+        }
+    }
+    return CardStackType.BOGUS;
+}
+
 function get_stack_type(cards: Card[]): CardStackType {
     /*
         THIS IS THE MOST IMPORTANT FUNCTION OF THE GAME.
@@ -138,7 +163,8 @@ function get_stack_type(cards: Card[]): CardStackType {
         return CardStackType.INCOMPLETE;
     }
 
-    const provisional_stack_type = cards[0].with(cards[1]);
+    const provisional_stack_type = card_pair_stack_type(cards[0], cards[1]);
+
     if (provisional_stack_type === CardStackType.BOGUS) {
         return CardStackType.BOGUS;
     }
@@ -455,30 +481,6 @@ class Card {
 
     matches(other_card: Card): boolean {
         return this.value === other_card.value && this.suit === other_card.suit;
-    }
-
-    with(other_card: Card): CardStackType {
-        // See if the pair is a promising start to a stack.
-        // Do not return INCOMPLETE here. It's obviously
-        // not complete in this context, and our caller will
-        // understand that.
-
-        if (this.matches(other_card)) {
-            return CardStackType.DUP;
-        }
-
-        if (this.value === other_card.value) {
-            return CardStackType.SET;
-        }
-
-        if (other_card.value === successor(this.value)) {
-            if (this.suit === other_card.suit) {
-                return CardStackType.PURE_RUN;
-            } else if (this.color !== other_card.color) {
-                return CardStackType.RED_BLACK_RUN;
-            }
-        }
-        return CardStackType.BOGUS;
     }
 
     static from(
@@ -2529,9 +2531,11 @@ function follows_consistent_pattern(
     if (cards.length <= 1) {
         return true;
     }
-    if (cards[0].with(cards[1]) !== stack_type) {
+
+    if (card_pair_stack_type(cards[0], cards[1]) !== stack_type) {
         return false;
     }
+
     return follows_consistent_pattern(cards.slice(1), stack_type);
 }
 
