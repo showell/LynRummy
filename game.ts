@@ -784,8 +784,7 @@ class Board {
         return shelf.card_stacks[stack_index];
     }
 
-    get_mergeable_stacks_for(stack_location: StackLocation): StackLocation[] {
-        const source_stack = this.get_stack_for(stack_location);
+    get_mergeable_stacks_for(source_stack: CardStack): StackLocation[] {
         const locs = this.get_stack_locations();
 
         const result: StackLocation[] = [];
@@ -1767,9 +1766,9 @@ class PhysicalBoard {
         return physical_shelf.physical_card_stacks[stack_index];
     }
 
-    display_mergeable_stacks_for(stack_location: StackLocation): void {
+    display_mergeable_stacks_for(card_stack: CardStack): void {
         const mergeable_stacks =
-            this.board.get_mergeable_stacks_for(stack_location);
+            this.board.get_mergeable_stacks_for(card_stack);
 
         const physical_stacks: PhysicalCardStack[] = mergeable_stacks.map(
             (location) => this.physical_card_stack_from(location),
@@ -1781,6 +1780,7 @@ class PhysicalBoard {
     }
 
     select_stack(stack_location: StackLocation): void {
+        const card_stack = this.board.get_stack_for(stack_location);
         const physical_card_stack =
             this.physical_card_stack_from(stack_location);
 
@@ -1791,7 +1791,7 @@ class PhysicalBoard {
         this.selected_stack = stack_location;
         physical_card_stack.show_as_selected();
         this.display_empty_shelf_spots_for_selected_stack();
-        this.display_mergeable_stacks_for(stack_location);
+        this.display_mergeable_stacks_for(card_stack);
     }
 
     display_empty_shelf_spots_for_selected_stack() {
