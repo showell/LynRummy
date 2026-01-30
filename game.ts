@@ -1357,28 +1357,30 @@ class PhysicalCardStack {
         this.physical_game = physical_game;
         this.stack_location = stack_location;
         this.stack = stack;
+
+        this.div = document.createElement("div");
+        this.div.style.marginRight = "20px";
+
+        this.div.addEventListener("click", () => {
+            physical_game.handle_stack_click(stack_location);
+        });
+        this.enable_drop();
+
         this.physical_shelf_cards = build_physical_shelf_cards(
             stack_location,
             stack.cards,
         );
-        this.div = this.make_div();
+
+        for (const physical_shelf_card of this.physical_shelf_cards) {
+            this.div.append(physical_shelf_card.dom());
+        }
+
         this.selected = false;
-        this.enable_drop();
         this.mergeable = false;
     }
 
-    make_div(): HTMLElement {
-        const physical_game = this.physical_game;
-        const stack_location = this.stack_location;
-        const div = document.createElement("div");
-
-        div.style.marginRight = "20px";
-
-        div.addEventListener("click", () => {
-            physical_game.handle_stack_click(stack_location);
-        });
-
-        return div;
+    dom(): HTMLElement {
+        return this.div;
     }
 
     get_all_physical_shelf_cards(): PhysicalShelfCard[] {
@@ -1407,22 +1409,6 @@ class PhysicalCardStack {
     hide_as_mergeable(): void {
         this.div.style.backgroundColor = "transparent";
         this.mergeable = true;
-    }
-
-    dom(): HTMLElement {
-        // should only be called once
-        const physical_shelf_cards = this.physical_shelf_cards;
-        this.populate();
-        return this.div;
-    }
-
-    populate(): void {
-        const div = this.div;
-        const physical_shelf_cards = this.physical_shelf_cards;
-
-        for (const physical_shelf_card of physical_shelf_cards) {
-            div.append(physical_shelf_card.dom());
-        }
     }
 
     set_up_clicks_handlers_for_cards(): void {
