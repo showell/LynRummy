@@ -659,6 +659,12 @@ class Shelf {
     }
 }
 
+class SoundEffects {
+    static play_ding_sound() {
+        new Audio("ding.mp3").play();
+    }
+}
+
 class Board {
     /*
         This is where the players lay out all the common cards.
@@ -720,20 +726,21 @@ class Board {
         this.shelves[new_shelf_idx].card_stacks.push(stack);
     }
 
+    // Returns the merged stack or undefined
     merge_card_stacks(info: {
         source: StackLocation;
         target: StackLocation;
-    }): boolean {
+    }): CardStack | undefined {
+        if (info.source.equals(info.target)) {
+            return undefined;
+        }
+
         const shelves = this.shelves;
 
         const source_shelf_index = info.source.shelf_index;
         const source_stack_index = info.source.stack_index;
         const target_shelf_index = info.target.shelf_index;
         const target_stack_index = info.target.stack_index;
-
-        if (info.source.equals(info.target)) {
-            return false;
-        }
 
         const source_shelf = shelves[source_shelf_index];
         const target_shelf = shelves[target_shelf_index];
@@ -747,7 +754,7 @@ class Board {
         const merged_stack = source_stack.marry(target_stack);
 
         if (merged_stack === undefined) {
-            return false;
+            return undefined;
         }
 
         const is_same_shelf_rightward_merge =
@@ -761,7 +768,7 @@ class Board {
         source_stacks.splice(source_stack_index, 1);
         target_stacks[final_index] = merged_stack;
 
-        return true;
+        return merged_stack;
     }
 }
 
@@ -1652,12 +1659,14 @@ class PhysicalBoard {
             source: selected_stack,
             target: stack_location,
         });
+        if (merged === undefined) return;
 
-        if (merged) {
-            this.un_select_stack();
-            this.populate_shelf(selected_stack.shelf_index);
-            this.populate_shelf(stack_location.shelf_index);
+        if (merged.cards.length >= 3) {
+            SoundEffects.play_ding_sound();
         }
+        this.un_select_stack();
+        this.populate_shelf(selected_stack.shelf_index);
+        this.populate_shelf(stack_location.shelf_index);
     }
 
     populate_shelf(shelf_index: number): void {
