@@ -125,13 +125,20 @@ class StackLocation {
     }
 }
 
+function is_pair_of_dups(card1: Card, card2): boolean {
+    // In a two-deck game, two cards can be both be
+    // the Ace of Hearts, to use an example,
+    // but you can't put dups in a set.
+    return card1.value === card2.value && card1.suit === card2.suit;
+}
+
 function card_pair_stack_type(card1: Card, card2: Card): CardStackType {
     // See if the pair is a promising start to a stack.
     // Do not return INCOMPLETE here. It's obviously
     // not complete in this context, and our caller will
     // understand that.
 
-    if (card1.matches(card2)) {
+    if (is_pair_of_dups(card1, card2)) {
         return CardStackType.DUP;
     }
 
@@ -477,10 +484,6 @@ class Card {
             this.suit === other_card.suit &&
             this.origin_deck === other_card.origin_deck
         );
-    }
-
-    matches(other_card: Card): boolean {
-        return this.value === other_card.value && this.suit === other_card.suit;
     }
 
     static from(
@@ -2508,7 +2511,7 @@ function has_duplicate_cards(cards: Card[]): boolean {
         if (rest.length === 0) {
             return false;
         }
-        if (card.matches(rest[0])) {
+        if (is_pair_of_dups(card, rest[0])) {
             return true;
         }
         return any_dup_card(card, rest.slice(1));
