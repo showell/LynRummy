@@ -548,15 +548,7 @@ class CardStack {
     }
 
     is_mergeable_with(other_stack: CardStack): boolean {
-        const join_me = new CardStack([...this.cards, ...other_stack.cards]);
-        if (!join_me.problematic()) {
-            return true;
-        }
-        const join_them = new CardStack([...other_stack.cards, ...this.cards]);
-        if (!join_them.problematic()) {
-            return true;
-        }
-        return false;
+        return this.marry(other_stack) !== undefined;
     }
 
     marry(other_stack: CardStack): CardStack | undefined {
@@ -569,6 +561,10 @@ class CardStack {
             return stack2;
         }
         return undefined;
+    }
+
+    is_mergeable_with_card(card: Card): boolean {
+        return this.is_mergeable_with(new CardStack([card]));
     }
 
     marry_single_card(card: Card): CardStack | undefined {
@@ -1428,12 +1424,7 @@ class PhysicalCardStack {
             return false;
         }
 
-        // Try to marry the card even though we will just
-        // throw it away here. Stacks are super cheap to
-        // create.
-        const temp_stack = stack.marry_single_card(card);
-
-        return temp_stack !== undefined;
+        return stack.is_mergeable_with_card(card);
     }
 
     handle_drop(): void {
