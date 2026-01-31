@@ -553,6 +553,11 @@ class CardStack {
         return undefined;
     }
 
+    static can_merge(s1: CardStack, s2: CardStack): boolean {
+        const stack = new CardStack([...s1.cards, ...s2.cards]);
+        return !stack.problematic();
+    }
+
     static from_stack_and_card(
         stack: CardStack,
         card: Card,
@@ -749,46 +754,11 @@ class Board {
         this.shelves[new_shelf_idx].card_stacks.push(stack);
     }
 
-    get_stack_locations(): StackLocation[] {
-        const shelves = this.shelves;
-
-        const locs: StackLocation[] = [];
-
-        for (let i = 0; i < this.shelves.length; i++) {
-            const shelf = shelves[i];
-
-            for (let j = 0; j < shelf.card_stacks.length; j++) {
-                const loc = new StackLocation({
-                    shelf_index: i,
-                    stack_index: j,
-                });
-                locs.push(loc);
-            }
-        }
-        return locs;
-    }
-
     get_stack_for(stack_location: StackLocation): CardStack {
         const { shelf_index, stack_index } = stack_location;
         const shelf = this.shelves[shelf_index];
 
         return shelf.card_stacks[stack_index];
-    }
-
-    get_mergeable_stacks_for(source_stack: CardStack): StackLocation[] {
-        const locs = this.get_stack_locations();
-
-        const result: StackLocation[] = [];
-
-        for (const loc of locs) {
-            const stack = this.get_stack_for(loc);
-
-            if (stack.is_mergeable_with(source_stack)) {
-                result.push(loc);
-            }
-        }
-
-        return result;
     }
 
     // Returns the merged stack or undefined
@@ -1293,6 +1263,52 @@ function build_physical_shelf_cards(
     return physical_shelf_cards;
 }
 
+class LeftEdge {
+    div: HTMLElement;
+
+    constructor() {
+        this.div = document.createElement("div");
+        this.div.style.minWidth = "12px";
+        this.div.style.minHeight = "38px";
+        this.hide();
+    }
+
+    dom(): HTMLElement {
+        return this.div;
+    }
+
+    show(): void {
+        this.div.style.backgroundColor = "hsl(105, 72.70%, 87.10%)";
+    }
+
+    hide(): void {
+        this.div.style.backgroundColor = "transparent";
+    }
+}
+
+class RightEdge {
+    div: HTMLElement;
+
+    constructor() {
+        this.div = document.createElement("div");
+        this.div.style.minWidth = "12px";
+        this.div.style.minHeight = "38px";
+        this.hide();
+    }
+
+    dom(): HTMLElement {
+        return this.div;
+    }
+
+    show(): void {
+        this.div.style.backgroundColor = "hsl(105, 72.70%, 87.10%)";
+    }
+
+    hide(): void {
+        this.div.style.backgroundColor = "transparent";
+    }
+}
+
 class PhysicalCardStack {
     physical_game: PhysicalGame;
     physical_board: PhysicalBoard;
@@ -1300,7 +1316,8 @@ class PhysicalCardStack {
     stack: CardStack;
     physical_shelf_cards: PhysicalShelfCard[];
     div: HTMLElement;
-    mergeable: boolean;
+    left_edge: LeftEdge;
+    right_edge: RightEdge;
 
     constructor(
         physical_game: PhysicalGame,
@@ -1312,6 +1329,9 @@ class PhysicalCardStack {
         this.stack_location = stack_location;
         this.stack = stack;
 
+        this.left_edge = new LeftEdge();
+        this.right_edge = new RightEdge();
+
         this.div = document.createElement("div");
         this.div.style.marginLeft = "15px";
         this.div.style.marginRight = "15px";
@@ -1319,16 +1339,25 @@ class PhysicalCardStack {
         this.enable_drop();
         this.allow_dragging();
 
+        const cards_div = document.createElement("div");
+
         this.physical_shelf_cards = build_physical_shelf_cards(
             stack_location,
             stack.cards,
         );
 
         for (const physical_shelf_card of this.physical_shelf_cards) {
-            this.div.append(physical_shelf_card.dom());
+            cards_div.append(physical_shelf_card.dom());
         }
 
-        this.mergeable = false;
+        const flex_div = document.createElement("div");
+        flex_div.style.display = "flex";
+
+        this.div.append(flex_div);
+
+        flex_div.append(this.left_edge.dom());
+        flex_div.append(cards_div);
+        flex_div.append(this.right_edge.dom());
     }
 
     dom(): HTMLElement {
@@ -1343,14 +1372,19 @@ class PhysicalCardStack {
         return this.div.clientWidth;
     }
 
-    show_as_mergeable(): void {
-        this.div.style.backgroundColor = "hsl(105, 72.70%, 87.10%)";
-        this.mergeable = true;
+    prepare_for_merge(incoming_stack: CardStack): void {
+        if (CardStack.can_merge(incoming_stack, this.stack)) {
+            this.left_edge.show();
+        }
+
+        if (CardStack.can_merge(this.stack, incoming_stack)) {
+            this.right_edge.show();
+        }
     }
 
     hide_as_mergeable(): void {
-        this.div.style.backgroundColor = "transparent";
-        this.mergeable = true;
+        this.left_edge.hide();
+        this.right_edge.hide();
     }
 
     set_up_clicks_handlers_for_cards(): void {
@@ -1605,9 +1639,7 @@ class PhysicalShelf {
     }
 
     hide_mergeable_stacks() {
-        this.physical_card_stacks
-            .filter((stack) => stack.mergeable)
-            .forEach((stack) => stack.hide_as_mergeable());
+        this.physical_card_stacks.forEach((stack) => stack.hide_as_mergeable());
     }
 
     populate(): void {
@@ -1777,16 +1809,23 @@ class PhysicalBoard {
         return physical_shelf.physical_card_stacks[stack_index];
     }
 
+    get_physical_card_stacks(): PhysicalCardStack[] {
+        const physical_shelves = this.physical_shelves;
+
+        const result = [];
+
+        for (const physical_shelf of physical_shelves) {
+            for (const physical_card_stack of physical_shelf.physical_card_stacks) {
+                result.push(physical_card_stack);
+            }
+        }
+
+        return result;
+    }
+
     display_mergeable_stacks_for(card_stack: CardStack): void {
-        const mergeable_stacks =
-            this.board.get_mergeable_stacks_for(card_stack);
-
-        const physical_stacks: PhysicalCardStack[] = mergeable_stacks.map(
-            (location) => this.physical_card_stack_from(location),
-        );
-
-        for (const physical_stack of physical_stacks) {
-            physical_stack.show_as_mergeable();
+        for (const physical_card_stack of this.get_physical_card_stacks()) {
+            physical_card_stack.prepare_for_merge(card_stack);
         }
     }
 
