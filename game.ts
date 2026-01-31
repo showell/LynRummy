@@ -1446,16 +1446,20 @@ class PhysicalCardStack {
     handle_drop(): void {
         const physical_game = this.physical_game;
         const physical_board = this.physical_board;
-        const stack_location = this.stack_location;
+        const target_location = this.stack_location;
         const dragged_card = physical_game.dragged_hand_card;
         const dragged_stack_location = physical_board.dragged_stack_location;
 
         if (dragged_card !== undefined) {
-            physical_game.handle_hand_card_drop(stack_location);
+            physical_game.handle_hand_card_drop(target_location);
         }
 
         if (dragged_stack_location !== undefined) {
-            console.log("COMING!");
+            const source_location = dragged_stack_location;
+            physical_board.drop_stack_on_stack({
+                source_location,
+                target_location,
+            });
         }
     }
 
@@ -2040,6 +2044,30 @@ class PhysicalBoard {
         for (const physical_shelf of this.physical_shelves) {
             physical_shelf.hide_mergeable_stacks();
         }
+    }
+
+    drop_stack_on_stack(info: {
+        source_location: StackLocation;
+        target_location: StackLocation;
+    }): void {
+        const { source_location, target_location } = info;
+
+        const merged_stack = this.board.merge_card_stacks({
+            source: source_location,
+            target: target_location,
+        });
+
+        if (merged_stack === undefined) {
+            console.log("unexpected merged failure!");
+            return;
+        }
+
+        if (merged_stack.cards.length >= 3) {
+            SoundEffects.play_ding_sound();
+        }
+
+        this.populate_shelf(source_location.shelf_index);
+        this.populate_shelf(target_location.shelf_index);
     }
 
     attempt_stack_merge(stack_location: StackLocation): void {
