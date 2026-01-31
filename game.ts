@@ -1378,12 +1378,19 @@ class PhysicalCardStack {
         return physical_board.dragged_stack_location !== undefined;
     }
 
-    can_drop_stack(): boolean {
+    dragged_stack_location(): StackLocation {
+        return this.physical_game.physical_board.dragged_stack_location;
+    }
+
+    dragged_stack(): CardStack {
         const physical_board = this.physical_game.physical_board;
         const board = physical_board.board;
         const dragged_stack_location = physical_board.dragged_stack_location;
-        const dragged_stack = board.get_stack_for(dragged_stack_location);
-        return this.stack.is_mergeable_with(dragged_stack);
+        return board.get_stack_for(dragged_stack_location);
+    }
+
+    can_drop_stack(): boolean {
+        return this.stack.is_mergeable_with(this.dragged_stack());
     }
 
     accepts_drop(): boolean {
@@ -1398,23 +1405,28 @@ class PhysicalCardStack {
         return false; // unforeseen future draggable
     }
 
-    handle_drop(): void {
-        const physical_game = this.physical_game;
-        const physical_board = this.physical_board;
-        const target_location = this.stack_location;
-        const dragged_card = physical_game.dragged_hand_card;
-        const dragged_stack_location = physical_board.dragged_stack_location;
+    handle_card_drop(): void {
+        this.physical_game.handle_hand_card_drop(this.stack_location);
+    }
 
-        if (dragged_card !== undefined) {
-            physical_game.handle_hand_card_drop(target_location);
+    handle_stack_drop(): void {
+        const physical_game = this.physical_game;
+        const physical_board = physical_game.physical_board;
+        const source_location = this.dragged_stack_location();
+        const target_location = this.stack_location;
+        physical_board.drop_stack_on_stack({
+            source_location,
+            target_location,
+        });
+    }
+
+    handle_drop(): void {
+        if (this.card_is_dragged()) {
+            this.handle_card_drop();
         }
 
-        if (dragged_stack_location !== undefined) {
-            const source_location = dragged_stack_location;
-            physical_board.drop_stack_on_stack({
-                source_location,
-                target_location,
-            });
+        if (this.stack_is_dragged()) {
+            this.handle_stack_drop();
         }
     }
 
