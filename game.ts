@@ -83,28 +83,19 @@ const enum CardStackType {
     RED_BLACK_RUN = "red/black alternating",
 }
 
-const enum CardPositionType {
-    LONER = 0,
-    AT_END = 1,
-    IN_MIDDLE = 2,
-}
-
 class ShelfCardLocation {
     shelf_index: number;
     stack_index: number;
     card_index: number;
-    card_position: CardPositionType;
 
     constructor(info: {
         shelf_index: number;
         stack_index: number;
         card_index: number;
-        card_position: CardPositionType;
     }) {
         this.shelf_index = info.shelf_index;
         this.stack_index = info.stack_index;
         this.card_index = info.card_index;
-        this.card_position = info.card_position;
     }
 }
 
@@ -531,11 +522,6 @@ class CardStack {
         );
     }
 
-    remove_end_card(card_index: number): void {
-        this.cards.splice(card_index, 1);
-        this.stack_type = this.get_stack_type();
-    }
-
     incomplete(): boolean {
         return this.stack_type === CardStackType.INCOMPLETE;
     }
@@ -653,7 +639,7 @@ class Shelf {
         return longer_stack;
     }
 
-    split_card_off_end(info: {
+    split_card_from_stack(info: {
         stack_index: number;
         card_index: number;
     }): void {
@@ -661,16 +647,19 @@ class Shelf {
         const card_stacks = this.card_stacks;
         const card_stack = card_stacks[stack_index];
         const cards = card_stack.cards;
-        const split_card = cards[card_index];
-        card_stack.remove_end_card(card_index);
 
-        const new_stack = new CardStack([split_card]);
+        const new_card_arrays = [
+            cards.slice(0, card_index),
+            [cards[card_index]],
+            cards.slice(card_index + 1),
+        ].filter((arr) => arr.length > 0);
 
-        if (card_index === 0) {
-            card_stacks.splice(stack_index, 0, new_stack);
-        } else {
-            card_stacks.splice(stack_index + 1, 0, new_stack);
-        }
+        const new_card_stacks = new_card_arrays.map(
+            (arr) => new CardStack(arr),
+        );
+
+        card_stacks.splice(stack_index, 1, ...new_card_stacks);
+        console.log(card_stacks.map((cs) => cs.str()));
     }
 
     add_singleton_card(card: Card) {
@@ -1265,20 +1254,6 @@ class PhysicalShelfCard {
     add_click_listener(physical_game: PhysicalGame): void {
         const div = this.card_div;
         const self = this;
-        const card_position = this.card_location.card_position;
-
-        // When you click at a card at either end of a stack,
-        // it gets split off the stack so that the player
-        // can then move that single card to some other stack.
-        // (This is part of what makes the game fun.)
-        //
-        // Other than that, we don't have click handlers on
-        // specific cards (at least for now); instead, users
-        // mostly manipulate full stacks of cards (including
-        // one-card stacks) via PhysicalCardStack.
-        if (card_position !== CardPositionType.AT_END) {
-            return;
-        }
 
         this.reset_click_listener(); // there can only be ONE!
 
@@ -1291,36 +1266,20 @@ class PhysicalShelfCard {
     }
 }
 
-function get_card_position(
-    card_index: number,
-    num_cards: number,
-): CardPositionType {
-    if (num_cards === 1) {
-        return CardPositionType.LONER;
-    }
-    if (card_index === 0 || card_index === num_cards - 1) {
-        return CardPositionType.AT_END;
-    }
-
-    return CardPositionType.IN_MIDDLE;
-}
-
 function build_physical_shelf_cards(
     stack_location: StackLocation,
     cards: Card[],
 ): PhysicalShelfCard[] {
     const physical_shelf_cards: PhysicalShelfCard[] = [];
+    const { shelf_index, stack_index } = stack_location;
 
     for (let card_index = 0; card_index < cards.length; ++card_index) {
-        let card_position = get_card_position(card_index, cards.length);
-
         const card = cards[card_index];
 
         const card_location = new ShelfCardLocation({
-            shelf_index: stack_location.shelf_index,
-            stack_index: stack_location.stack_index,
+            shelf_index,
+            stack_index,
             card_index,
-            card_position,
         });
 
         const physical_card = new PhysicalCard(card);
@@ -1709,11 +1668,11 @@ class PhysicalShelf {
         return physical_cards;
     }
 
-    split_card_off_end(info: {
+    split_card_from_stack(info: {
         stack_index: number;
         card_index: number;
     }): void {
-        this.shelf.split_card_off_end(info);
+        this.shelf.split_card_from_stack(info);
         this.populate();
     }
 
@@ -1959,8 +1918,8 @@ class PhysicalBoard {
         const physical_shelves = this.physical_shelves;
 
         // Right now the only action when you click on a shelf card
-        // is to split it from the end of its stack.
-        physical_shelves[shelf_index].split_card_off_end({
+        // is to split it from the reset of the stack.
+        physical_shelves[shelf_index].split_card_from_stack({
             stack_index,
             card_index,
         });
