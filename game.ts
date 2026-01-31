@@ -747,7 +747,7 @@ class Board {
         return result;
     }
 
-    move_selected_card_stack_to_end_of_shelf(
+    move_card_stack_to_end_of_shelf(
         card_stack_location: StackLocation,
         new_shelf_idx: number,
     ) {
@@ -954,12 +954,6 @@ class PhysicalHandCard {
 
     handle_dragstart(e): void {
         const physical_game = this.physical_game;
-
-        if (physical_game.has_selected_stack()) {
-            e.preventDefault();
-            return;
-        }
-
         const card = this.card;
         const tray_width = this.get_width();
         physical_game.start_drag_hand_card({ card, tray_width });
@@ -1342,11 +1336,11 @@ function build_physical_shelf_cards(
 
 class PhysicalCardStack {
     physical_game: PhysicalGame;
+    physical_board: PhysicalBoard;
     stack_location: StackLocation;
     stack: CardStack;
     physical_shelf_cards: PhysicalShelfCard[];
     div: HTMLElement;
-    selected: boolean;
     mergeable: boolean;
 
     constructor(
@@ -1355,16 +1349,15 @@ class PhysicalCardStack {
         stack: CardStack,
     ) {
         this.physical_game = physical_game;
+        this.physical_board = physical_game.physical_board;
         this.stack_location = stack_location;
         this.stack = stack;
 
         this.div = document.createElement("div");
         this.div.style.marginRight = "20px";
 
-        this.div.addEventListener("click", () => {
-            physical_game.handle_stack_click(stack_location);
-        });
         this.enable_drop();
+        this.allow_dragging();
 
         this.physical_shelf_cards = build_physical_shelf_cards(
             stack_location,
@@ -1375,7 +1368,6 @@ class PhysicalCardStack {
             this.div.append(physical_shelf_card.dom());
         }
 
-        this.selected = false;
         this.mergeable = false;
     }
 
@@ -1389,16 +1381,6 @@ class PhysicalCardStack {
 
     get_stack_width() {
         return this.div.clientWidth;
-    }
-
-    show_as_selected(): void {
-        this.selected = true;
-        this.div.style.backgroundColor = "cyan";
-    }
-
-    show_as_un_selected(): void {
-        this.selected = false;
-        this.div.style.backgroundColor = "transparent";
     }
 
     show_as_mergeable(): void {
@@ -1422,21 +1404,42 @@ class PhysicalCardStack {
 
     accepts_drop(): boolean {
         const physical_game = this.physical_game;
-        const stack = this.stack;
-        const card = physical_game.dragged_hand_card;
+        const physical_board = physical_game.physical_board;
+        const board = physical_board.board;
+        const dropped_on_stack = this.stack;
+        const dragged_card = physical_game.dragged_hand_card;
+        const dragged_stack_location = physical_board.dragged_stack_location;
 
-        if (card === undefined) {
-            return false;
+        if (dragged_card !== undefined) {
+            return dropped_on_stack.is_mergeable_with_card(dragged_card);
         }
 
-        return stack.is_mergeable_with_card(card);
+        if (dragged_stack_location !== undefined) {
+            const dragged_stack = board.get_stack_for(dragged_stack_location);
+            return dropped_on_stack.is_mergeable_with(dragged_stack);
+        }
+
+        return false; // unforeseen future draggable
     }
 
     handle_drop(): void {
         const physical_game = this.physical_game;
-        const stack_location = this.stack_location;
+        const physical_board = this.physical_board;
+        const target_location = this.stack_location;
+        const dragged_card = physical_game.dragged_hand_card;
+        const dragged_stack_location = physical_board.dragged_stack_location;
 
-        physical_game.handle_hand_card_drop(stack_location);
+        if (dragged_card !== undefined) {
+            physical_game.handle_hand_card_drop(target_location);
+        }
+
+        if (dragged_stack_location !== undefined) {
+            const source_location = dragged_stack_location;
+            physical_board.drop_stack_on_stack({
+                source_location,
+                target_location,
+            });
+        }
     }
 
     enable_drop(): void {
@@ -1451,6 +1454,41 @@ class PhysicalCardStack {
 
         div.addEventListener("drop", () => {
             self.handle_drop();
+        });
+    }
+
+    // DRAG **from** the stack
+
+    handle_dragstart(e): void {
+        const physical_board = this.physical_board;
+        const card_stack = this.stack;
+        const stack_location = this.stack_location;
+        const tray_width = this.get_stack_width();
+
+        physical_board.start_drag_stack({
+            card_stack,
+            stack_location,
+            tray_width,
+        });
+    }
+
+    handle_dragend(): void {
+        this.physical_board.end_drag_stack();
+    }
+
+    allow_dragging() {
+        const self = this;
+        const div = this.div;
+
+        div.draggable = true;
+        div.style.userSelect = undefined;
+
+        div.addEventListener("dragstart", (e) => {
+            self.handle_dragstart(e);
+        });
+
+        div.addEventListener("dragend", () => {
+            self.handle_dragend();
         });
     }
 }
@@ -1473,19 +1511,12 @@ class PhysicalEmptyShelfSpot {
     shelf_idx: number;
     div: HTMLElement;
     physical_game: PhysicalGame;
+
     constructor(shelf_idx: number, physical_game: PhysicalGame) {
         this.shelf_idx = shelf_idx;
         this.physical_game = physical_game;
         this.div = this.make_div();
-        this.add_click_listener();
         this.enable_drop();
-    }
-
-    add_click_listener() {
-        this.div.addEventListener("click", (e) => {
-            if (e.currentTarget !== e.target) return;
-            this.physical_game.handle_empty_shelf_space_click(this.shelf_idx);
-        });
     }
 
     make_div() {
@@ -1515,16 +1546,31 @@ class PhysicalEmptyShelfSpot {
     }
 
     accepts_drop(): boolean {
-        if (this.physical_game.dragged_hand_card !== undefined) {
-            console.log("accepting drop of hand card to empty spot");
+        const physical_game = this.physical_game;
+        const physical_board = physical_game.physical_board;
+
+        if (physical_game.dragged_hand_card !== undefined) {
             return true;
         }
 
-        return false; // don't handle stacks drags yet
+        if (physical_board.dragged_stack_location !== undefined) {
+            console.log("accepting drop of stack to empty spot");
+            return true;
+        }
+
+        return false; // unknown "future" draggable
     }
 
     handle_drop(): void {
-        this.physical_game.move_card_from_hand_to_board();
+        const physical_game = this.physical_game;
+        const physical_board = physical_game.physical_board;
+        const shelf_index = this.shelf_idx;
+
+        if (physical_game.dragged_hand_card !== undefined) {
+            physical_game.move_card_from_hand_to_board();
+        } else {
+            physical_board.move_dragged_card_stack_to_end_of_shelf(shelf_index);
+        }
     }
 
     enable_drop(): void {
@@ -1682,7 +1728,7 @@ class PhysicalBoard {
     board: Board;
     div: HTMLElement;
     physical_shelves: PhysicalShelf[];
-    selected_stack: StackLocation | undefined;
+    dragged_stack_location: StackLocation | undefined;
     undo_button: UndoButton;
 
     constructor(physical_game: PhysicalGame, board: Board) {
@@ -1690,7 +1736,7 @@ class PhysicalBoard {
         this.board = board;
         this.div = this.make_div();
         this.physical_shelves = this.build_physical_shelves();
-        this.selected_stack = undefined;
+        this.dragged_stack_location = undefined;
         this.undo_button = new UndoButton(physical_game);
     }
 
@@ -1714,15 +1760,19 @@ class PhysicalBoard {
         return physical_shelves;
     }
 
-    move_selected_card_stack_to_end_of_shelf(new_shelf_idx: number) {
-        const selected_stack_loc = this.selected_stack!;
-        this.board.move_selected_card_stack_to_end_of_shelf(
-            selected_stack_loc,
-            new_shelf_idx,
+    // ACTION
+    move_dragged_card_stack_to_end_of_shelf(new_shelf_index: number) {
+        const physical_game = this.physical_game;
+        const stack_location = this.dragged_stack_location!;
+
+        this.board.move_card_stack_to_end_of_shelf(
+            stack_location,
+            new_shelf_index,
         );
-        this.un_select_stack();
-        this.populate_shelf(selected_stack_loc.shelf_index);
-        this.populate_shelf(new_shelf_idx);
+        this.populate_shelf(stack_location.shelf_index);
+        this.populate_shelf(new_shelf_index);
+
+        physical_game.game.maybe_update_snapshot();
     }
 
     top_physical_shelf(): PhysicalShelf {
@@ -1760,27 +1810,6 @@ class PhysicalBoard {
         );
     }
 
-    in_stack_selection_mode(): boolean {
-        return this.selected_stack !== undefined;
-    }
-
-    merge_with_or_select(stack_location: StackLocation) {
-        if (this.in_stack_selection_mode()) {
-            if (stack_location.equals(this.selected_stack!)) {
-                this.un_select_stack();
-            } else {
-                this.attempt_stack_merge(stack_location);
-            }
-        } else {
-            // Start stack selection mode
-            this.select_stack(stack_location);
-        }
-    }
-
-    handle_stack_click(stack_location: StackLocation): void {
-        this.merge_with_or_select(stack_location);
-    }
-
     physical_card_stack_from(stack_location: StackLocation): PhysicalCardStack {
         const { shelf_index, stack_index } = stack_location;
         const physical_shelf = this.physical_shelves[shelf_index];
@@ -1806,25 +1835,36 @@ class PhysicalBoard {
         this.display_mergeable_stacks_for(card_stack);
     }
 
-    select_stack(stack_location: StackLocation): void {
-        const card_stack = this.board.get_stack_for(stack_location);
-        const physical_card_stack =
-            this.physical_card_stack_from(stack_location);
+    start_drag_stack(info: {
+        card_stack: CardStack;
+        stack_location: StackLocation;
+        tray_width: number;
+    }): void {
+        const { card_stack, stack_location, tray_width } = info;
 
-        for (const physical_shelf_card of this.get_all_physical_shelf_cards()) {
-            physical_shelf_card.reset_click_listener();
-        }
+        this.dragged_stack_location = stack_location;
 
-        this.selected_stack = stack_location;
-        physical_card_stack.show_as_selected();
-        this.display_empty_shelf_spots_for_selected_stack();
+        console.log("game dragging stack", card_stack.str());
+
         this.display_mergeable_stacks_for(card_stack);
+
+        const physical_shelves =
+            this.get_physical_shelves_for_stack_drag(stack_location);
+        this.display_empty_shelf_spots(physical_shelves, tray_width);
     }
 
-    get_physical_shelves_for_stack_move(): PhysicalShelf[] {
+    end_drag_stack(): void {
+        console.log("game end dragging stack", this.dragged_stack_location);
+        this.hide_mergeable_stacks();
+        this.hide_empty_spots();
+        this.dragged_stack_location = undefined;
+    }
+
+    get_physical_shelves_for_stack_drag(
+        stack_location: StackLocation,
+    ): PhysicalShelf[] {
         const result: PhysicalShelf[] = [];
 
-        const stack_location = this.selected_stack!;
         const stack_shelf_idx = stack_location.shelf_index;
 
         for (let i = 0; i < this.physical_shelves.length; i++) {
@@ -1844,11 +1884,6 @@ class PhysicalBoard {
         return result;
     }
 
-    get_tray_width_for_selected_stack(): number {
-        const stack = this.selected_stack!;
-        return this.physical_card_stack_from(stack).get_stack_width();
-    }
-
     display_empty_shelf_spots(
         physical_shelves: PhysicalShelf[],
         tray_width: number,
@@ -1856,29 +1891,6 @@ class PhysicalBoard {
         for (const physical_shelf of physical_shelves) {
             physical_shelf.show_empty_spot(tray_width);
         }
-    }
-
-    display_empty_shelf_spots_for_selected_stack(): void {
-        const physical_shelves = this.get_physical_shelves_for_stack_move();
-        const tray_width = this.get_tray_width_for_selected_stack();
-
-        this.display_empty_shelf_spots(physical_shelves, tray_width);
-    }
-
-    un_select_stack(): void {
-        const physical_game = this.physical_game;
-
-        for (const physical_shelf_card of this.get_all_physical_shelf_cards()) {
-            physical_shelf_card.add_click_listener(physical_game);
-        }
-
-        const physical_card_stack = this.physical_card_stack_from(
-            this.selected_stack!,
-        );
-        physical_card_stack.show_as_un_selected();
-        this.selected_stack = undefined;
-        this.hide_empty_spots();
-        this.hide_mergeable_stacks();
     }
 
     hide_empty_spots(): void {
@@ -1893,23 +1905,33 @@ class PhysicalBoard {
         }
     }
 
-    attempt_stack_merge(stack_location: StackLocation): void {
-        // Our caller ensures that we have a selected stack.
+    // ACTION
+    drop_stack_on_stack(info: {
+        source_location: StackLocation;
+        target_location: StackLocation;
+    }): void {
+        const { source_location, target_location } = info;
 
-        const selected_stack = this.selected_stack!;
+        const physical_game = this.physical_game;
 
-        const merged = this.board.merge_card_stacks({
-            source: selected_stack,
-            target: stack_location,
+        const merged_stack = this.board.merge_card_stacks({
+            source: source_location,
+            target: target_location,
         });
-        if (merged === undefined) return;
 
-        if (merged.cards.length >= 3) {
+        if (merged_stack === undefined) {
+            console.log("unexpected merged failure!");
+            return;
+        }
+
+        if (merged_stack.cards.length >= 3) {
             SoundEffects.play_ding_sound();
         }
-        this.un_select_stack();
-        this.populate_shelf(selected_stack.shelf_index);
-        this.populate_shelf(stack_location.shelf_index);
+
+        this.populate_shelf(source_location.shelf_index);
+        this.populate_shelf(target_location.shelf_index);
+
+        physical_game.game.maybe_update_snapshot();
     }
 
     extend_stack_with_card(stack_location: StackLocation, card: Card): void {
@@ -2170,24 +2192,14 @@ class PhysicalGame {
         this.dragged_hand_card = undefined;
     }
 
-    // ACTION - we would send this over wire for multi-player game
+    // ACTION
     handle_shelf_card_click(card_location: ShelfCardLocation) {
         this.physical_board.handle_shelf_card_click(card_location);
+        // no need to call maybe_update_snapshot here
     }
 
     current_physical_player() {
         return this.physical_players[this.game.current_player_index];
-    }
-
-    handle_empty_shelf_space_click(clicked_shelf_idx: number): void {
-        if (this.physical_board.selected_stack === undefined) return;
-        this.physical_board.move_selected_card_stack_to_end_of_shelf(
-            clicked_shelf_idx,
-        );
-    }
-
-    has_selected_stack(): boolean {
-        return this.physical_board.selected_stack !== undefined;
     }
 
     start_drag_hand_card(info: { card: Card; tray_width: number }): void {
@@ -2210,6 +2222,7 @@ class PhysicalGame {
         this.physical_board.hide_empty_spots();
     }
 
+    // ACTION
     handle_hand_card_drop(stack_location: StackLocation): void {
         const card = this.dragged_hand_card;
         const physical_hand = this.current_physical_player().physical_hand;
@@ -2224,8 +2237,7 @@ class PhysicalGame {
         this.game.maybe_update_snapshot();
     }
 
-    // ACTION! (We will need to broadcast this when we
-    // get to multi-player.)
+    // ACTION
     move_card_from_hand_to_board(): void {
         const card = this.dragged_hand_card;
         const physical_board = this.physical_board;
@@ -2237,8 +2249,11 @@ class PhysicalGame {
         physical_board.make_old_cards_firmly_on_board();
         physical_hand.remove_card_from_hand(card);
         physical_board.add_card_to_top_shelf(card);
+
+        // no need to call maybe_update_snapshot() here
     }
 
+    // ACTION
     rollback_moves_to_last_clean_state() {
         this.game.rollback_moves_to_last_clean_state();
         this.physical_deck = new PhysicalDeck(this.game.deck);
@@ -2252,13 +2267,7 @@ class PhysicalGame {
         this.populate_board_area();
     }
 
-    // ACTION!
-    handle_stack_click(stack_location: StackLocation): void {
-        this.physical_board.handle_stack_click(stack_location);
-        this.game.maybe_update_snapshot();
-    }
-
-    // ACTION!
+    // ACTION
     complete_turn() {
         if (!this.game.complete_turn()) {
             alert(
