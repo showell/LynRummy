@@ -1425,21 +1425,38 @@ class PhysicalCardStack {
 
     accepts_drop(): boolean {
         const physical_game = this.physical_game;
-        const stack = this.stack;
-        const card = physical_game.dragged_hand_card;
+        const physical_board = physical_game.physical_board;
+        const board = physical_board.board;
+        const dropped_on_stack = this.stack;
+        const dragged_card = physical_game.dragged_hand_card;
+        const dragged_stack_location = physical_board.dragged_stack_location;
 
-        if (card === undefined) {
-            return false;
+        if (dragged_card !== undefined) {
+            return dropped_on_stack.is_mergeable_with_card(dragged_card);
         }
 
-        return stack.is_mergeable_with_card(card);
+        if (dragged_stack_location !== undefined) {
+            const dragged_stack = board.get_stack_for(dragged_stack_location);
+            return dropped_on_stack.is_mergeable_with(dragged_stack);
+        }
+
+        return false; // unforeseen future draggable
     }
 
     handle_drop(): void {
         const physical_game = this.physical_game;
+        const physical_board = this.physical_board;
         const stack_location = this.stack_location;
+        const dragged_card = physical_game.dragged_hand_card;
+        const dragged_stack_location = physical_board.dragged_stack_location;
 
-        physical_game.handle_hand_card_drop(stack_location);
+        if (dragged_card !== undefined) {
+            physical_game.handle_hand_card_drop(stack_location);
+        }
+
+        if (dragged_stack_location !== undefined) {
+            console.log("COMING!");
+        }
     }
 
     enable_drop(): void {
