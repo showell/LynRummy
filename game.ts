@@ -747,7 +747,7 @@ class Board {
         return result;
     }
 
-    move_selected_card_stack_to_end_of_shelf(
+    move_card_stack_to_end_of_shelf(
         card_stack_location: StackLocation,
         new_shelf_idx: number,
     ) {
@@ -1517,6 +1517,7 @@ class PhysicalEmptyShelfSpot {
     shelf_idx: number;
     div: HTMLElement;
     physical_game: PhysicalGame;
+
     constructor(shelf_idx: number, physical_game: PhysicalGame) {
         this.shelf_idx = shelf_idx;
         this.physical_game = physical_game;
@@ -1559,16 +1560,31 @@ class PhysicalEmptyShelfSpot {
     }
 
     accepts_drop(): boolean {
-        if (this.physical_game.dragged_hand_card !== undefined) {
-            console.log("accepting drop of hand card to empty spot");
+        const physical_game = this.physical_game;
+        const physical_board = physical_game.physical_board;
+
+        if (physical_game.dragged_hand_card !== undefined) {
             return true;
         }
 
-        return false; // don't handle stacks drags yet
+        if (physical_board.dragged_stack_location !== undefined) {
+            console.log("accepting drop of stack to empty spot");
+            return true;
+        }
+
+        return false; // unknown "future" draggable
     }
 
     handle_drop(): void {
-        this.physical_game.move_card_from_hand_to_board();
+        const physical_game = this.physical_game;
+        const physical_board = physical_game.physical_board;
+        const shelf_index = this.shelf_idx;
+
+        if (physical_game.dragged_hand_card !== undefined) {
+            physical_game.move_card_from_hand_to_board();
+        } else {
+            physical_board.move_dragged_card_stack_to_end_of_shelf(shelf_index);
+        }
     }
 
     enable_drop(): void {
@@ -1760,9 +1776,19 @@ class PhysicalBoard {
         return physical_shelves;
     }
 
+    move_dragged_card_stack_to_end_of_shelf(new_shelf_index: number) {
+        const stack_location = this.dragged_stack_location!;
+        this.board.move_card_stack_to_end_of_shelf(
+            stack_location,
+            new_shelf_index,
+        );
+        this.populate_shelf(stack_location.shelf_index);
+        this.populate_shelf(new_shelf_index);
+    }
+
     move_selected_card_stack_to_end_of_shelf(new_shelf_idx: number) {
         const selected_stack_loc = this.selected_stack!;
-        this.board.move_selected_card_stack_to_end_of_shelf(
+        this.board.move_card_stack_to_end_of_shelf(
             selected_stack_loc,
             new_shelf_idx,
         );
