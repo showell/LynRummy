@@ -1313,7 +1313,8 @@ class PhysicalCardStack {
         this.stack = stack;
 
         this.div = document.createElement("div");
-        this.div.style.marginRight = "20px";
+        this.div.style.marginLeft = "15px";
+        this.div.style.marginRight = "15px";
 
         this.enable_drop();
         this.allow_dragging();
@@ -1454,7 +1455,6 @@ class PhysicalCardStack {
 
 function create_shelf_is_clean_or_not_emoji(shelf: Shelf): HTMLElement {
     const emoji = document.createElement("span");
-    emoji.style.marginRight = "10px";
     emoji.style.marginBottom = "5px";
 
     if (shelf.is_clean()) {
@@ -1484,7 +1484,9 @@ class PhysicalEmptyShelfSpot {
         div.style.width = "40px";
         div.style.height = "34px";
         div.style.border = "2px lightgreen dotted";
-        div.style.margin = "auto 0";
+        div.style.marginLeft = "15px";
+        div.style.marginRight = "15px";
+        div.style.marginBottom = "5px";
         div.style.order = "1";
         div.style.backgroundColor = "rgba(0,0,200,0.05)";
         return div;
@@ -1585,7 +1587,7 @@ class PhysicalShelf {
         div.style.borderBottom = "3px solid blue";
         div.style.marginTop = "3px";
         div.style.marginBottom = "10px";
-        div.style.minHeight = "40px"; // TODO - make this more accurate
+        div.style.minHeight = "45px";
         return div;
     }
 
