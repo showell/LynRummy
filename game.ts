@@ -1362,21 +1362,37 @@ class PhysicalCardStack {
         }
     }
 
-    accepts_drop(): boolean {
-        const physical_game = this.physical_game;
-        const physical_board = physical_game.physical_board;
-        const board = physical_board.board;
-        const dropped_on_stack = this.stack;
-        const dragged_card = physical_game.dragged_hand_card;
-        const dragged_stack_location = physical_board.dragged_stack_location;
+    /* accept DROP (either hand card or stack) */
 
-        if (dragged_card !== undefined) {
-            return dropped_on_stack.is_mergeable_with_card(dragged_card);
+    card_is_dragged(): boolean {
+        return this.physical_game.dragged_hand_card !== undefined;
+    }
+
+    can_drop_card(): boolean {
+        const dragged_card = this.physical_game.dragged_hand_card;
+        return this.stack.is_mergeable_with_card(dragged_card);
+    }
+
+    stack_is_dragged(): boolean {
+        const physical_board = this.physical_game.physical_board;
+        return physical_board.dragged_stack_location !== undefined;
+    }
+
+    can_drop_stack(): boolean {
+        const physical_board = this.physical_game.physical_board;
+        const board = physical_board.board;
+        const dragged_stack_location = physical_board.dragged_stack_location;
+        const dragged_stack = board.get_stack_for(dragged_stack_location);
+        return this.stack.is_mergeable_with(dragged_stack);
+    }
+
+    accepts_drop(): boolean {
+        if (this.card_is_dragged()) {
+            return this.can_drop_card();
         }
 
-        if (dragged_stack_location !== undefined) {
-            const dragged_stack = board.get_stack_for(dragged_stack_location);
-            return dropped_on_stack.is_mergeable_with(dragged_stack);
+        if (this.stack_is_dragged()) {
+            return this.can_drop_stack();
         }
 
         return false; // unforeseen future draggable
