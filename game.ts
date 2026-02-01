@@ -1364,6 +1364,16 @@ class PhysicalShelfCard {
 
         div.addEventListener("click", this.click_handler);
     }
+
+    ensure_firmly_on_board() {
+        const physical_card = this.physical_card;
+        const card = physical_card.card;
+
+        if (card.state === CardState.FRESHLY_PLAYED_BY_LAST_PLAYER) {
+            card.state = CardState.FIRMLY_ON_BOARD;
+            physical_card.update_state_styles();
+        }
+    }
 }
 
 function build_physical_shelf_cards(
@@ -1818,18 +1828,9 @@ class PhysicalBoard {
         // This move will make all the FRESHLY_PLAYED_BY_LAST_PLAYER cards
         // be FIRMLY_ON_BOARD, which basically means they will lose their highlighting
         // as the current turn owner has decided to make a "real move" on the board.
-        this.get_all_physical_shelf_cards().forEach(
-            (physical_shelf_card: PhysicalShelfCard) => {
-                const physical_card = physical_shelf_card.physical_card;
-                const card = physical_card.card;
-
-                if (card.state === CardState.FRESHLY_PLAYED_BY_LAST_PLAYER) {
-                    card.state = CardState.FIRMLY_ON_BOARD;
-                }
-
-                physical_card.update_state_styles();
-            },
-        );
+        for (const physical_shelf_card of this.get_all_physical_shelf_cards()) {
+            physical_shelf_card.ensure_firmly_on_board();
+        }
     }
 
     get_physical_card_stacks(): PhysicalCardStack[] {
