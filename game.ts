@@ -355,10 +355,6 @@ function card_color(suit: Suit): CardColor {
     }
 }
 
-function css_color(card_color: CardColor): string {
-    return card_color == CardColor.RED ? "red" : "black";
-}
-
 function card_color_str(color: CardColor): string {
     return color == CardColor.RED ? "red" : "black";
 }
@@ -1138,6 +1134,44 @@ function example_board() {
 
 ***********************************************/
 
+function css_color(card_color: CardColor): string {
+    return card_color == CardColor.RED ? "red" : "black";
+}
+
+function draw_playing_card(card: Card): HTMLElement {
+    const span = document.createElement("span");
+    const v_node = document.createElement("span");
+    const s_node = document.createElement("span");
+    v_node.style.display = "block";
+    v_node.style.userSelect = "none";
+    s_node.style.display = "block";
+    s_node.style.userSelect = "none";
+    v_node.innerText = value_str(card.value);
+    s_node.innerText = suit_emoji_str(card.suit);
+    span.append(v_node);
+    span.append(s_node);
+
+    span.style.color = css_color(card.color);
+    span.style.textAlign = "center";
+    span.style.fontSize = "17px";
+    span.style.border = "1px blue solid";
+    span.style.padding = "1px";
+    span.style.margin = "1px";
+    span.style.display = "inline-block";
+    span.style.minWidth = "21px";
+    span.style.minHeight = "38px";
+
+    return span;
+}
+
+/***********************************************
+
+    TRY TO KEEP PURE DRAWING CODE ABOVE ^^^^^
+
+    TRY TO KEEP OTHER UI CODE BELOW vvvvv
+
+***********************************************/
+
 type ClickHandler = (e: MouseEvent) => void;
 
 class PhysicalCard {
@@ -1146,29 +1180,7 @@ class PhysicalCard {
 
     constructor(card: Card) {
         this.card = card;
-
-        const span = document.createElement("span");
-        const v_node = document.createElement("span");
-        const s_node = document.createElement("span");
-        v_node.style.display = "block";
-        v_node.style.userSelect = "none";
-        s_node.style.display = "block";
-        s_node.style.userSelect = "none";
-        v_node.innerText = value_str(card.value);
-        s_node.innerText = suit_emoji_str(card.suit);
-        span.append(v_node);
-        span.append(s_node);
-
-        span.style.color = css_color(card.color);
-        span.style.textAlign = "center";
-        span.style.fontSize = "17px";
-        span.style.border = "1px blue solid";
-        span.style.padding = "1px";
-        span.style.margin = "1px";
-        span.style.display = "inline-block";
-        span.style.minWidth = "21px";
-        span.style.minHeight = "38px";
-
+        const span = draw_playing_card(card);
         this.span = span;
 
         this.update_state_styles();
