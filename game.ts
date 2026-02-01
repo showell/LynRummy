@@ -2646,7 +2646,186 @@ let SoundEffects: SoundEffectsSingleton;
 
 // This is the entry point for static/index.html
 function gui() {
-    SoundEffects = new SoundEffectsSingleton();
-    const ui = new MainPage();
-    ui.start();
+    playground();
+}
+
+function playground() {
+    const top_div = document.createElement("div");
+    const h3 = document.createElement("h3");
+    h3.innerText = "playground";
+
+    const pre = document.createElement("pre");
+    pre.innerText = `
+        Drag stacks with the mouse.
+        There is no overlap detection yet.
+    `;
+
+    const hr = document.createElement("hr");
+    const my_div = document.createElement("div");
+
+    top_div.append(h3);
+    top_div.append(pre);
+    top_div.append(hr);
+    top_div.append(my_div);
+
+    document.body.append(top_div);
+    my_div.style.width = "700px";
+    my_div.style.height = "500px";
+    my_div.style.border = "1px blue solid";
+    my_div.style.marginLeft = "100px";
+    my_div.style.position = "relative";
+
+    const sigs = [
+        "KS,AS,2S,3S",
+        "TD,JD,QD,KD",
+        "2H,3H,4H",
+        "7S,7D,7C",
+        "AC,AD,AH",
+        "2C,3D,4C,5H",
+    ];
+
+    let x = 10;
+    let y = 10;
+
+    for (const sig of sigs) {
+        const block = new Block(sig, x, y);
+        x += 100;
+        y += 50;
+        my_div.append(block.div);
+        block.begin();
+    }
+}
+
+class Block {
+    div: HTMLElement;
+    sig: string;
+    offsetX: number;
+    offsetY: number;
+    x: number;
+    y: number;
+    up: ClickHandler;
+    down: ClickHandler;
+    move: ClickHandler;
+    leave: ClickHandler;
+
+    constructor(sig: string, x: number, y: number) {
+        const div = document.createElement("div");
+        div.style.position = "absolute";
+        div.draggable = false;
+
+        const flex_div = document.createElement("div");
+        flex_div.style.display = "flex";
+        div.append(flex_div);
+
+        for (const card_sig of sig.split(",")) {
+            console.log(card_sig);
+            const card = Card.from_board(card_sig, 1);
+            const physical_card = new PhysicalCard(card);
+            div.append(physical_card.dom());
+        }
+
+        this.sig = sig;
+        this.x = x;
+        this.y = y;
+        this.div = div;
+
+        this.display();
+    }
+
+    begin(): void {
+        const div = this.div;
+        const self = this;
+
+        div.style.top = `${this.y}`;
+        div.style.left = `${this.x}`;
+        this.display();
+
+        this.down = (e) => {
+            self.mousedown(e);
+        };
+        div.addEventListener("mousedown", this.down);
+    }
+
+    display(): void {
+        const div = this.div;
+        const sig = this.sig;
+
+        console.log(
+            `${sig}offsetLeft = ${div.offsetLeft}, offsetTop = ${div.offsetTop}`,
+        );
+    }
+
+    mousedown(event) {
+        const div = this.div;
+        const self = this;
+
+        console.log("down", this.sig);
+
+        this.offsetX = event.clientX - div.offsetLeft;
+        this.offsetY = event.clientY - div.offsetTop;
+
+        this.move = (e) => {
+            self.mousemove(e);
+        };
+        div.addEventListener("mousemove", this.move);
+
+        this.leave = (e) => {
+            self.mouseleave(e);
+        };
+        div.addEventListener("mouseleave", this.leave);
+
+        this.up = (e) => {
+            self.mouseup(e);
+        };
+        div.addEventListener("mouseup", this.up);
+
+        // Optional: Change cursor style while dragging
+        div.style.cursor = "grabbing";
+
+        event.stopPropagation();
+        event.preventDefault();
+    }
+
+    mousemove(event) {
+        const div = this.div;
+
+        const newLeft = event.clientX - this.offsetX;
+        const newTop = event.clientY - this.offsetY;
+
+        // Update the div's position
+        div.style.left = `${newLeft}px`;
+        div.style.top = `${newTop}px`;
+        event.stopPropagation();
+        event.preventDefault();
+    }
+
+    mouseleave(event) {
+        console.log("leave", this.sig);
+        this.abort();
+        event.stopPropagation();
+        event.preventDefault();
+    }
+
+    mouseup(event) {
+        console.log("up", this.sig);
+        this.abort();
+        event.stopPropagation();
+        event.preventDefault();
+    }
+
+    abort() {
+        const div = this.div;
+
+        if (this.move) {
+            // Optional: Change cursor style while dragging
+            div.style.cursor = "grab";
+
+            div.removeEventListener("mousemove", this.move);
+            this.move = undefined;
+            div.removeEventListener("mouseleave", this.leave);
+            this.leave = undefined;
+            div.removeEventListener("mouseup", this.up);
+            this.up = undefined;
+        }
+    }
 }
