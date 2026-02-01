@@ -1138,7 +1138,7 @@ function css_color(card_color: CardColor): string {
     return card_color == CardColor.RED ? "red" : "black";
 }
 
-function draw_playing_card(card: Card): HTMLElement {
+function render_playing_card(card: Card): HTMLElement {
     const span = document.createElement("span");
     const v_node = document.createElement("span");
     const s_node = document.createElement("span");
@@ -1164,7 +1164,7 @@ function draw_playing_card(card: Card): HTMLElement {
     return span;
 }
 
-function draw_card_stack(card_spans: HTMLElement[]): HTMLElement {
+function render_card_stack(card_spans: HTMLElement[]): HTMLElement {
     const div = document.createElement("div");
     div.style.marginLeft = "15px";
     div.style.marginRight = "15px";
@@ -1173,6 +1173,20 @@ function draw_card_stack(card_spans: HTMLElement[]): HTMLElement {
         div.append(card_span);
     }
 
+    return div;
+}
+
+function render_empty_shelf_spot() {
+    const div = document.createElement("div");
+    div.classList.add("empty-shelf-spot");
+    div.style.width = "40px";
+    div.style.height = "34px";
+    div.style.border = "2px lightgreen dotted";
+    div.style.marginLeft = "15px";
+    div.style.marginRight = "15px";
+    div.style.marginBottom = "5px";
+    div.style.order = "1";
+    div.style.backgroundColor = "rgba(0,0,200,0.05)";
     return div;
 }
 
@@ -1192,7 +1206,7 @@ class PhysicalCard {
 
     constructor(card: Card) {
         this.card = card;
-        const span = draw_playing_card(card);
+        const span = render_playing_card(card);
         this.span = span;
 
         this.update_state_styles();
@@ -1401,7 +1415,7 @@ class PhysicalCardStack {
 
         const card_spans = this.physical_shelf_cards.map((psc) => psc.dom());
 
-        this.div = draw_card_stack(card_spans);
+        this.div = render_card_stack(card_spans);
         this.enable_drop();
         this.allow_dragging();
 
@@ -1579,22 +1593,8 @@ class PhysicalEmptyShelfSpot {
     constructor(shelf_idx: number, physical_game: PhysicalGame) {
         this.shelf_idx = shelf_idx;
         this.physical_game = physical_game;
-        this.div = this.make_div();
+        this.div = render_empty_shelf_spot();
         this.enable_drop();
-    }
-
-    make_div() {
-        const div = document.createElement("div");
-        div.classList.add("empty-shelf-spot");
-        div.style.width = "40px";
-        div.style.height = "34px";
-        div.style.border = "2px lightgreen dotted";
-        div.style.marginLeft = "15px";
-        div.style.marginRight = "15px";
-        div.style.marginBottom = "5px";
-        div.style.order = "1";
-        div.style.backgroundColor = "rgba(0,0,200,0.05)";
-        return div;
     }
 
     hide() {
