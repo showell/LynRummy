@@ -1326,7 +1326,7 @@ class PhysicalHandCard {
     }
 }
 
-class PhysicalShelfCard {
+class PhysicalBoardCard {
     card_location: ShelfCardLocation;
     physical_card: PhysicalCard;
     card_div: HTMLElement;
@@ -1376,11 +1376,11 @@ class PhysicalShelfCard {
     }
 }
 
-function build_physical_shelf_cards(
+function build_physical_board_cards(
     stack_location: StackLocation,
     cards: Card[],
-): PhysicalShelfCard[] {
-    const physical_shelf_cards: PhysicalShelfCard[] = [];
+): PhysicalBoardCard[] {
+    const physical_board_cards: PhysicalBoardCard[] = [];
     const { shelf_index, stack_index } = stack_location;
 
     for (let card_index = 0; card_index < cards.length; ++card_index) {
@@ -1393,14 +1393,14 @@ function build_physical_shelf_cards(
         });
 
         const physical_card = new PhysicalCard(card);
-        const physical_shelf_card = new PhysicalShelfCard(
+        const physical_board_card = new PhysicalBoardCard(
             card_location,
             physical_card,
         );
-        physical_shelf_cards.push(physical_shelf_card);
+        physical_board_cards.push(physical_board_card);
     }
 
-    return physical_shelf_cards;
+    return physical_board_cards;
 }
 
 class PhysicalCardStack {
@@ -1408,7 +1408,7 @@ class PhysicalCardStack {
     physical_board: PhysicalBoard;
     stack_location: StackLocation;
     stack: CardStack;
-    physical_shelf_cards: PhysicalShelfCard[];
+    physical_board_cards: PhysicalBoardCard[];
     div: HTMLElement;
 
     constructor(
@@ -1421,12 +1421,12 @@ class PhysicalCardStack {
         this.stack_location = stack_location;
         this.stack = stack;
 
-        this.physical_shelf_cards = build_physical_shelf_cards(
+        this.physical_board_cards = build_physical_board_cards(
             stack_location,
             stack.cards,
         );
 
-        const card_spans = this.physical_shelf_cards.map((psc) => psc.dom());
+        const card_spans = this.physical_board_cards.map((psc) => psc.dom());
 
         this.div = render_card_stack(card_spans);
         this.enable_drop();
@@ -1437,8 +1437,8 @@ class PhysicalCardStack {
         return this.div;
     }
 
-    get_all_physical_shelf_cards(): PhysicalShelfCard[] {
-        return this.physical_shelf_cards;
+    get_all_physical_board_cards(): PhysicalBoardCard[] {
+        return this.physical_board_cards;
     }
 
     get_stack_width() {
@@ -1461,10 +1461,10 @@ class PhysicalCardStack {
 
     set_up_clicks_handlers_for_cards(): void {
         const physical_game = this.physical_game;
-        const physical_shelf_cards = this.physical_shelf_cards;
+        const physical_board_cards = this.physical_board_cards;
 
-        for (const physical_shelf_card of physical_shelf_cards) {
-            physical_shelf_card.add_click_listener(physical_game);
+        for (const physical_board_card of physical_board_cards) {
+            physical_board_card.add_click_listener(physical_game);
         }
     }
 
@@ -1740,13 +1740,13 @@ class PhysicalShelf {
         return physical_card_stacks;
     }
 
-    get_all_physical_shelf_cards(): PhysicalShelfCard[] {
-        let physical_cards: PhysicalShelfCard[] = [];
+    get_all_physical_board_cards(): PhysicalBoardCard[] {
+        let physical_cards: PhysicalBoardCard[] = [];
         const physical_card_stacks = this.physical_card_stacks;
 
         for (const physical_card_stack of physical_card_stacks) {
             physical_cards = physical_cards.concat(
-                physical_card_stack.get_all_physical_shelf_cards(),
+                physical_card_stack.get_all_physical_board_cards(),
             );
         }
 
@@ -1811,13 +1811,13 @@ class PhysicalBoard {
         return this.physical_shelves[0];
     }
 
-    get_all_physical_shelf_cards(): PhysicalShelfCard[] {
-        let physical_cards: PhysicalShelfCard[] = [];
+    get_all_physical_board_cards(): PhysicalBoardCard[] {
+        let physical_cards: PhysicalBoardCard[] = [];
         const physical_shelves = this.physical_shelves;
 
         for (const physical_shelf of physical_shelves) {
             physical_cards = physical_cards.concat(
-                physical_shelf.get_all_physical_shelf_cards(),
+                physical_shelf.get_all_physical_board_cards(),
             );
         }
 
@@ -1828,8 +1828,8 @@ class PhysicalBoard {
         // This move will make all the FRESHLY_PLAYED_BY_LAST_PLAYER cards
         // be FIRMLY_ON_BOARD, which basically means they will lose their highlighting
         // as the current turn owner has decided to make a "real move" on the board.
-        for (const physical_shelf_card of this.get_all_physical_shelf_cards()) {
-            physical_shelf_card.ensure_firmly_on_board();
+        for (const physical_board_card of this.get_all_physical_board_cards()) {
+            physical_board_card.ensure_firmly_on_board();
         }
     }
 
