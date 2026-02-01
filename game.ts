@@ -83,11 +83,13 @@ const enum CardStackType {
     RED_BLACK_RUN = "red/black alternating",
 }
 
-enum CardState {
-    IN_DECK,
+enum HandCardState {
     STILL_IN_HAND,
-    FIRMLY_ON_BOARD,
     FRESHLY_DRAWN,
+}
+
+enum BoardCardState {
+    FIRMLY_ON_BOARD,
     FRESHLY_PLAYED,
     FRESHLY_PLAYED_BY_LAST_PLAYER,
 }
@@ -331,10 +333,6 @@ function suit_str(suit: Suit): string {
     }
 }
 
-function state_str(state: CardState) {
-    return state.toString();
-}
-
 function deck_str(origin_deck: OriginDeck): string {
     return origin_deck.toString();
 }
@@ -387,14 +385,20 @@ const all_card_values = [
     CardValue.KING,
 ];
 
-function get_sorted_cards_for_suit(suit: Suit, cards: Card[]): Card[] {
-    const suit_cards: Card[] = [];
-    for (const card of cards) {
-        if (card.suit === suit) {
-            suit_cards.push(card);
+function get_sorted_cards_for_suit(
+    suit: Suit,
+    hand_cards: HandCard[],
+): HandCard[] {
+    const suit_cards: HandCard[] = [];
+    for (const hand_card of hand_cards) {
+        if (hand_card.card.suit === suit) {
+            suit_cards.push(hand_card);
         }
     }
-    suit_cards.sort((card1, card2) => card1.value - card2.value);
+    suit_cards.sort(
+        (hand_card1, hand_card2) =>
+            hand_card1.card.value - hand_card2.card.value,
+    );
     return suit_cards;
 }
 
@@ -403,8 +407,7 @@ function build_full_double_deck(): Card[] {
 
     function suit_run(suit: Suit, origin_deck: OriginDeck) {
         return all_card_values.map(
-            (card_value) =>
-                new Card(card_value, suit, CardState.IN_DECK, origin_deck),
+            (card_value) => new Card(card_value, suit, origin_deck),
         );
     }
 
@@ -428,24 +431,17 @@ class Card {
     suit: Suit;
     value: CardValue;
     color: CardColor;
-    state: CardState;
     origin_deck: OriginDeck;
 
-    constructor(
-        value: CardValue,
-        suit: Suit,
-        state: CardState,
-        origin_deck: OriginDeck,
-    ) {
+    constructor(value: CardValue, suit: Suit, origin_deck: OriginDeck) {
         this.value = value;
         this.suit = suit;
-        this.state = state;
         this.origin_deck = origin_deck;
         this.color = card_color(suit);
     }
 
     clone(): Card {
-        return new Card(this.value, this.suit, this.state, this.origin_deck);
+        return new Card(this.value, this.suit, this.origin_deck);
     }
 
     str(): string {
@@ -460,37 +456,84 @@ class Card {
         );
     }
 
-    static from(
-        label: string,
-        state: CardState,
-        origin_deck: OriginDeck,
-    ): Card {
+    static from(label: string, origin_deck: OriginDeck): Card {
         const value = value_for(label[0]);
         const suit = suit_for(label[1]);
-        return new Card(value, suit, state, origin_deck);
+        return new Card(value, suit, origin_deck);
+    }
+}
+
+class HandCard {
+    card: Card;
+    state: HandCardState;
+
+    constructor(card: Card, state: HandCardState) {
+        this.card = card;
+        this.state = state;
+    }
+
+    clone(): HandCard {
+        return new HandCard(this.card, this.state);
+    }
+
+    str(): string {
+        return this.card.str();
+    }
+}
+
+class BoardCard {
+    card: Card;
+    state: BoardCardState;
+
+    constructor(card: Card, state: BoardCardState) {
+        this.card = card;
+        this.state = state;
+    }
+
+    clone(): BoardCard {
+        return new BoardCard(this.card, this.state);
+    }
+
+    str(): string {
+        return this.card.str();
+    }
+
+    static from(label: string, origin_deck: OriginDeck): BoardCard {
+        const value = value_for(label[0]);
+        const suit = suit_for(label[1]);
+        const card = new Card(value, suit, origin_deck);
+        return new BoardCard(card, BoardCardState.FIRMLY_ON_BOARD);
+    }
+
+    static from_hand_card(hand_card: HandCard): BoardCard {
+        return new BoardCard(hand_card.card, BoardCardState.FRESHLY_PLAYED);
     }
 }
 
 class CardStack {
-    cards: Card[]; // Order does matter here!
+    board_cards: BoardCard[]; // Order does matter here!
     stack_type: CardStackType;
 
-    constructor(cards: Card[]) {
-        this.cards = cards;
+    constructor(board_cards: BoardCard[]) {
+        this.board_cards = board_cards;
         this.stack_type = this.get_stack_type();
     }
 
     clone(): CardStack {
-        return new CardStack(this.cards.map((card) => card.clone()));
+        return new CardStack(this.board_cards.map((card) => card.clone()));
+    }
+
+    get_cards(): Card[] {
+        return this.board_cards.map((board_card) => board_card.card);
     }
 
     get_stack_type(): CardStackType {
-        const cards = this.cards;
-        return get_stack_type(cards);
+        // Use raw cards.
+        return get_stack_type(this.get_cards());
     }
 
     str() {
-        return this.cards.map((card) => card.str()).join(",");
+        return this.board_cards.map((board_card) => board_card.str()).join(",");
     }
 
     incomplete(): boolean {
@@ -508,35 +551,34 @@ class CardStack {
         return CardStack.merge(this, other_stack) !== undefined;
     }
 
-    is_mergeable_with_card(card: Card): boolean {
-        return this.is_mergeable_with(new CardStack([card]));
+    is_mergeable_with_card(hand_card: HandCard): boolean {
+        const board_card = BoardCard.from_hand_card(hand_card);
+        return this.is_mergeable_with(new CardStack([board_card]));
     }
 
     static merge(s1: CardStack, s2: CardStack): CardStack | undefined {
-        const stack1 = new CardStack([...s1.cards, ...s2.cards]);
+        const stack1 = new CardStack([...s1.board_cards, ...s2.board_cards]);
         if (!stack1.problematic()) {
             return stack1;
         }
-        const stack2 = new CardStack([...s2.cards, ...s1.cards]);
+        const stack2 = new CardStack([...s2.board_cards, ...s1.board_cards]);
         if (!stack2.problematic()) {
             return stack2;
         }
         return undefined;
     }
 
-    static from_stack_and_card(
-        stack: CardStack,
-        card: Card,
-    ): CardStack | undefined {
-        return CardStack.merge(stack, new CardStack([card]));
-    }
-
     static from(shorthand: string, origin_deck: OriginDeck): CardStack {
         const card_labels = shorthand.split(",");
-        const cards = card_labels.map((label) =>
-            Card.from(label, CardState.FIRMLY_ON_BOARD, origin_deck),
+        const board_cards = card_labels.map((label) =>
+            BoardCard.from(label, origin_deck),
         );
-        return new CardStack(cards);
+        return new CardStack(board_cards);
+    }
+
+    static from_hand_card(hand_card: HandCard): CardStack {
+        const board_card = BoardCard.from_hand_card(hand_card);
+        return new CardStack([board_card]);
     }
 }
 
@@ -587,10 +629,14 @@ class Shelf {
         return true;
     }
 
-    extend_stack_with_card(stack_index: number, card: Card): CardStack {
+    extend_stack_with_card(
+        stack_index: number,
+        hand_card: HandCard,
+    ): CardStack {
         const card_stacks = this.card_stacks;
         const card_stack = this.card_stacks[stack_index];
-        const longer_stack = CardStack.from_stack_and_card(card_stack, card);
+        const new_stack = CardStack.from_hand_card(hand_card);
+        const longer_stack = CardStack.merge(card_stack, new_stack);
 
         card_stacks[stack_index] = longer_stack;
 
@@ -604,12 +650,12 @@ class Shelf {
         const { stack_index, card_index } = info;
         const card_stacks = this.card_stacks;
         const card_stack = card_stacks[stack_index];
-        const cards = card_stack.cards;
+        const board_cards = card_stack.board_cards;
 
         const new_card_arrays = [
-            cards.slice(0, card_index),
-            [cards[card_index]],
-            cards.slice(card_index + 1),
+            board_cards.slice(0, card_index),
+            [board_cards[card_index]],
+            board_cards.slice(card_index + 1),
         ].filter((arr) => arr.length > 0);
 
         const new_card_stacks = new_card_arrays.map(
@@ -620,8 +666,8 @@ class Shelf {
         console.log(card_stacks.map((cs) => cs.str()));
     }
 
-    add_singleton_card(card: Card) {
-        this.card_stacks.push(new CardStack([card]));
+    add_singleton_card(hand_card: HandCard) {
+        this.card_stacks.push(CardStack.from_hand_card(hand_card));
     }
 
     static from(shorthand: string, origin_deck: OriginDeck): Shelf {
@@ -656,14 +702,14 @@ class Board {
         return this.shelves.every((shelf) => shelf.is_clean());
     }
 
-    get_cards(): Card[] {
+    get_cards(): BoardCard[] {
         const shelves = this.shelves;
 
-        const result: Card[] = [];
+        const result: BoardCard[] = [];
         for (const shelf of shelves) {
             for (const card_stack of shelf.card_stacks) {
-                for (const card of card_stack.cards) {
-                    result.push(card);
+                for (const board_card of card_stack.board_cards) {
+                    result.push(board_card);
                 }
             }
         }
@@ -798,25 +844,35 @@ function remove_card_from_array(cards: Card[], card: Card): void {
 }
 
 class Hand {
-    cards: Card[];
+    hand_cards: HandCard[];
 
     constructor() {
-        this.cards = [];
+        this.hand_cards = [];
     }
 
-    add_cards(cards: Card[]): void {
-        this.cards = this.cards.concat(cards);
+    add_cards(cards: Card[], state: HandCardState): void {
+        for (const card of cards) {
+            this.hand_cards.push(new HandCard(card, state));
+        }
     }
 
-    remove_card_from_hand(card: Card): void {
-        const cards = this.cards;
-        remove_card_from_array(cards, card);
+    remove_card_from_hand(hand_card: HandCard): void {
+        const hand_cards = this.hand_cards;
+
+        for (let i = 0; i < hand_cards.length; ++i) {
+            if (hand_cards[i].card.equals(hand_card.card)) {
+                hand_cards.splice(i, 1);
+                return;
+            }
+        }
+
+        throw new Error("Card to be removed is not present in the array!");
     }
 
     // This is called after the player's turn ends.
     age_cards(): void {
-        this.cards.forEach((card) => {
-            card.state = CardState.STILL_IN_HAND;
+        this.hand_cards.forEach((hand_card) => {
+            hand_card.state = HandCardState.STILL_IN_HAND;
         });
     }
 }
@@ -860,7 +916,7 @@ class Game {
     current_player_index: number;
     // The first snapshot will be initialized after `deal_cards`.
     // We will then update the snapshot at any point the board is in a clean state.
-    snapshot: { hand_cards: Card[]; board: Board };
+    snapshot: { hand_cards: HandCard[]; board: Board };
 
     constructor() {
         this.players = [
@@ -871,8 +927,8 @@ class Game {
         this.board = initial_board();
 
         // remove initial cards from deck
-        for (const card of this.board.get_cards()) {
-            this.deck.pull_card_from_deck(card);
+        for (const board_card of this.board.get_cards()) {
+            this.deck.pull_card_from_deck(board_card.card);
         }
 
         this.deal_cards();
@@ -884,7 +940,9 @@ class Game {
 
     update_snapshot(): void {
         this.snapshot = {
-            hand_cards: this.current_hand().cards.map((card) => card.clone()),
+            hand_cards: this.current_hand().hand_cards.map((hand_card) =>
+                hand_card.clone(),
+            ),
             board: this.board.clone(),
         };
     }
@@ -899,7 +957,7 @@ class Game {
 
     rollback_moves_to_last_clean_state(): void {
         const snapshot = this.snapshot;
-        this.current_hand().cards = snapshot.hand_cards;
+        this.current_hand().hand_cards = snapshot.hand_cards;
         this.board = snapshot.board;
     }
 
@@ -911,14 +969,17 @@ class Game {
     deal_cards() {
         for (const player of this.players) {
             const cards = this.deck.take_from_top(15);
-            player.hand.add_cards(cards);
+            player.hand.add_cards(cards, HandCardState.STILL_IN_HAND);
         }
     }
 
     can_get_new_cards(): boolean {
         const did_place_new_cards_on_board = this.board
             .get_cards()
-            .some((card) => card.state === CardState.FRESHLY_PLAYED);
+            .some(
+                (board_card) =>
+                    board_card.state === BoardCardState.FRESHLY_PLAYED,
+            );
         return !did_place_new_cards_on_board;
     }
 
@@ -932,11 +993,7 @@ class Game {
 
     draw_new_cards(cnt: number): void {
         const cards = this.deck.take_from_top(cnt);
-
-        for (const card of cards) {
-            card.state = CardState.FRESHLY_DRAWN;
-        }
-        this.current_hand().add_cards(cards);
+        this.current_hand().add_cards(cards, HandCardState.FRESHLY_DRAWN);
     }
 
     complete_turn(): boolean {
@@ -954,9 +1011,9 @@ class Game {
 
         // The freshly played cards by the last player are highlighted
         // to let the new turn owner know what was done in the previous turn.
-        this.board.get_cards().forEach((card) => {
-            if (card.state === CardState.FRESHLY_PLAYED) {
-                card.state = CardState.FRESHLY_PLAYED_BY_LAST_PLAYER;
+        this.board.get_cards().forEach((board_card) => {
+            if (board_card.state === BoardCardState.FRESHLY_PLAYED) {
+                board_card.state = BoardCardState.FRESHLY_PLAYED_BY_LAST_PLAYER;
             }
         });
 
@@ -1144,26 +1201,10 @@ class PhysicalCard {
         this.card = card;
         const span = render_playing_card(card);
         this.span = span;
-
-        this.update_state_styles();
     }
 
     dom(): HTMLElement {
         return this.span;
-    }
-
-    update_state_styles(): void {
-        const span = this.span;
-
-        if (
-            this.card.state === CardState.FRESHLY_DRAWN ||
-            this.card.state === CardState.FRESHLY_PLAYED ||
-            this.card.state === CardState.FRESHLY_PLAYED_BY_LAST_PLAYER
-        ) {
-            span.style.backgroundColor = new_card_color();
-        } else {
-            span.style.backgroundColor = "transparent";
-        }
     }
 }
 
@@ -1209,17 +1250,18 @@ function new_card_color(): string {
 }
 
 class PhysicalHandCard {
+    hand_card: HandCard;
     card: Card;
     card_div: HTMLElement;
     physical_card: PhysicalCard;
-    physical_game: PhysicalGame;
 
-    constructor(physical_game: PhysicalGame, physical_card: PhysicalCard) {
-        this.physical_game = physical_game;
-        this.physical_card = physical_card;
+    constructor(hand_card: HandCard) {
+        this.hand_card = hand_card;
+        this.card = hand_card.card;
+        this.physical_card = new PhysicalCard(this.card);
         this.card_div = this.physical_card.dom();
-        this.card = physical_card.card;
         this.allow_dragging();
+        this.update_state_styles();
     }
 
     dom() {
@@ -1231,10 +1273,9 @@ class PhysicalHandCard {
     }
 
     handle_dragstart(e): void {
-        const physical_game = this.physical_game;
-        const card = this.card;
+        const hand_card = this.hand_card;
         const tray_width = this.get_width();
-        HandCardDragAction.start_drag_hand_card({ card, tray_width });
+        HandCardDragAction.start_drag_hand_card({ hand_card, tray_width });
     }
 
     handle_dragend(): void {
@@ -1256,19 +1297,34 @@ class PhysicalHandCard {
             self.handle_dragend();
         });
     }
+
+    update_state_styles(): void {
+        const span = this.physical_card.span;
+
+        if (this.hand_card.state === HandCardState.FRESHLY_DRAWN) {
+            span.style.backgroundColor = new_card_color();
+        } else {
+            span.style.backgroundColor = "transparent";
+        }
+    }
 }
 
 class PhysicalBoardCard {
+    board_card: BoardCard;
+    card: Card;
     card_location: ShelfCardLocation;
     physical_card: PhysicalCard;
     card_div: HTMLElement;
     click_handler: ClickHandler | undefined;
 
-    constructor(card_location: ShelfCardLocation, physical_card: PhysicalCard) {
+    constructor(card_location: ShelfCardLocation, board_card: BoardCard) {
+        this.board_card = board_card;
+        this.card = board_card.card;
         this.card_location = card_location;
-        this.physical_card = physical_card;
+        this.physical_card = new PhysicalCard(this.card);
         this.card_div = this.physical_card.dom();
         this.click_handler = undefined;
+        this.update_state_styles();
     }
 
     dom(): HTMLElement {
@@ -1298,25 +1354,34 @@ class PhysicalBoardCard {
     }
 
     ensure_firmly_on_board() {
-        const physical_card = this.physical_card;
-        const card = physical_card.card;
+        this.board_card.state = BoardCardState.FIRMLY_ON_BOARD;
+        this.update_state_styles();
+    }
 
-        if (card.state === CardState.FRESHLY_PLAYED_BY_LAST_PLAYER) {
-            card.state = CardState.FIRMLY_ON_BOARD;
-            physical_card.update_state_styles();
+    update_state_styles(): void {
+        const span = this.physical_card.span;
+        const state = this.board_card.state;
+
+        if (
+            state === BoardCardState.FRESHLY_PLAYED ||
+            state === BoardCardState.FRESHLY_PLAYED_BY_LAST_PLAYER
+        ) {
+            span.style.backgroundColor = new_card_color();
+        } else {
+            span.style.backgroundColor = "transparent";
         }
     }
 }
 
 function build_physical_board_cards(
     stack_location: StackLocation,
-    cards: Card[],
+    board_cards: BoardCard[],
 ): PhysicalBoardCard[] {
     const physical_board_cards: PhysicalBoardCard[] = [];
     const { shelf_index, stack_index } = stack_location;
 
-    for (let card_index = 0; card_index < cards.length; ++card_index) {
-        const card = cards[card_index];
+    for (let card_index = 0; card_index < board_cards.length; ++card_index) {
+        const board_card = board_cards[card_index];
 
         const card_location = new ShelfCardLocation({
             shelf_index,
@@ -1324,10 +1389,9 @@ function build_physical_board_cards(
             card_index,
         });
 
-        const physical_card = new PhysicalCard(card);
         const physical_board_card = new PhysicalBoardCard(
             card_location,
-            physical_card,
+            board_card,
         );
         physical_board_cards.push(physical_board_card);
     }
@@ -1355,7 +1419,7 @@ class PhysicalCardStack {
 
         this.physical_board_cards = build_physical_board_cards(
             stack_location,
-            stack.cards,
+            stack.board_cards,
         );
 
         const card_spans = this.physical_board_cards.map((psc) => psc.dom());
@@ -1693,8 +1757,8 @@ class PhysicalShelf {
         this.populate();
     }
 
-    add_singleton_card(card: Card) {
-        this.shelf.add_singleton_card(card);
+    add_singleton_card(hand_card: HandCard) {
+        this.shelf.add_singleton_card(hand_card);
         this.populate();
     }
 }
@@ -1783,8 +1847,8 @@ class PhysicalBoard {
         }
     }
 
-    display_mergeable_stacks_for_card(card: Card): void {
-        const card_stack = new CardStack([card]);
+    display_mergeable_stacks_for_card(hand_card: HandCard): void {
+        const card_stack = CardStack.from_hand_card(hand_card);
 
         this.display_mergeable_stacks_for(card_stack);
     }
@@ -1834,15 +1898,21 @@ class PhysicalBoard {
         }
     }
 
-    extend_stack_with_card(stack_location: StackLocation, card: Card): void {
+    extend_stack_with_card(
+        stack_location: StackLocation,
+        hand_card: HandCard,
+    ): void {
         const shelf_index = stack_location.shelf_index;
         const stack_index = stack_location.stack_index;
         const board = this.board;
         const shelf = board.shelves[shelf_index];
 
-        const longer_stack = shelf.extend_stack_with_card(stack_index, card);
+        const longer_stack = shelf.extend_stack_with_card(
+            stack_index,
+            hand_card,
+        );
 
-        if (longer_stack.cards.length >= 3) {
+        if (longer_stack.board_cards.length >= 3) {
             SoundEffects.play_ding_sound();
         }
         this.populate_shelf(shelf_index);
@@ -1893,11 +1963,11 @@ class PhysicalBoard {
         div.append(this.undo_button.dom());
     }
 
-    add_card_to_top_shelf(card: Card): StackLocation {
+    add_card_to_top_shelf(hand_card: HandCard): StackLocation {
         if (this.physical_shelves.length < 1) {
             throw new Error("No top shelf");
         }
-        this.physical_shelves[0].add_singleton_card(card);
+        this.physical_shelves[0].add_singleton_card(hand_card);
         return new StackLocation({
             shelf_index: 0,
             stack_index: this.board.shelves[0].card_stacks.length - 1,
@@ -1905,10 +1975,7 @@ class PhysicalBoard {
     }
 }
 
-function row_of_cards_in_hand(
-    cards: Card[],
-    physical_game: PhysicalGame,
-): HTMLElement {
+function row_of_cards_in_hand(hand_cards: HandCard[]): HTMLElement {
     /*
         This can be a pure function, because even though
         users can mutate our row (by clicking a card to put it
@@ -1918,13 +1985,8 @@ function row_of_cards_in_hand(
     */
     const card_spans = [];
 
-    for (const card of cards) {
-        const physical_card = new PhysicalCard(card);
-
-        const physical_hand_card = new PhysicalHandCard(
-            physical_game,
-            physical_card,
-        );
+    for (const hand_card of hand_cards) {
+        const physical_hand_card = new PhysicalHandCard(hand_card);
         const span = physical_hand_card.dom();
         card_spans.push(span);
     }
@@ -1956,26 +2018,21 @@ class PhysicalHand {
     populate(): void {
         const physical_game = this.physical_game;
         const div = this.div;
-        const cards = this.hand.cards;
+        const hand_cards = this.hand.hand_cards;
         div.innerHTML = "";
 
         for (const suit of all_suits) {
-            const suit_cards = get_sorted_cards_for_suit(suit, cards);
+            const suit_cards = get_sorted_cards_for_suit(suit, hand_cards);
 
             if (suit_cards.length > 0) {
-                const row = row_of_cards_in_hand(suit_cards, physical_game);
+                const row = row_of_cards_in_hand(suit_cards);
                 div.append(row);
             }
         }
     }
 
-    remove_card_from_hand(card: Card) {
-        this.hand.remove_card_from_hand(card);
-        this.populate();
-    }
-
-    add_card_to_hand(card: Card) {
-        this.hand.add_cards([card]);
+    remove_card_from_hand(hand_card: HandCard) {
+        this.hand.remove_card_from_hand(hand_card);
         this.populate();
     }
 }
@@ -2102,7 +2159,7 @@ class CardStackDragActionSingleton {
             return;
         }
 
-        if (merged_stack.cards.length >= 3) {
+        if (merged_stack.board_cards.length >= 3) {
             SoundEffects.play_ding_sound();
         }
 
@@ -2119,7 +2176,7 @@ class HandCardDragActionSingleton {
     physical_game: PhysicalGame;
     physical_board: PhysicalBoard;
     game: Game;
-    dragged_hand_card: Card;
+    dragged_hand_card: HandCard;
 
     constructor(
         physical_game: PhysicalGame,
@@ -2136,22 +2193,25 @@ class HandCardDragActionSingleton {
         return this.dragged_hand_card !== undefined;
     }
 
-    get_card(): Card {
+    get_card(): HandCard {
         return this.dragged_hand_card!;
     }
 
-    start_drag_hand_card(info: { card: Card; tray_width: number }): void {
-        const { card, tray_width } = info;
+    start_drag_hand_card(info: {
+        hand_card: HandCard;
+        tray_width: number;
+    }): void {
+        const { hand_card, tray_width } = info;
         const physical_board = this.physical_board;
         const top_physical_shelf = physical_board.top_physical_shelf();
 
-        physical_board.display_mergeable_stacks_for_card(card);
+        physical_board.display_mergeable_stacks_for_card(hand_card);
         physical_board.display_empty_shelf_spots(
             [top_physical_shelf],
             tray_width,
         );
 
-        this.dragged_hand_card = card;
+        this.dragged_hand_card = hand_card;
     }
 
     end_drag_hand_card(): void {
@@ -2166,30 +2226,26 @@ class HandCardDragActionSingleton {
 
     // ACTION
     merge_hand_card_to_board_stack(stack_location: StackLocation): void {
-        const card = this.dragged_hand_card;
+        const hand_card = this.dragged_hand_card;
         const physical_hand = this.get_physical_hand();
         const physical_board = this.physical_board;
 
-        card.state = CardState.FRESHLY_PLAYED;
-
         physical_board.make_old_cards_firmly_on_board();
-        physical_board.extend_stack_with_card(stack_location, card);
-        physical_hand.remove_card_from_hand(card);
+        physical_board.extend_stack_with_card(stack_location, hand_card);
+        physical_hand.remove_card_from_hand(hand_card);
 
         this.game.maybe_update_snapshot();
     }
 
     // ACTION
     move_card_from_hand_to_board(): void {
-        const card = this.dragged_hand_card;
+        const hand_card = this.dragged_hand_card;
         const physical_board = this.physical_board;
         const physical_hand = this.get_physical_hand();
 
-        card.state = CardState.FRESHLY_PLAYED;
-
         physical_board.make_old_cards_firmly_on_board();
-        physical_hand.remove_card_from_hand(card);
-        physical_board.add_card_to_top_shelf(card);
+        physical_hand.remove_card_from_hand(hand_card);
+        physical_board.add_card_to_top_shelf(hand_card);
 
         // no need to call maybe_update_snapshot() here
     }
@@ -2336,7 +2392,7 @@ function heading_for_example_card_stack(opts: {
 function div_for_example_card_stack(stack: CardStack): HTMLElement {
     const div = document.createElement("div");
 
-    for (const card of stack.cards) {
+    for (const card of stack.get_cards()) {
         const physical_card = new PhysicalCard(card);
         div.append(physical_card.dom());
     }
