@@ -1164,6 +1164,18 @@ function draw_playing_card(card: Card): HTMLElement {
     return span;
 }
 
+function draw_card_stack(card_spans: HTMLElement[]): HTMLElement {
+    const div = document.createElement("div");
+    div.style.marginLeft = "15px";
+    div.style.marginRight = "15px";
+
+    for (const card_span of card_spans) {
+        div.append(card_span);
+    }
+
+    return div;
+}
+
 /***********************************************
 
     TRY TO KEEP PURE DRAWING CODE ABOVE ^^^^^
@@ -1382,21 +1394,16 @@ class PhysicalCardStack {
         this.stack_location = stack_location;
         this.stack = stack;
 
-        this.div = document.createElement("div");
-        this.div.style.marginLeft = "15px";
-        this.div.style.marginRight = "15px";
-
-        this.enable_drop();
-        this.allow_dragging();
-
         this.physical_shelf_cards = build_physical_shelf_cards(
             stack_location,
             stack.cards,
         );
 
-        for (const physical_shelf_card of this.physical_shelf_cards) {
-            this.div.append(physical_shelf_card.dom());
-        }
+        const card_spans = this.physical_shelf_cards.map((psc) => psc.dom());
+
+        this.div = draw_card_stack(card_spans);
+        this.enable_drop();
+        this.allow_dragging();
 
         this.mergeable = false;
     }
