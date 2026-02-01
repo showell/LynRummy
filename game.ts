@@ -1318,11 +1318,11 @@ class PhysicalHandCard {
         const physical_game = this.physical_game;
         const card = this.card;
         const tray_width = this.get_width();
-        physical_game.start_drag_hand_card({ card, tray_width });
+        HandCardDragAction.start_drag_hand_card({ card, tray_width });
     }
 
     handle_dragend(): void {
-        this.physical_game.end_drag_hand_card();
+        HandCardDragAction.end_drag_hand_card();
     }
 
     allow_dragging() {
@@ -1475,12 +1475,8 @@ class PhysicalCardStack {
 
     /* accept DROP (either hand card or stack) */
 
-    card_is_dragged(): boolean {
-        return this.physical_game.dragged_hand_card !== undefined;
-    }
-
     can_drop_card(): boolean {
-        const dragged_card = this.physical_game.dragged_hand_card;
+        const dragged_card = HandCardDragAction.get_card();
         return this.stack.is_mergeable_with_card(dragged_card);
     }
 
@@ -1505,7 +1501,7 @@ class PhysicalCardStack {
     }
 
     accepts_drop(): boolean {
-        if (this.card_is_dragged()) {
+        if (HandCardDragAction.in_progress()) {
             return this.can_drop_card();
         }
 
@@ -1514,10 +1510,6 @@ class PhysicalCardStack {
         }
 
         return false; // unforeseen future draggable
-    }
-
-    handle_card_drop(): void {
-        this.physical_game.merge_hand_card_to_board_stack(this.stack_location);
     }
 
     handle_stack_drop(): void {
@@ -1532,8 +1524,10 @@ class PhysicalCardStack {
     }
 
     handle_drop(): void {
-        if (this.card_is_dragged()) {
-            this.handle_card_drop();
+        if (HandCardDragAction.in_progress()) {
+            HandCardDragAction.merge_hand_card_to_board_stack(
+                this.stack_location,
+            );
         }
 
         if (this.stack_is_dragged()) {
@@ -1635,7 +1629,7 @@ class PhysicalEmptyShelfSpot {
         const physical_game = this.physical_game;
         const physical_board = physical_game.physical_board;
 
-        if (physical_game.dragged_hand_card !== undefined) {
+        if (HandCardDragAction.in_progress()) {
             return true;
         }
 
@@ -1652,8 +1646,8 @@ class PhysicalEmptyShelfSpot {
         const physical_board = physical_game.physical_board;
         const shelf_index = this.shelf_idx;
 
-        if (physical_game.dragged_hand_card !== undefined) {
-            physical_game.move_card_from_hand_to_board();
+        if (HandCardDragAction.in_progress()) {
+            HandCardDragAction.move_card_from_hand_to_board();
         } else {
             physical_board.move_dragged_card_stack_to_end_of_shelf(shelf_index);
         }
@@ -2190,40 +2184,31 @@ class PhysicalPlayer {
     }
 }
 
-class PhysicalGame {
-    game: Game;
-    player_area: HTMLElement;
-    board_area: HTMLElement;
-    physical_players: PhysicalPlayer[];
+let HandCardDragAction: HandCardDragActionSingleton;
+
+class HandCardDragActionSingleton {
+    physical_game: PhysicalGame;
     physical_board: PhysicalBoard;
-    physical_deck: PhysicalDeck;
+    game: Game;
     dragged_hand_card: Card;
 
-    constructor(info: { player_area: HTMLElement; board_area: HTMLElement }) {
-        const physical_game = this;
-        this.game = new Game();
-        this.player_area = info.player_area;
-        this.board_area = info.board_area;
-        this.physical_deck = new PhysicalDeck(this.game.deck);
-        this.physical_board = new PhysicalBoard(physical_game, this.game.board);
-        this.physical_players = this.game.players.map(
-            (player) => new PhysicalPlayer(physical_game, player),
-        );
+    constructor(
+        physical_game: PhysicalGame,
+        physical_board: PhysicalBoard,
+        game: Game,
+    ) {
+        this.physical_game = physical_game;
+        this.physical_board = physical_board;
+        this.game = game;
         this.dragged_hand_card = undefined;
     }
 
-    // ACTION
-    handle_shelf_card_click(card_location: ShelfCardLocation) {
-        this.physical_board.handle_shelf_card_click(card_location);
-        // no need to call maybe_update_snapshot here
+    in_progress(): boolean {
+        return this.dragged_hand_card !== undefined;
     }
 
-    current_physical_player() {
-        return this.physical_players[this.game.current_player_index];
-    }
-
-    get_physical_hand(): PhysicalHand {
-        return this.current_physical_player().physical_hand;
+    get_card(): Card {
+        return this.dragged_hand_card!;
     }
 
     start_drag_hand_card(info: { card: Card; tray_width: number }): void {
@@ -2246,6 +2231,10 @@ class PhysicalGame {
         this.physical_board.hide_empty_spots();
     }
 
+    get_physical_hand(): PhysicalHand {
+        return this.physical_game.get_physical_hand();
+    }
+
     // ACTION
     merge_hand_card_to_board_stack(stack_location: StackLocation): void {
         const card = this.dragged_hand_card;
@@ -2265,8 +2254,7 @@ class PhysicalGame {
     move_card_from_hand_to_board(): void {
         const card = this.dragged_hand_card;
         const physical_board = this.physical_board;
-        const player = this.current_physical_player();
-        const physical_hand = player.physical_hand;
+        const physical_hand = this.get_physical_hand();
 
         card.state = CardState.FRESHLY_PLAYED;
 
@@ -2275,6 +2263,46 @@ class PhysicalGame {
         physical_board.add_card_to_top_shelf(card);
 
         // no need to call maybe_update_snapshot() here
+    }
+}
+
+class PhysicalGame {
+    game: Game;
+    player_area: HTMLElement;
+    board_area: HTMLElement;
+    physical_players: PhysicalPlayer[];
+    physical_board: PhysicalBoard;
+    physical_deck: PhysicalDeck;
+
+    constructor(info: { player_area: HTMLElement; board_area: HTMLElement }) {
+        const physical_game = this;
+        this.game = new Game();
+        this.player_area = info.player_area;
+        this.board_area = info.board_area;
+        this.physical_deck = new PhysicalDeck(this.game.deck);
+        this.physical_board = new PhysicalBoard(physical_game, this.game.board);
+        this.physical_players = this.game.players.map(
+            (player) => new PhysicalPlayer(physical_game, player),
+        );
+        HandCardDragAction = new HandCardDragActionSingleton(
+            physical_game,
+            this.physical_board,
+            this.game,
+        );
+    }
+
+    // ACTION
+    handle_shelf_card_click(card_location: ShelfCardLocation) {
+        this.physical_board.handle_shelf_card_click(card_location);
+        // no need to call maybe_update_snapshot here
+    }
+
+    current_physical_player() {
+        return this.physical_players[this.game.current_player_index];
+    }
+
+    get_physical_hand(): PhysicalHand {
+        return this.current_physical_player().physical_hand;
     }
 
     // ACTION
