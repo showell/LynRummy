@@ -2276,6 +2276,22 @@ class PhysicalGame {
         this.game = new Game();
         this.player_area = info.player_area;
         this.board_area = info.board_area;
+        this.build_physical_game();
+    }
+
+    // ACTION
+    rollback_moves_to_last_clean_state() {
+        this.game.rollback_moves_to_last_clean_state();
+        this.build_physical_game();
+
+        // Re-render
+        this.populate_player_area();
+        this.populate_board_area();
+    }
+
+    build_physical_game(): void {
+        const physical_game = this;
+
         this.physical_deck = new PhysicalDeck(this.game.deck);
         this.physical_board = new PhysicalBoard(physical_game, this.game.board);
         this.physical_players = this.game.players.map(
@@ -2300,20 +2316,6 @@ class PhysicalGame {
 
     get_physical_hand(): PhysicalHand {
         return this.current_physical_player().physical_hand;
-    }
-
-    // ACTION
-    rollback_moves_to_last_clean_state() {
-        this.game.rollback_moves_to_last_clean_state();
-        this.physical_deck = new PhysicalDeck(this.game.deck);
-        this.physical_board = new PhysicalBoard(this, this.game.board);
-        this.physical_players = this.game.players.map(
-            (player) => new PhysicalPlayer(this, player),
-        );
-
-        // Re-render
-        this.populate_player_area();
-        this.populate_board_area();
     }
 
     // ACTION
