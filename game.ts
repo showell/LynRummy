@@ -800,6 +800,20 @@ class Board {
 
         return merged_stack;
     }
+    // This is called after the player's turn ends.
+    age_cards(): void {
+        for (const board_card of this.get_cards()) {
+            switch (board_card.state) {
+                case BoardCardState.FRESHLY_PLAYED_BY_LAST_PLAYER:
+                    board_card.state = BoardCardState.FIRMLY_ON_BOARD;
+                    break;
+                case BoardCardState.FRESHLY_PLAYED:
+                    board_card.state =
+                        BoardCardState.FRESHLY_PLAYED_BY_LAST_PLAYER;
+                    break;
+            }
+        }
+    }
 }
 
 class Deck {
@@ -1005,6 +1019,9 @@ class Game {
             this.draw_new_cards(3);
             alert("You will get 3 new cards on your next hand.");
         }
+
+        // IMPORTANT: Do this after prior check.
+        this.board.age_cards();
 
         this.current_player_index =
             (this.current_player_index + 1) % this.players.length;
@@ -1358,11 +1375,6 @@ class PhysicalBoardCard {
         div.addEventListener("click", this.click_handler);
     }
 
-    ensure_firmly_on_board() {
-        this.board_card.state = BoardCardState.FIRMLY_ON_BOARD;
-        this.update_state_styles();
-    }
-
     update_state_styles(): void {
         const span = this.physical_card.span;
         const state = this.board_card.state;
@@ -1435,10 +1447,6 @@ class PhysicalCardStack {
 
     dom(): HTMLElement {
         return this.div;
-    }
-
-    get_all_physical_board_cards(): PhysicalBoardCard[] {
-        return this.physical_board_cards;
     }
 
     get_stack_width() {
@@ -1740,19 +1748,6 @@ class PhysicalShelf {
         return physical_card_stacks;
     }
 
-    get_all_physical_board_cards(): PhysicalBoardCard[] {
-        let physical_cards: PhysicalBoardCard[] = [];
-        const physical_card_stacks = this.physical_card_stacks;
-
-        for (const physical_card_stack of physical_card_stacks) {
-            physical_cards = physical_cards.concat(
-                physical_card_stack.get_all_physical_board_cards(),
-            );
-        }
-
-        return physical_cards;
-    }
-
     split_card_from_stack(info: {
         stack_index: number;
         card_index: number;
@@ -1809,28 +1804,6 @@ class PhysicalBoard {
 
     top_physical_shelf(): PhysicalShelf {
         return this.physical_shelves[0];
-    }
-
-    get_all_physical_board_cards(): PhysicalBoardCard[] {
-        let physical_cards: PhysicalBoardCard[] = [];
-        const physical_shelves = this.physical_shelves;
-
-        for (const physical_shelf of physical_shelves) {
-            physical_cards = physical_cards.concat(
-                physical_shelf.get_all_physical_board_cards(),
-            );
-        }
-
-        return physical_cards;
-    }
-
-    make_old_cards_firmly_on_board(): void {
-        // This move will make all the FRESHLY_PLAYED_BY_LAST_PLAYER cards
-        // be FIRMLY_ON_BOARD, which basically means they will lose their highlighting
-        // as the current turn owner has decided to make a "real move" on the board.
-        for (const physical_board_card of this.get_all_physical_board_cards()) {
-            physical_board_card.ensure_firmly_on_board();
-        }
     }
 
     get_physical_card_stacks(): PhysicalCardStack[] {
@@ -2234,7 +2207,6 @@ class HandCardDragActionSingleton {
         const physical_hand = this.get_physical_hand();
         const physical_board = this.physical_board;
 
-        physical_board.make_old_cards_firmly_on_board();
         physical_board.extend_stack_with_card(stack_location, hand_card);
         physical_hand.remove_card_from_hand(hand_card);
 
@@ -2247,7 +2219,6 @@ class HandCardDragActionSingleton {
         const physical_board = this.physical_board;
         const physical_hand = this.get_physical_hand();
 
-        physical_board.make_old_cards_firmly_on_board();
         physical_hand.remove_card_from_hand(hand_card);
         physical_board.add_card_to_top_shelf(hand_card);
 
