@@ -83,6 +83,15 @@ const enum CardStackType {
     RED_BLACK_RUN = "red/black alternating",
 }
 
+enum CardState {
+    IN_DECK,
+    STILL_IN_HAND,
+    FIRMLY_ON_BOARD,
+    FRESHLY_DRAWN,
+    FRESHLY_PLAYED,
+    FRESHLY_PLAYED_BY_LAST_PLAYER,
+}
+
 class ShelfCardLocation {
     shelf_index: number;
     stack_index: number;
@@ -413,15 +422,6 @@ function build_full_double_deck(): Card[] {
     const all_cards = all_runs.reduce((acc, lst) => acc.concat(lst));
 
     return shuffle(all_cards);
-}
-
-enum CardState {
-    IN_DECK,
-    STILL_IN_HAND,
-    FIRMLY_ON_BOARD,
-    FRESHLY_DRAWN,
-    FRESHLY_PLAYED,
-    FRESHLY_PLAYED_BY_LAST_PLAYER,
 }
 
 class Card {
