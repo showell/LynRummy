@@ -2318,6 +2318,7 @@ class PhysicalGame {
             );
         }
         this.populate_player_area();
+        this.populate_board_area();
     }
 
     populate_player_area() {
