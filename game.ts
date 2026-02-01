@@ -382,6 +382,17 @@ const all_card_values = [
     CardValue.KING,
 ];
 
+function get_sorted_cards_for_suit(suit: Suit, cards: Card[]): Card[] {
+    const suit_cards: Card[] = [];
+    for (const card of cards) {
+        if (card.suit === suit) {
+            suit_cards.push(card);
+        }
+    }
+    suit_cards.sort((card1, card2) => card1.value - card2.value);
+    return suit_cards;
+}
+
 function build_full_double_deck(): Card[] {
     // Returns a shuffled deck of 2 packs of normal cards.
 
@@ -673,21 +684,6 @@ class Shelf {
     }
 }
 
-class SoundEffectsSingleton {
-    ding: HTMLAudioElement;
-
-    constructor() {
-        // It might be overkill to pre-load these, but I can't
-        // see how it hurts either.
-        this.ding = document.createElement("audio");
-        this.ding.src = "ding.mp3";
-    }
-
-    play_ding_sound() {
-        this.ding.play();
-    }
-}
-
 class Board {
     /*
         This is where the players lay out all the common cards.
@@ -876,97 +872,6 @@ function remove_card_from_array(cards: Card[], card: Card): void {
     }
 
     throw new Error("Card to be removed is not present in the array!");
-}
-
-class PhysicalDeck {
-    deck: Deck;
-    div: HTMLElement;
-
-    constructor(deck: Deck) {
-        this.deck = deck;
-        this.div = this.make_div();
-    }
-
-    make_div(): HTMLElement {
-        // no real styling yet
-        return document.createElement("div");
-    }
-
-    dom(): HTMLElement {
-        this.populate();
-        return this.div;
-    }
-
-    populate(): void {
-        const deck = this.deck;
-        if (this.div.innerHTML === "") {
-            const img = document.createElement("img");
-            img.src = "images/deck.png";
-            img.style.height = "200px";
-            this.div.append(img);
-
-            const span = document.createElement("span");
-            span.innerText = `${deck.cards.length} in deck`;
-            this.div.append(span);
-        }
-        const span = this.div.querySelector("span")!;
-        span.innerText = `${deck.cards.length} in deck`;
-    }
-}
-
-function new_card_color(): string {
-    // kind of a pale yellow
-    return "rgba(255, 255, 0, 0.4)";
-}
-
-class PhysicalHandCard {
-    card: Card;
-    card_div: HTMLElement;
-    physical_card: PhysicalCard;
-    physical_game: PhysicalGame;
-
-    constructor(physical_game: PhysicalGame, physical_card: PhysicalCard) {
-        this.physical_game = physical_game;
-        this.physical_card = physical_card;
-        this.card_div = this.physical_card.dom();
-        this.card = physical_card.card;
-        this.allow_dragging();
-    }
-
-    dom() {
-        return this.card_div;
-    }
-
-    get_width() {
-        return this.card_div.clientWidth;
-    }
-
-    handle_dragstart(e): void {
-        const physical_game = this.physical_game;
-        const card = this.card;
-        const tray_width = this.get_width();
-        physical_game.start_drag_hand_card({ card, tray_width });
-    }
-
-    handle_dragend(): void {
-        this.physical_game.end_drag_hand_card();
-    }
-
-    allow_dragging() {
-        const self = this;
-        const div = this.card_div;
-
-        div.draggable = true;
-        div.style.userSelect = undefined;
-
-        div.addEventListener("dragstart", (e) => {
-            self.handle_dragstart(e);
-        });
-
-        div.addEventListener("dragend", () => {
-            self.handle_dragend();
-        });
-    }
 }
 
 class Hand {
@@ -1171,6 +1076,70 @@ class Example {
     }
 }
 
+function has_duplicate_cards(cards: Card[]): boolean {
+    function any_dup_card(card: Card, rest: Card[]): boolean {
+        if (rest.length === 0) {
+            return false;
+        }
+        if (is_pair_of_dups(card, rest[0])) {
+            return true;
+        }
+        return any_dup_card(card, rest.slice(1));
+    }
+
+    if (cards.length <= 1) {
+        return false;
+    }
+
+    return (
+        any_dup_card(cards[0], cards.slice(1)) ||
+        has_duplicate_cards(cards.slice(1))
+    );
+}
+
+function follows_consistent_pattern(
+    cards: Card[],
+    stack_type: CardStackType,
+): boolean {
+    if (cards.length <= 1) {
+        return true;
+    }
+
+    if (card_pair_stack_type(cards[0], cards[1]) !== stack_type) {
+        return false;
+    }
+
+    return follows_consistent_pattern(cards.slice(1), stack_type);
+}
+
+function shuffle(array: any[]) {
+    for (let i = array.length - 1; i > 0; i--) {
+        // Pick a random index from 0 to i
+        const j = Math.floor(Math.random() * (i + 1));
+
+        // Swap elements at i and j
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+function example_board() {
+    return new Board([
+        Shelf.from("AC", OriginDeck.DECK_ONE),
+        Shelf.from("AH | 2C | 5S,6S,7S | 4D | 8S,9S | 6C", OriginDeck.DECK_ONE),
+    ]);
+}
+
+/***********************************************
+
+    TRY TO KEEP MODEL CODE ABOVE ^^^^^
+
+    TRY TO KEEP UI CODE BELOW vvvvv
+
+***********************************************/
+
+type ClickHandler = (e: MouseEvent) => void;
+
 class PhysicalCard {
     card: Card;
     span: HTMLElement;
@@ -1224,7 +1193,96 @@ class PhysicalCard {
     }
 }
 
-type ClickHandler = (e: MouseEvent) => void;
+class PhysicalDeck {
+    deck: Deck;
+    div: HTMLElement;
+
+    constructor(deck: Deck) {
+        this.deck = deck;
+        this.div = this.make_div();
+    }
+
+    make_div(): HTMLElement {
+        // no real styling yet
+        return document.createElement("div");
+    }
+
+    dom(): HTMLElement {
+        this.populate();
+        return this.div;
+    }
+
+    populate(): void {
+        const deck = this.deck;
+        if (this.div.innerHTML === "") {
+            const img = document.createElement("img");
+            img.src = "images/deck.png";
+            img.style.height = "200px";
+            this.div.append(img);
+
+            const span = document.createElement("span");
+            span.innerText = `${deck.cards.length} in deck`;
+            this.div.append(span);
+        }
+        const span = this.div.querySelector("span")!;
+        span.innerText = `${deck.cards.length} in deck`;
+    }
+}
+
+function new_card_color(): string {
+    // kind of a pale yellow
+    return "rgba(255, 255, 0, 0.4)";
+}
+
+class PhysicalHandCard {
+    card: Card;
+    card_div: HTMLElement;
+    physical_card: PhysicalCard;
+    physical_game: PhysicalGame;
+
+    constructor(physical_game: PhysicalGame, physical_card: PhysicalCard) {
+        this.physical_game = physical_game;
+        this.physical_card = physical_card;
+        this.card_div = this.physical_card.dom();
+        this.card = physical_card.card;
+        this.allow_dragging();
+    }
+
+    dom() {
+        return this.card_div;
+    }
+
+    get_width() {
+        return this.card_div.clientWidth;
+    }
+
+    handle_dragstart(e): void {
+        const physical_game = this.physical_game;
+        const card = this.card;
+        const tray_width = this.get_width();
+        physical_game.start_drag_hand_card({ card, tray_width });
+    }
+
+    handle_dragend(): void {
+        this.physical_game.end_drag_hand_card();
+    }
+
+    allow_dragging() {
+        const self = this;
+        const div = this.card_div;
+
+        div.draggable = true;
+        div.style.userSelect = undefined;
+
+        div.addEventListener("dragstart", (e) => {
+            self.handle_dragstart(e);
+        });
+
+        div.addEventListener("dragend", () => {
+            self.handle_dragend();
+        });
+    }
+}
 
 class PhysicalShelfCard {
     card_location: ShelfCardLocation;
@@ -1994,17 +2052,6 @@ class PhysicalBoard {
     }
 }
 
-function get_sorted_cards_for_suit(suit: Suit, cards: Card[]): Card[] {
-    const suit_cards: Card[] = [];
-    for (const card of cards) {
-        if (card.suit === suit) {
-            suit_cards.push(card);
-        }
-    }
-    suit_cards.sort((card1, card2) => card1.value - card2.value);
-    return suit_cards;
-}
-
 function row_of_cards_in_hand(
     cards: Card[],
     physical_game: PhysicalGame,
@@ -2077,47 +2124,6 @@ class PhysicalHand {
     add_card_to_hand(card: Card) {
         this.hand.add_cards([card]);
         this.populate();
-    }
-}
-
-class CompleteTurnButton {
-    button: HTMLElement;
-
-    constructor(physical_game: PhysicalGame) {
-        const button = document.createElement("button");
-        button.classList.add("button", "complete-turn-button");
-        button.style.backgroundColor = "#007bff";
-        button.style.color = "white";
-        button.style.marginRight = "5px";
-        button.innerText = "Complete turn";
-        button.addEventListener("click", () => {
-            physical_game.complete_turn();
-        });
-        this.button = button;
-    }
-
-    dom(): HTMLElement {
-        return this.button;
-    }
-}
-
-class UndoButton {
-    button: HTMLElement;
-
-    constructor(physical_game: PhysicalGame) {
-        const button = document.createElement("button");
-        button.classList.add("button", "reset-button");
-        button.style.backgroundColor = "#007bff";
-        button.style.color = "white";
-        button.innerText = "Undo mistakes";
-        button.addEventListener("click", () => {
-            physical_game.rollback_moves_to_last_clean_state();
-        });
-        this.button = button;
-    }
-
-    dom(): HTMLElement {
-        return this.button;
     }
 }
 
@@ -2497,6 +2503,47 @@ class MainPage {
     }
 }
 
+class CompleteTurnButton {
+    button: HTMLElement;
+
+    constructor(physical_game: PhysicalGame) {
+        const button = document.createElement("button");
+        button.classList.add("button", "complete-turn-button");
+        button.style.backgroundColor = "#007bff";
+        button.style.color = "white";
+        button.style.marginRight = "5px";
+        button.innerText = "Complete turn";
+        button.addEventListener("click", () => {
+            physical_game.complete_turn();
+        });
+        this.button = button;
+    }
+
+    dom(): HTMLElement {
+        return this.button;
+    }
+}
+
+class UndoButton {
+    button: HTMLElement;
+
+    constructor(physical_game: PhysicalGame) {
+        const button = document.createElement("button");
+        button.classList.add("button", "reset-button");
+        button.style.backgroundColor = "#007bff";
+        button.style.color = "white";
+        button.innerText = "Undo mistakes";
+        button.addEventListener("click", () => {
+            physical_game.rollback_moves_to_last_clean_state();
+        });
+        this.button = button;
+    }
+
+    dom(): HTMLElement {
+        return this.button;
+    }
+}
+
 function get_examples(): { good: Example[]; bad: Example[] } {
     const good = [
         new Example("SET of 3s", "3H,3S,3D", CardStackType.SET),
@@ -2540,60 +2587,6 @@ function get_examples(): { good: Example[]; bad: Example[] } {
     ];
 
     return { good, bad };
-}
-
-function has_duplicate_cards(cards: Card[]): boolean {
-    function any_dup_card(card: Card, rest: Card[]): boolean {
-        if (rest.length === 0) {
-            return false;
-        }
-        if (is_pair_of_dups(card, rest[0])) {
-            return true;
-        }
-        return any_dup_card(card, rest.slice(1));
-    }
-
-    if (cards.length <= 1) {
-        return false;
-    }
-
-    return (
-        any_dup_card(cards[0], cards.slice(1)) ||
-        has_duplicate_cards(cards.slice(1))
-    );
-}
-
-function follows_consistent_pattern(
-    cards: Card[],
-    stack_type: CardStackType,
-): boolean {
-    if (cards.length <= 1) {
-        return true;
-    }
-
-    if (card_pair_stack_type(cards[0], cards[1]) !== stack_type) {
-        return false;
-    }
-
-    return follows_consistent_pattern(cards.slice(1), stack_type);
-}
-
-function shuffle(array: any[]) {
-    for (let i = array.length - 1; i > 0; i--) {
-        // Pick a random index from 0 to i
-        const j = Math.floor(Math.random() * (i + 1));
-
-        // Swap elements at i and j
-        [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
-}
-
-function example_board() {
-    return new Board([
-        Shelf.from("AC", OriginDeck.DECK_ONE),
-        Shelf.from("AH | 2C | 5S,6S,7S | 4D | 8S,9S | 6C", OriginDeck.DECK_ONE),
-    ]);
 }
 
 function test_merge() {
@@ -2640,6 +2633,21 @@ function test_card_serde() {
 }
 
 test(); // runs in node
+
+class SoundEffectsSingleton {
+    ding: HTMLAudioElement;
+
+    constructor() {
+        // It might be overkill to pre-load these, but I can't
+        // see how it hurts either.
+        this.ding = document.createElement("audio");
+        this.ding.src = "ding.mp3";
+    }
+
+    play_ding_sound() {
+        this.ding.play();
+    }
+}
 
 // SINGLETONS get initialized in gui().
 let SoundEffects: SoundEffectsSingleton;
