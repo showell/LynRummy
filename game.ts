@@ -1164,6 +1164,15 @@ function render_playing_card(card: Card): HTMLElement {
     return span;
 }
 
+function render_hand_card_row(card_spans: HTMLElement[]): HTMLElement {
+    const div = document.createElement("div");
+    div.style.paddingBottom = "10px";
+    for (const card_span of card_spans) {
+        div.append(card_span);
+    }
+    return div;
+}
+
 function render_card_stack(card_spans: HTMLElement[]): HTMLElement {
     const div = document.createElement("div");
     div.style.marginLeft = "15px";
@@ -1176,7 +1185,7 @@ function render_card_stack(card_spans: HTMLElement[]): HTMLElement {
     return div;
 }
 
-function render_empty_shelf_spot() {
+function render_empty_shelf_spot(): HTMLElement {
     const div = document.createElement("div");
     div.classList.add("empty-shelf-spot");
     div.style.width = "40px";
@@ -1187,6 +1196,20 @@ function render_empty_shelf_spot() {
     div.style.marginBottom = "5px";
     div.style.order = "1";
     div.style.backgroundColor = "rgba(0,0,200,0.05)";
+    return div;
+}
+
+function render_shelf(): HTMLElement {
+    const div = document.createElement("div");
+    div.classList.add("shelf");
+    div.style.display = "flex";
+    div.style.minWidth = "600px";
+    div.style.alignItems = "flex-end";
+    div.style.paddingBottom = "2px";
+    div.style.borderBottom = "3px solid blue";
+    div.style.marginTop = "3px";
+    div.style.marginBottom = "10px";
+    div.style.minHeight = "45px";
     return div;
 }
 
@@ -1674,26 +1697,12 @@ class PhysicalShelf {
         this.physical_board = info.physical_board;
         this.shelf_index = info.shelf_index;
         this.shelf = info.shelf;
-        this.div = this.make_div();
+        this.div = render_shelf();
         this.physical_card_stacks = [];
         this.physical_shelf_empty_spot = new PhysicalEmptyShelfSpot(
             this.shelf_index,
             this.physical_game,
         );
-    }
-
-    make_div(): HTMLElement {
-        const div = document.createElement("div");
-        div.classList.add("shelf");
-        div.style.display = "flex";
-        div.style.minWidth = "600px";
-        div.style.alignItems = "flex-end";
-        div.style.paddingBottom = "2px";
-        div.style.borderBottom = "3px solid blue";
-        div.style.marginTop = "3px";
-        div.style.marginBottom = "10px";
-        div.style.minHeight = "45px";
-        return div;
     }
 
     dom(): HTMLElement {
@@ -2082,8 +2091,8 @@ function row_of_cards_in_hand(
         ourself.  We just let PhysicalHand re-populate the
         entire hand, since the hand is usually super small.
     */
-    const div = document.createElement("div");
-    div.style.paddingBottom = "10px";
+    const card_spans = [];
+
     for (const card of cards) {
         const physical_card = new PhysicalCard(card);
 
@@ -2091,11 +2100,11 @@ function row_of_cards_in_hand(
             physical_game,
             physical_card,
         );
-        const node = physical_hand_card.dom();
-
-        div.append(node);
+        const span = physical_hand_card.dom();
+        card_spans.push(span);
     }
-    return div;
+
+    return render_hand_card_row(card_spans);
 }
 
 class PhysicalHand {
