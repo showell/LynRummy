@@ -1050,28 +1050,6 @@ class Game {
     }
 }
 
-class Example {
-    comment: string;
-    stack: CardStack;
-    expected_type: CardStackType;
-
-    constructor(
-        comment: string,
-        shorthand: string,
-        expected_type: CardStackType,
-    ) {
-        this.comment = comment;
-        this.stack = CardStack.from(shorthand, OriginDeck.DECK_ONE);
-        this.expected_type = expected_type;
-        // test it even at runtime
-        if (this.stack.stack_type !== expected_type) {
-            console.log("\n\n----- PROBLEM!\n\n");
-            console.log(this.stack.str());
-            console.log(this.stack.stack_type, "is not", expected_type);
-        }
-    }
-}
-
 function has_duplicate_cards(cards: Card[]): boolean {
     function any_dup_card(card: Card, rest: Card[]): boolean {
         if (rest.length === 0) {
@@ -2355,6 +2333,28 @@ function color_for_example_stack(stack: CardStack): string {
             return "lightred";
         default:
             return "green";
+    }
+}
+
+class Example {
+    comment: string;
+    stack: CardStack;
+    expected_type: CardStackType;
+
+    constructor(
+        comment: string,
+        shorthand: string,
+        expected_type: CardStackType,
+    ) {
+        this.comment = comment;
+        this.stack = CardStack.from(shorthand, OriginDeck.DECK_ONE);
+        this.expected_type = expected_type;
+        // test it even at runtime
+        if (this.stack.stack_type !== expected_type) {
+            console.log("\n\n----- PROBLEM!\n\n");
+            console.log(this.stack.str());
+            console.log(this.stack.stack_type, "is not", expected_type);
+        }
     }
 }
 
