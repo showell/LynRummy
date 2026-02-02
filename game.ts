@@ -94,6 +94,12 @@ enum BoardCardState {
     FRESHLY_PLAYED_BY_LAST_PLAYER,
 }
 
+enum CompleteTurnResult {
+    SUCCESS,
+    SUCCESS_BUT_NEEDS_CARDS,
+    FAILURE,
+}
+
 class ShelfCardLocation {
     shelf_index: number;
     stack_index: number;
@@ -1050,19 +1056,18 @@ class Game {
         ActivePlayer = this.players[this.current_player_index];
     }
 
-    complete_turn(): boolean {
-        if (!CurrentBoard.is_clean()) return false;
+    complete_turn(): CompleteTurnResult {
+        if (!CurrentBoard.is_clean()) return CompleteTurnResult.FAILURE;
 
         ActivePlayer.hand.age_cards();
 
+        let turn_result;
+
         if (ActivePlayer.can_get_new_cards()) {
             ActivePlayer.take_cards_from_deck(3);
-            Popup.getInstance().show({
-                content: "You will get 3 new cards on your next hand.",
-                type: "warning",
-                required_action_string: "Meh",
-                avatar: PopupAvatar.OLIVER,
-            });
+            turn_result = CompleteTurnResult.SUCCESS_BUT_NEEDS_CARDS;
+        } else {
+            turn_result = CompleteTurnResult.SUCCESS;
         }
 
         // IMPORTANT: Do this after prior check.
@@ -1071,7 +1076,7 @@ class Game {
         this.advance_turn_to_next_player();
         this.update_snapshot();
 
-        return true;
+        return turn_result;
     }
 }
 
@@ -2291,14 +2296,27 @@ class PhysicalGame {
 
     // ACTION
     complete_turn() {
-        if (!this.game.complete_turn()) {
-            Popup.getInstance().show({
-                content:
-                    "Cannot complete turn! You will need to place at least one card\
-                    on the board while ensuring it is clean.\nYou can always use the\
-                    'Undo mistakes' button to get back to the previous clean state.",
-                type: "warning",
-            });
+        const turn_result = this.game.complete_turn();
+        switch (turn_result) {
+            case CompleteTurnResult.FAILURE:
+                Popup.getInstance().show({
+                    content:
+                        "The board is not clean! (nor is my litter box)\n Try\
+                        using the 'Undo mistakes' button to get back to the previous clean state.",
+                    required_action_string: "Oy vey, ok",
+                    type: "warning",
+                });
+                return;
+            case CompleteTurnResult.SUCCESS_BUT_NEEDS_CARDS:
+                Popup.getInstance().show({
+                    content:
+                        "You didn't make much progress. Hope you had a good nap!\
+                    \nYou will get 3 new cards on your next hand.",
+                    type: "warning",
+                    required_action_string: "Meh",
+                    avatar: PopupAvatar.OLIVER,
+                });
+                break;
         }
         this.populate_player_area();
         this.populate_board_area();
@@ -2746,9 +2764,9 @@ class MainPage {
                 "Welcome to Lyn Rummy!\nYou can:\
                 \n1) Drag any card or pile to another pile.\
                 \n2) Click on a single card to remove it from a pile.\
-                \n3) Drag cards to empty spaces.\nYou can also drag piles to merge them together.\
-                \nTo successfully complete your turn, you must place at least one card on the board from your hand and keep the board clean.\
-                \nA board with shelves that have a ❌ is in an unclean state.\
+                \n3) Drag cards to empty spaces.\n\
+                \nYou can mess up the board during your turn, but you must clean up the board to complete the turn.\
+                \nIf you see an ❌ that means you might be in trouble!\
                 \nGood luck!",
             type: "info",
             required_action_string: "Thanks, Mr. Professor!",
