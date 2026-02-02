@@ -1249,7 +1249,7 @@ function render_shelf(): HTMLElement {
 function render_complete_turn_button(): HTMLElement {
     const button = document.createElement("button");
     button.classList.add("button", "complete-turn-button");
-    button.style.backgroundColor = "#007bff";
+    button.style.backgroundColor = button_color();
     button.style.color = "white";
     button.style.marginRight = "5px";
     button.innerText = "Complete turn";
@@ -1259,10 +1259,18 @@ function render_complete_turn_button(): HTMLElement {
 function render_undo_button(): HTMLElement {
     const button = document.createElement("button");
     button.classList.add("button", "reset-button");
-    button.style.backgroundColor = "#007bff";
+    button.style.backgroundColor = button_color();
     button.style.color = "white";
     button.innerText = "Undo mistakes";
     return button;
+}
+
+function heading_color() {
+    return button_color(); // needs another color haha
+}
+
+function button_color() {
+    return "#000080"; // navy blue
 }
 
 /***********************************************
@@ -1924,6 +1932,7 @@ class PhysicalBoard {
 
         const heading = document.createElement("h3");
         heading.innerText = "Board";
+        heading.style.color = heading_color();
 
         div.append(heading);
         for (const physical_shelf of physical_shelves) {
@@ -2033,6 +2042,7 @@ class PhysicalPlayer {
 
         const h3 = document.createElement("h3");
         h3.innerText = player.name;
+        h3.style.color = heading_color();
 
         div.append(h3);
 
