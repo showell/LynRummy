@@ -907,9 +907,9 @@ class Player {
     name: string;
     hand: Hand;
 
-    constructor(info: { name: string; hand?: Hand }) {
+    constructor(info: { name: string }) {
         this.name = info.name;
-        this.hand = info.hand ?? new Hand();
+        this.hand = new Hand();
     }
 }
 
