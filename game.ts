@@ -941,8 +941,15 @@ class Player {
         this.starting_board_score = CurrentBoard.score();
     }
 
+    get_turn_score(): number {
+        const board_score = CurrentBoard.score() - this.starting_board_score;
+        const num_cards_played = this.starting_hand_size - this.hand.size();
+        const cards_score = Score.for_cards_played(num_cards_played);
+        return board_score + cards_score;
+    }
+
     end_turn(): void {
-        const turn_score = CurrentBoard.score() - this.starting_board_score;
+        const turn_score = this.get_turn_score();
         this.total_score += turn_score;
         console.log("scores", turn_score, this.total_score);
     }
@@ -983,7 +990,7 @@ class ScoreSingleton {
     stack_type_value(stack_type: CardStackType): number {
         switch (stack_type) {
             case CardStackType.PURE_RUN:
-                return 100;
+                return 90;
             case CardStackType.SET:
                 return 60;
             case CardStackType.RED_BLACK_RUN:
@@ -1005,6 +1012,10 @@ class ScoreSingleton {
         }
 
         return score;
+    }
+
+    for_cards_played(num: number) {
+        return 100 * num * num;
     }
 }
 
