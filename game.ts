@@ -1210,21 +1210,6 @@ function render_undo_button(): HTMLElement {
 
 type ClickHandler = (e: MouseEvent) => void;
 
-class PhysicalCard {
-    card: Card;
-    span: HTMLElement;
-
-    constructor(card: Card) {
-        this.card = card;
-        const span = render_playing_card(card);
-        this.span = span;
-    }
-
-    dom(): HTMLElement {
-        return this.span;
-    }
-}
-
 class PhysicalDeck {
     deck: Deck;
     div: HTMLElement;
@@ -1275,13 +1260,11 @@ class PhysicalHandCard {
     hand_card: HandCard;
     card: Card;
     card_span: HTMLElement;
-    physical_card: PhysicalCard;
 
     constructor(hand_card: HandCard) {
         this.hand_card = hand_card;
         this.card = hand_card.card;
-        this.physical_card = new PhysicalCard(this.card);
-        this.card_span = this.physical_card.dom();
+        this.card_span = render_playing_card(this.card);
         this.allow_dragging();
         this.update_state_styles();
     }
@@ -1321,7 +1304,7 @@ class PhysicalHandCard {
     }
 
     update_state_styles(): void {
-        const span = this.physical_card.span;
+        const span = this.card_span;
 
         if (this.hand_card.state === HandCardState.FRESHLY_DRAWN) {
             span.style.backgroundColor = new_card_color();
@@ -1335,7 +1318,6 @@ class PhysicalBoardCard {
     board_card: BoardCard;
     card: Card;
     card_location: ShelfCardLocation;
-    physical_card: PhysicalCard;
     card_span: HTMLElement;
     click_handler: ClickHandler | undefined;
 
@@ -1343,8 +1325,7 @@ class PhysicalBoardCard {
         this.board_card = board_card;
         this.card = board_card.card;
         this.card_location = card_location;
-        this.physical_card = new PhysicalCard(this.card);
-        this.card_span = this.physical_card.dom();
+        this.card_span = render_playing_card(this.card);
         this.click_handler = undefined;
         this.update_state_styles();
     }
@@ -1376,7 +1357,7 @@ class PhysicalBoardCard {
     }
 
     update_state_styles(): void {
-        const span = this.physical_card.span;
+        const span = this.card_span;
         const state = this.board_card.state;
 
         if (state === BoardCardState.FRESHLY_PLAYED) {
@@ -2344,8 +2325,7 @@ function div_for_example_card_stack(stack: CardStack): HTMLElement {
     const div = document.createElement("div");
 
     for (const card of stack.get_cards()) {
-        const physical_card = new PhysicalCard(card);
-        div.append(physical_card.dom());
+        div.append(render_playing_card(card));
     }
 
     return div;
