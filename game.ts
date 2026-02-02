@@ -830,6 +830,8 @@ class Board {
     }
 }
 
+let TheDeck: Deck;
+
 class Deck {
     // The "top" of the deck is the last index, so
     // we can do the equivalent of pop, not that it
@@ -972,7 +974,6 @@ let Score = new ScoreSingleton();
 
 class Game {
     players: Player[];
-    deck: Deck;
     current_player_index: number;
     // The first snapshot will be initialized after `deal_cards`.
     // We will then update the snapshot at any point the board is in a clean state.
@@ -983,12 +984,12 @@ class Game {
             new Player({ name: "Player One" }),
             new Player({ name: "Player Two" }),
         ];
-        this.deck = new Deck();
+        TheDeck = new Deck();
         CurrentBoard = initial_board();
 
         // remove initial cards from deck
         for (const board_card of CurrentBoard.get_cards()) {
-            this.deck.pull_card_from_deck(board_card.card);
+            TheDeck.pull_card_from_deck(board_card.card);
         }
 
         this.deal_cards();
@@ -1024,7 +1025,7 @@ class Game {
 
     deal_cards() {
         for (const player of this.players) {
-            const cards = this.deck.take_from_top(15);
+            const cards = TheDeck.take_from_top(15);
             player.hand.add_cards(cards, HandCardState.STILL_IN_HAND);
         }
     }
@@ -1037,7 +1038,7 @@ class Game {
     }
 
     draw_new_cards(cnt: number): void {
-        const cards = this.deck.take_from_top(cnt);
+        const cards = TheDeck.take_from_top(cnt);
         ActivePlayer.hand.add_cards(cards, HandCardState.FRESHLY_DRAWN);
     }
 
@@ -1232,11 +1233,9 @@ function render_undo_button(): HTMLElement {
 type ClickHandler = (e: MouseEvent) => void;
 
 class PhysicalDeck {
-    deck: Deck;
     div: HTMLElement;
 
-    constructor(deck: Deck) {
-        this.deck = deck;
+    constructor() {
         this.div = this.make_div();
     }
 
@@ -1251,7 +1250,8 @@ class PhysicalDeck {
     }
 
     populate(): void {
-        const deck = this.deck;
+        const deck = TheDeck;
+
         if (this.div.innerHTML === "") {
             const img = document.createElement("img");
             img.src = "images/deck.png";
@@ -2261,7 +2261,7 @@ class PhysicalGame {
     build_physical_game(): void {
         const physical_game = this;
 
-        this.physical_deck = new PhysicalDeck(this.game.deck);
+        this.physical_deck = new PhysicalDeck();
         this.physical_board = new PhysicalBoard(physical_game);
         this.physical_players = this.game.players.map(
             (player) => new PhysicalPlayer(physical_game, player),
