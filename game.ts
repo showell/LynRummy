@@ -2439,6 +2439,9 @@ class PhysicalExamples {
     start(opts: { on_dismiss_callback: SimpleCallback }): void {
         const div = document.createElement("div");
 
+        const cat_img = document.createElement("img");
+        cat_img.src = "images/oliver.png";
+
         const h3 = document.createElement("h3");
         h3.innerText = "Examples";
 
@@ -2470,6 +2473,7 @@ class PhysicalExamples {
 
         panel.append(good_column);
         panel.append(bad_column);
+        div.append(cat_img);
         div.append(h3);
         div.append(button);
         div.append(panel);
