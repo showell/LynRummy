@@ -1654,7 +1654,6 @@ class PhysicalEmptyShelfSpot {
 }
 
 class PhysicalShelf {
-    physical_game: PhysicalGame;
     physical_board: PhysicalBoard;
     physical_card_stacks: PhysicalCardStack[];
     shelf_index: number;
@@ -1663,12 +1662,10 @@ class PhysicalShelf {
     physical_shelf_empty_spot: PhysicalEmptyShelfSpot;
 
     constructor(info: {
-        physical_game: PhysicalGame;
         physical_board: PhysicalBoard;
         shelf_index: number;
         shelf: Shelf;
     }) {
-        this.physical_game = info.physical_game;
         this.physical_board = info.physical_board;
         this.shelf_index = info.shelf_index;
         this.shelf = info.shelf;
@@ -1786,7 +1783,6 @@ class PhysicalBoard {
         for (let shelf_index = 0; shelf_index < shelves.length; ++shelf_index) {
             const shelf = shelves[shelf_index];
             const physical_shelf = new PhysicalShelf({
-                physical_game,
                 physical_board,
                 shelf_index,
                 shelf,
