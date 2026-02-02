@@ -2332,7 +2332,8 @@ class PhysicalGame {
                 SoundEffects.play_purr_sound();
                 Popup.getInstance().show({
                     content:
-                        "You didn't make much progress. Hope you had a good nap!\
+                        "You didn't make any progress at all.\
+                        \n I'm going back to my nap!\
                         \nYou will get 3 new cards on your next hand.",
                     type: "warning",
                     required_action_string: "Meh",
@@ -2426,7 +2427,7 @@ type PopupOptions = {
     content: string;
     type: PopupType;
     required_action_string?: string;
-    avatar?: PopupAvatar;
+    avatar: PopupAvatar;
 };
 
 class Popup {
@@ -2460,6 +2461,27 @@ class Popup {
         return dialog;
     }
 
+    avatar_img(avatar) {
+        const img = document.createElement("img");
+        img.style.width = "4rem";
+        img.style.height = "4rem";
+        switch (avatar) {
+            case PopupAvatar.STEVE:
+                img.src = "images/steve.png";
+                break;
+            case PopupAvatar.CAT_PROFESSOR:
+                img.src = "images/cat_professor.webp";
+                break;
+            case PopupAvatar.ANGRY_CAT:
+                img.src = "images/angry_cat.png";
+                break;
+            case PopupAvatar.OLIVER:
+                img.src = "images/oliver.png";
+                break;
+        }
+        return img;
+    }
+
     show(info: PopupOptions) {
         document.body.append(this.popup_element);
 
@@ -2489,26 +2511,8 @@ class Popup {
             this.popup_element.append(button);
         }
 
-        if (info.avatar !== undefined) {
-            const img = document.createElement("img");
-            img.style.width = "4rem";
-            img.style.height = "4rem";
-            switch (info.avatar) {
-                case PopupAvatar.STEVE:
-                    img.src = "images/steve.png";
-                    break;
-                case PopupAvatar.CAT_PROFESSOR:
-                    img.src = "images/cat_professor.webp";
-                    break;
-                case PopupAvatar.ANGRY_CAT:
-                    img.src = "images/angry_cat.png";
-                    break;
-                case PopupAvatar.OLIVER:
-                    img.src = "images/oliver.png";
-                    break;
-            }
-            this.popup_element.prepend(img);
-        }
+        const img = this.avatar_img(info.avatar);
+        this.popup_element.prepend(img);
 
         this.popup_element.showModal();
     }
