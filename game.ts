@@ -1931,15 +1931,8 @@ class PhysicalBoard {
         div.append(this.undo_button.dom());
     }
 
-    add_card_to_top_shelf(hand_card: HandCard): StackLocation {
-        if (this.physical_shelves.length < 1) {
-            throw new Error("No top shelf");
-        }
+    add_card_to_top_shelf(hand_card: HandCard): void {
         this.physical_shelves[0].add_singleton_card(hand_card);
-        return new StackLocation({
-            shelf_index: 0,
-            stack_index: this.board.shelves[0].card_stacks.length - 1,
-        });
     }
 }
 
