@@ -2451,7 +2451,7 @@ class Popup {
         s.maxWidth = "50vw";
         s.borderRadius = "1rem";
         s.outline = "none";
-        s.border = "none";
+        s.border = "1px #000080 solid";
         s.display = "flex";
         s.flexDirection = "column";
         s.gap = "0.5rem";
