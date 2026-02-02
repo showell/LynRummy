@@ -1104,13 +1104,6 @@ class Game {
             turn_result = CompleteTurnResult.SUCCESS;
         }
 
-        CurrentBoard.age_cards();
-
-        this.advance_turn_to_next_player();
-        ActivePlayer.start_turn();
-
-        this.update_snapshot();
-
         return turn_result;
     }
 }
@@ -2331,7 +2324,10 @@ class PhysicalGame {
 
     // ACTION
     complete_turn() {
-        const turn_result = this.game.complete_turn();
+        const game = this.game;
+
+        const turn_result = game.complete_turn();
+
         switch (turn_result) {
             case CompleteTurnResult.FAILURE:
                 Popup.getInstance().show({
@@ -2347,14 +2343,31 @@ class PhysicalGame {
                 Popup.getInstance().show({
                     content:
                         "You didn't make much progress. Hope you had a good nap!\
-                    \nYou will get 3 new cards on your next hand.",
+                        \nYou will get 3 new cards on your next hand.",
                     type: "warning",
                     required_action_string: "Meh",
                     avatar: PopupAvatar.OLIVER,
                 });
                 break;
+            case CompleteTurnResult.SUCCESS:
+                SoundEffects.play_bark_sound();
+                const turn_score = ActivePlayer.get_turn_score();
+                Popup.getInstance().show({
+                    content: `You did well! I am rewarding you with ${turn_score} points for this turn!\
+                         \nLet's see how your opponent (you again, maybe?) does!`,
+                    type: "warning",
+                    required_action_string: "See if they can try!",
+                    avatar: PopupAvatar.STEVE,
+                });
+                break;
         }
-        SoundEffects.play_bark_sound();
+
+        CurrentBoard.age_cards();
+        game.advance_turn_to_next_player();
+        ActivePlayer.start_turn();
+
+        game.update_snapshot();
+
         this.populate_player_area();
         this.populate_board_area();
     }
