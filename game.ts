@@ -84,7 +84,7 @@ const enum CardStackType {
 }
 
 enum HandCardState {
-    STILL_IN_HAND,
+    NORMAL,
     FRESHLY_DRAWN,
 }
 
@@ -906,10 +906,10 @@ class Hand {
     }
 
     // This is called after the player's turn ends.
-    age_cards(): void {
-        this.hand_cards.forEach((hand_card) => {
-            hand_card.state = HandCardState.STILL_IN_HAND;
-        });
+    reset_state(): void {
+        for (const hand_card of this.hand_cards) {
+            hand_card.state = HandCardState.NORMAL;
+        }
     }
 
     size(): number {
@@ -930,6 +930,10 @@ class Player {
         this.name = info.name;
         this.hand = new Hand();
         this.total_score = 0;
+    }
+
+    reset_hand_state(): void {
+        this.hand.reset_state();
     }
 
     start_turn(): void {
@@ -1061,7 +1065,7 @@ class Game {
     deal_cards() {
         for (const player of this.players) {
             const cards = TheDeck.take_from_top(15);
-            player.hand.add_cards(cards, HandCardState.STILL_IN_HAND);
+            player.hand.add_cards(cards, HandCardState.NORMAL);
         }
     }
 
@@ -1078,7 +1082,7 @@ class Game {
     complete_turn(): CompleteTurnResult {
         if (!CurrentBoard.is_clean()) return CompleteTurnResult.FAILURE;
 
-        ActivePlayer.hand.age_cards();
+        ActivePlayer.reset_hand_state();
 
         let turn_result;
 
