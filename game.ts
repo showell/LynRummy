@@ -2793,33 +2793,43 @@ class LandingPage {
 }
 
 class MainGamePage {
-    page: HTMLElement;
     player_area: HTMLElement;
     board_area: HTMLElement;
 
     constructor() {
-        this.page = document.createElement("div");
-        this.page.style.display = "flex";
-        this.page.style.justifyContent = "center";
-        this.page.style.width = "100%";
+        const page = document.createElement("div");
+        page.style.display = "flex";
+        page.style.justifyContent = "center";
+        page.style.width = "100%";
+        const left_panel = this.make_left_panel();
+        const right_panel = this.make_right_panel();
+        page.append(left_panel);
+        page.append(right_panel);
 
+        document.body.append(page);
+
+        this.start_game_components();
+    }
+
+    make_left_panel(): HTMLElement {
         this.player_area = document.createElement("div");
         this.player_area.style.paddingRight = "20px";
         this.player_area.style.marginRight = "20px";
         this.player_area.style.borderRight = "1px gray solid";
-        this.board_area = document.createElement("div");
 
         const left_panel = document.createElement("div");
         left_panel.append(this.player_area);
+        return left_panel;
+    }
 
+    make_right_panel(): HTMLElement {
+        this.board_area = document.createElement("div");
         const right_panel = document.createElement("div");
         right_panel.append(this.board_area);
+        return right_panel;
+    }
 
-        this.page.append(left_panel);
-        this.page.append(right_panel);
-
-        document.body.append(this.page);
-
+    start_game_components(): void {
         const player_area = this.player_area;
         const board_area = this.board_area;
 
