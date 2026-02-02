@@ -2726,49 +2726,19 @@ function create_welcome_button(): HTMLElement {
     return welcome_button;
 }
 
-class MainPage {
-    page: HTMLElement;
-    welcome_area: HTMLElement;
-    player_area: HTMLElement;
-    examples_area: HTMLElement;
-    board_area: HTMLElement;
-
+class LandingPage {
     constructor() {
-        this.page = document.createElement("div");
-        this.page.style.display = "flex";
-        this.page.style.justifyContent = "center";
-        this.page.style.width = "100%";
-
-        this.welcome_area = document.createElement("div");
-        this.welcome_area.style.paddingRight = "30px";
-
-        this.player_area = document.createElement("div");
-        this.player_area.style.paddingRight = "20px";
-        this.player_area.style.marginRight = "20px";
-        this.player_area.style.borderRight = "1px gray solid";
-
-        this.examples_area = document.createElement("div");
-        this.examples_area.style.borderLeft = "1px blue solid";
-        this.examples_area.style.paddingLeft = "20px";
-
-        this.board_area = document.createElement("div");
-
-        const left_panel = document.createElement("div");
-        left_panel.append(this.welcome_area);
-        left_panel.append(this.player_area);
-
-        const right_panel = document.createElement("div");
-        right_panel.append(this.examples_area);
-        right_panel.append(this.board_area);
-
-        this.page.append(left_panel);
-        this.page.append(right_panel);
-    }
-
-    start(): void {
         const self = this;
-        const welcome_area = this.welcome_area;
-        const examples_area = this.examples_area;
+
+        const page = document.createElement("div");
+        page.style.display = "flex";
+        page.style.justifyContent = "center";
+        page.style.width = "100%";
+
+        // Left panel
+
+        const welcome_area = document.createElement("div");
+        welcome_area.style.paddingRight = "30px";
 
         const welcome = document.createElement("div");
         welcome.innerText = "Welcome to Lyn Rummy!";
@@ -2790,6 +2760,12 @@ class MainPage {
         welcome_area.append(welcome_button);
         welcome_area.append(cat_div);
 
+        // RIGHT PANEL
+
+        const examples_area = document.createElement("div");
+        examples_area.style.borderLeft = "1px blue solid";
+        examples_area.style.paddingLeft = "20px";
+
         const examples = new PhysicalExamples(examples_area);
         examples.start({
             on_dismiss_callback() {
@@ -2797,24 +2773,70 @@ class MainPage {
             },
         });
 
-        document.body.append(this.page);
+        // PUT EVERYTHING TOGETHER
+
+        const left_panel = document.createElement("div");
+        left_panel.append(welcome_area);
+
+        const right_panel = document.createElement("div");
+        right_panel.append(examples_area);
+
+        page.append(left_panel);
+        page.append(right_panel);
+        document.body.append(page);
     }
 
     start_actual_game(): void {
-        const welcome_area = this.welcome_area;
-        const examples_area = this.examples_area;
+        document.body.innerHTML = "";
+        new MainGamePage();
+    }
+}
+
+class MainGamePage {
+    page: HTMLElement;
+    player_area: HTMLElement;
+    board_area: HTMLElement;
+
+    constructor() {
+        this.page = document.createElement("div");
+        this.page.style.display = "flex";
+        this.page.style.justifyContent = "center";
+        this.page.style.width = "100%";
+
+        this.player_area = document.createElement("div");
+        this.player_area.style.paddingRight = "20px";
+        this.player_area.style.marginRight = "20px";
+        this.player_area.style.borderRight = "1px gray solid";
+        this.board_area = document.createElement("div");
+
+        const left_panel = document.createElement("div");
+        left_panel.append(this.player_area);
+
+        const right_panel = document.createElement("div");
+        right_panel.append(this.board_area);
+
+        this.page.append(left_panel);
+        this.page.append(right_panel);
+
+        document.body.append(this.page);
+
         const player_area = this.player_area;
         const board_area = this.board_area;
 
-        welcome_area.innerHTML = "";
-        examples_area.innerHTML = "";
-
-        // We get called back one the player dismisses the examples.
         const physical_game = new PhysicalGame({
             player_area: player_area,
             board_area: board_area,
         });
         physical_game.start();
+
+        const self = this;
+
+        setTimeout(() => {
+            self.show_professor();
+        }, 1000);
+    }
+
+    show_professor(): void {
         Popup.getInstance().show({
             content:
                 "Welcome to Lyn Rummy!\nYou can:\
@@ -2915,6 +2937,5 @@ let SoundEffects: SoundEffectsSingleton;
 // This is the entry point for static/index.html
 function gui() {
     SoundEffects = new SoundEffectsSingleton();
-    const ui = new MainPage();
-    ui.start();
+    new LandingPage();
 }
