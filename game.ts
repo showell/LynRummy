@@ -925,11 +925,13 @@ class Player {
     total_score: number;
     starting_hand_size: number;
     starting_board_score: number;
+    active: boolean;
 
     constructor(info: { name: string }) {
         this.name = info.name;
         this.hand = new Hand();
         this.total_score = 0;
+        this.active = false;
     }
 
     reset_hand_state(): void {
@@ -937,6 +939,7 @@ class Player {
     }
 
     start_turn(): void {
+        this.active = true;
         this.starting_hand_size = this.hand.size();
         this.starting_board_score = CurrentBoard.score();
     }
@@ -949,6 +952,7 @@ class Player {
     }
 
     end_turn(): void {
+        this.active = false;
         const turn_score = this.get_turn_score();
         this.total_score += turn_score;
         console.log("scores", turn_score, this.total_score);
@@ -2005,16 +2009,21 @@ class PhysicalPlayer {
         this.player = player;
         this.physical_hand = new PhysicalHand(player.hand);
         this.complete_turn_button = new CompleteTurnButton(physical_game);
-        this.make_div();
-    }
-
-    make_div() {
         this.div = document.createElement("div");
+        this.div.style.minWidth = "200px";
     }
 
     dom(): HTMLElement {
-        this.populate();
         return this.div;
+    }
+
+    card_count(): HTMLElement {
+        const div = document.createElement("div");
+
+        const count = this.player.hand.size();
+
+        div.innerText = `${count} cards`;
+        return div;
     }
 
     populate() {
@@ -2026,8 +2035,13 @@ class PhysicalPlayer {
         h3.innerText = player.name;
 
         div.append(h3);
-        div.append(this.physical_hand.dom());
-        div.append(this.complete_turn_button.dom());
+
+        if (this.player.active) {
+            div.append(this.physical_hand.dom());
+            div.append(this.complete_turn_button.dom());
+        } else {
+            div.append(this.card_count());
+        }
     }
 }
 
@@ -2257,7 +2271,6 @@ class PhysicalGame {
         this.build_physical_game();
 
         // Re-render
-        this.populate_player_area();
         this.populate_board_area();
     }
 
@@ -2268,6 +2281,8 @@ class PhysicalGame {
         this.physical_players = this.game.players.map(
             (player) => new PhysicalPlayer(physical_game, player),
         );
+        this.populate_player_area();
+
         HandCardDragAction = new HandCardDragActionSingleton(
             physical_game,
             this.physical_board,
@@ -2339,7 +2354,10 @@ class PhysicalGame {
 
     populate_player_area() {
         this.player_area.innerHTML = "";
-        this.player_area.append(this.current_physical_player().dom());
+        for (const physical_player of this.physical_players) {
+            physical_player.populate();
+            this.player_area.append(physical_player.dom());
+        }
     }
 
     populate_board_area() {
