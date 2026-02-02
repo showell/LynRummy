@@ -1921,7 +1921,7 @@ class PhysicalBoard {
         );
 
         if (longer_stack.board_cards.length >= 3) {
-            SoundEffects.play_ding_sound();
+            SoundEffects.play_purr_sound();
         }
         this.populate_shelf(shelf_index);
         this.hide_mergeable_stacks();
@@ -2159,7 +2159,7 @@ class CardStackDragActionSingleton {
         }
 
         if (merged_stack.board_cards.length >= 3) {
-            SoundEffects.play_ding_sound();
+            SoundEffects.play_purr_sound();
         }
 
         physical_board.populate_shelf(source_location.shelf_index);
@@ -2354,6 +2354,7 @@ class PhysicalGame {
                 });
                 break;
         }
+        SoundEffects.play_bark_sound();
         this.populate_player_area();
         this.populate_board_area();
     }
@@ -2867,17 +2868,22 @@ function test() {
 test(); // runs in node
 
 class SoundEffectsSingleton {
-    ding: HTMLAudioElement;
-
+    purr: HTMLAudioElement;
+    bark: HTMLAudioElement;
     constructor() {
         // It might be overkill to pre-load these, but I can't
         // see how it hurts either.
-        this.ding = document.createElement("audio");
-        this.ding.src = "ding.mp3";
+        this.purr = document.createElement("audio");
+        this.bark = document.createElement("audio");
+        this.purr.src = "purr.mp3";
+        this.bark.src = "bark.mp3";
     }
 
-    play_ding_sound() {
-        this.ding.play();
+    play_purr_sound() {
+        this.purr.play();
+    }
+    play_bark_sound() {
+        this.bark.play();
     }
 }
 
