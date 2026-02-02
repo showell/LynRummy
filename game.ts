@@ -1274,24 +1274,24 @@ function new_card_color(): string {
 class PhysicalHandCard {
     hand_card: HandCard;
     card: Card;
-    card_div: HTMLElement;
+    card_span: HTMLElement;
     physical_card: PhysicalCard;
 
     constructor(hand_card: HandCard) {
         this.hand_card = hand_card;
         this.card = hand_card.card;
         this.physical_card = new PhysicalCard(this.card);
-        this.card_div = this.physical_card.dom();
+        this.card_span = this.physical_card.dom();
         this.allow_dragging();
         this.update_state_styles();
     }
 
     dom() {
-        return this.card_div;
+        return this.card_span;
     }
 
     get_width() {
-        return this.card_div.clientWidth;
+        return this.card_span.clientWidth;
     }
 
     handle_dragstart(e): void {
@@ -1306,7 +1306,7 @@ class PhysicalHandCard {
 
     allow_dragging() {
         const self = this;
-        const div = this.card_div;
+        const div = this.card_span;
 
         div.draggable = true;
         div.style.userSelect = undefined;
@@ -1336,7 +1336,7 @@ class PhysicalBoardCard {
     card: Card;
     card_location: ShelfCardLocation;
     physical_card: PhysicalCard;
-    card_div: HTMLElement;
+    card_span: HTMLElement;
     click_handler: ClickHandler | undefined;
 
     constructor(card_location: ShelfCardLocation, board_card: BoardCard) {
@@ -1344,25 +1344,25 @@ class PhysicalBoardCard {
         this.card = board_card.card;
         this.card_location = card_location;
         this.physical_card = new PhysicalCard(this.card);
-        this.card_div = this.physical_card.dom();
+        this.card_span = this.physical_card.dom();
         this.click_handler = undefined;
         this.update_state_styles();
     }
 
     dom(): HTMLElement {
-        return this.card_div;
+        return this.card_span;
     }
 
     reset_click_listener(): void {
         if (this.click_handler === undefined) {
             return;
         }
-        this.card_div.removeEventListener("click", this.click_handler);
+        this.card_span.removeEventListener("click", this.click_handler);
         this.click_handler = undefined;
     }
 
     add_click_listener(physical_board: PhysicalBoard): void {
-        const div = this.card_div;
+        const div = this.card_span;
         const self = this;
 
         this.reset_click_listener(); // there can only be ONE!
