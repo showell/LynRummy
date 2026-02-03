@@ -1386,7 +1386,7 @@ class PhysicalBoardCard {
         this.reset_click_listener(); // there can only be ONE!
 
         this.click_handler = (e) => {
-            physical_board.handle_shelf_card_click(self.card_location);
+            EventManager.split_card_from_stack(self.card_location);
             e.stopPropagation();
         };
 
@@ -1900,7 +1900,7 @@ class PhysicalBoard {
     }
 
     // ACTION
-    handle_shelf_card_click(card_location: ShelfCardLocation) {
+    split_card_from_stack(card_location: ShelfCardLocation) {
         const { shelf_index, stack_index, card_index } = card_location;
 
         const shelf = this.physical_shelves[shelf_index];
@@ -2240,6 +2240,14 @@ class EventManagerSingleton {
         console.log("EVENT SCORE!", ActivePlayer.get_turn_score());
     }
 
+    // SPLITTING UP STACKS
+    split_card_from_stack(card_location: ShelfCardLocation): void {
+        this.physical_board.split_card_from_stack(card_location);
+        StatusBar.update_text(
+            "Split! Moves like this can be tricky, even for experts. You have the undo button if you need it.",
+        );
+    }
+
     // MOVING TO EMPTY SPOTS
     move_card_from_hand_to_board(): void {
         HandCardDragAction.move_card_from_hand_to_board();
@@ -2247,7 +2255,8 @@ class EventManagerSingleton {
             "You moved a card to the board! Do you have a plan? (You can click on other cards to break them out of stacks.)",
         );
     }
-    move_dragged_card_stack_to_end_of_shelf(new_shelf_index: number) {
+
+    move_dragged_card_stack_to_end_of_shelf(new_shelf_index: number): void {
         CardStackDragAction.move_dragged_card_stack_to_end_of_shelf(
             new_shelf_index,
         );
