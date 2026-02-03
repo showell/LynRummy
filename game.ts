@@ -1337,7 +1337,7 @@ function opponent_card_color(): string {
 }
 
 function new_card_color(): string {
-    return "lightpink";
+    return "hsla(240, 96%, 68%, 0.2)";
 }
 
 class PhysicalHandCard {
