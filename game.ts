@@ -3060,6 +3060,8 @@ class MainGamePage {
     }
 
     show_professor(): void {
+        SoundEffects.play_welcome_sound();
+
         Popup.show({
             content:
                 "Welcome to Lyn Rummy!\
@@ -3151,6 +3153,7 @@ class SoundEffectsSingleton {
     ding: HTMLAudioElement;
     good_job: HTMLAudioElement;
     nice: HTMLAudioElement;
+    welcome: HTMLAudioElement;
 
     constructor() {
         // It might be overkill to pre-load these, but I can't
@@ -3160,11 +3163,13 @@ class SoundEffectsSingleton {
         this.bark = document.createElement("audio");
         this.good_job = document.createElement("audio");
         this.nice = document.createElement("audio");
+        this.welcome = document.createElement("audio");
         this.ding.src = "ding.mp3";
         this.purr.src = "purr.mp3";
         this.bark.src = "bark.mp3";
         this.good_job.src = "steve.m4a";
         this.nice.src = "nice.m4a";
+        this.welcome.src = "welcome.mp3";
     }
 
     play_ding_sound() {
@@ -3185,6 +3190,10 @@ class SoundEffectsSingleton {
 
     play_nice_sound() {
         this.nice.play();
+    }
+
+    play_welcome_sound() {
+        this.welcome.play();
     }
 }
 
