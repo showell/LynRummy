@@ -2433,10 +2433,10 @@ class PhysicalGame {
                 });
                 break;
             case CompleteTurnResult.SUCCESS:
-                SoundEffects.play_bark_sound();
+                SoundEffects.play_good_job_sound();
                 const turn_score = ActivePlayer.get_turn_score();
                 Popup.show({
-                    content: `Great job!\
+                    content: `Good job!\
                          \n\n I am rewarding you with ${turn_score} points for this turn!\
                          \n\nLet's see how your opponent (you again, maybe?) does!`,
                     type: "success",
@@ -3121,6 +3121,7 @@ class SoundEffectsSingleton {
     purr: HTMLAudioElement;
     bark: HTMLAudioElement;
     ding: HTMLAudioElement;
+    good_job: HTMLAudioElement;
 
     constructor() {
         // It might be overkill to pre-load these, but I can't
@@ -3128,19 +3129,27 @@ class SoundEffectsSingleton {
         this.ding = document.createElement("audio");
         this.purr = document.createElement("audio");
         this.bark = document.createElement("audio");
+        this.good_job = document.createElement("audio");
         this.ding.src = "ding.mp3";
         this.purr.src = "purr.mp3";
         this.bark.src = "bark.mp3";
+        this.good_job.src = "steve.m4a";
     }
 
     play_ding_sound() {
         this.ding.play();
     }
+
     play_purr_sound() {
         this.purr.play();
     }
+
     play_bark_sound() {
         this.bark.play();
+    }
+
+    play_good_job_sound() {
+        this.good_job.play();
     }
 }
 
