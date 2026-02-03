@@ -1225,7 +1225,7 @@ function render_playing_card(card: Card): HTMLElement {
     span.style.padding = "1px";
     span.style.margin = "1px";
     span.style.display = "inline-block";
-    span.style.minWidth = "21px";
+    span.style.minWidth = "27px";
     span.style.minHeight = "38px";
 
     span.style.userSelect = "none";
