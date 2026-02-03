@@ -2240,6 +2240,13 @@ class EventManagerSingleton {
         console.log("EVENT SCORE!", ActivePlayer.get_turn_score());
     }
 
+    // Undo mistakes
+
+    undo_mistakes(): void {
+        this.physical_game.rollback_moves_to_last_clean_state();
+        StatusBar.update_text("PHEW!");
+    }
+
     // SPLITTING UP STACKS
     split_card_from_stack(card_location: ShelfCardLocation): void {
         this.physical_board.split_card_from_stack(card_location);
@@ -2435,7 +2442,7 @@ class UndoButton {
     constructor(physical_game: PhysicalGame) {
         const button = render_undo_button();
         button.addEventListener("click", () => {
-            physical_game.rollback_moves_to_last_clean_state();
+            EventManager.undo_mistakes();
         });
         this.button = button;
     }
