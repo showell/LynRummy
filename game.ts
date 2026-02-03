@@ -1290,12 +1290,11 @@ type ClickHandler = (e: MouseEvent) => void;
 
 function opponent_card_color(): string {
     // kind of a pale blue
-    return "rgba(0, 0, 255, 0.2)";
+    return "rgba(0, 0, 255, 0.1)";
 }
 
 function new_card_color(): string {
-    // kind of a pale yellow
-    return "rgba(255, 255, 0, 0.4)";
+    return "rgba(0, 255, 0, 0.4)";
 }
 
 class PhysicalHandCard {
