@@ -1654,6 +1654,7 @@ class PhysicalCardStack {
 function create_shelf_is_clean_or_not_emoji(shelf: Shelf): HTMLElement {
     const emoji = document.createElement("span");
     emoji.style.marginBottom = "5px";
+    emoji.style.userSelect = "none";
 
     if (shelf.is_clean()) {
         emoji.innerText = "\u2705"; // green checkmark
