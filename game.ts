@@ -2371,9 +2371,9 @@ class PhysicalGame {
             case CompleteTurnResult.FAILURE:
                 SoundEffects.play_purr_sound();
                 Popup.show({
-                    content:
-                        "The board is not clean! (nor is my litter box)\n Try\
-                        using the 'Undo mistakes' button to get back to the previous clean state.",
+                    content: `The board is not clean!\
+                        \n\n(nor is my litter box)\
+                        \n\nUse the "Undo mistakes" button if you need to.`,
                     confirm_button_text: "Oy vey, ok",
                     type: "warning",
                     avatar: PopupAvatar.ANGRY_CAT,
