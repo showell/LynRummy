@@ -1645,9 +1645,7 @@ class PhysicalEmptyShelfSpot {
         if (HandCardDragAction.in_progress()) {
             EventManager.move_card_from_hand_to_board();
         } else {
-            CardStackDragAction.move_dragged_card_stack_to_end_of_shelf(
-                shelf_index,
-            );
+            EventManager.move_dragged_card_stack_to_end_of_shelf(shelf_index);
         }
     }
 
@@ -2116,8 +2114,6 @@ class CardStackDragActionSingleton {
 
         physical_board.populate_shelf(stack_location.shelf_index);
         physical_board.populate_shelf(new_shelf_index);
-
-        game.maybe_update_snapshot();
     }
 
     // ACTION
@@ -2251,6 +2247,16 @@ class EventManagerSingleton {
             "You moved a card to the board! Do you have a plan? (You can click on other cards to break them out of stacks.)",
         );
     }
+    move_dragged_card_stack_to_end_of_shelf(new_shelf_index: number) {
+        CardStackDragAction.move_dragged_card_stack_to_end_of_shelf(
+            new_shelf_index,
+        );
+        StatusBar.update_text(
+            "Organizing the board is a key part of the game!",
+        );
+
+        this.game.maybe_update_snapshot();
+    }
 
     // SCORING MOVES
 
@@ -2285,7 +2291,9 @@ class PhysicalGame {
         this.player_area = info.player_area;
         this.board_area = info.board_area;
         this.build_physical_game();
-        StatusBar.update_text("Begin game. You can drag and drop cards.");
+        StatusBar.update_text(
+            "Begin game. You can drag and drop hand cards or board piles to piles or empty spaces on the board.",
+        );
     }
 
     // ACTION
