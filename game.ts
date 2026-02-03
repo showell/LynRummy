@@ -1330,6 +1330,7 @@ class PhysicalHandCard {
         this.hand_card = hand_card;
         this.card = hand_card.card;
         this.card_span = render_playing_card(this.card);
+        this.card_span.style.cursor = "grab";
         this.allow_dragging();
         this.update_state_styles();
     }
@@ -2650,6 +2651,7 @@ class PopupSingleton {
 
     make_button(text: string): HTMLElement {
         const button = document.createElement("button");
+        button.style.cursor = "pointer";
         button.style.maxWidth = "fit-content";
         button.style.padding = "5px";
         button.style.marginTop = "15px";
@@ -2830,6 +2832,7 @@ class PhysicalExamples {
 
         const button = document.createElement("button");
         button.innerText = "Got it!";
+        button.style.cursor = "pointer";
         button.style.height = "30px";
         button.style.width = "100px";
         button.style.backgroundColor = "blue";
@@ -2900,6 +2903,7 @@ class PhysicalExamples {
 function create_welcome_button(): HTMLElement {
     // TODO: This is badly in need of better styling!
     const welcome_button = document.createElement("button");
+    welcome_button.style.cursor = "pointer";
     welcome_button.style.background = "white";
     welcome_button.style.color = "green";
     welcome_button.style.padding = "3px";
@@ -2940,6 +2944,24 @@ class LandingPage {
         cat_img.src = "images/oliver.png";
         cat_img.style.width = "200px";
         cat_div.append(cat_img);
+        cat_div.style.cursor = "pointer";
+
+        cat_div.addEventListener("click", () => {
+            Popup.show({
+                content:
+                    "Stop poking me!\
+                    \n\
+                    \nI'm trying to take a nap!\
+                    \n\
+                    \nGo play Lyn Rummy while I sleep, please.",
+                type: "warning",
+                confirm_button_text: "Ok, Oliver",
+                avatar: PopupAvatar.OLIVER,
+                callback() {
+                    self.start_actual_game();
+                },
+            });
+        });
 
         welcome_area.append(welcome);
         welcome_area.append(welcome_button);
