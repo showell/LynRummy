@@ -2760,7 +2760,7 @@ class PopupSingleton {
         const right = document.createElement("div");
 
         const content_div = document.createElement("pre");
-        content_div.innerText = info.content;
+        content_div.innerText = this.clean_multi_string(info.content);
         right.append(content_div);
 
         const button = this.make_button(info.confirm_button_text);
@@ -2776,6 +2776,13 @@ class PopupSingleton {
         this.popup_element.append(flex_div);
 
         this.popup_element.showModal();
+    }
+
+    clean_multi_string(text: string) {
+        return text
+            .split("\n")
+            .map((s) => s.trimEnd())
+            .join("\n");
     }
 
     finish(info: PopupOptions) {
