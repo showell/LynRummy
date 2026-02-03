@@ -1993,7 +1993,9 @@ class PhysicalHand {
 
     make_div(): HTMLElement {
         // no real styling yet
-        return document.createElement("div");
+        const div = document.createElement("div");
+        div.style.marginTop = "10px";
+        return div;
     }
 
     dom(): HTMLElement {
@@ -2042,6 +2044,15 @@ class PhysicalPlayer {
         return this.div;
     }
 
+    score(): HTMLElement {
+        const div = document.createElement("div");
+
+        const score = this.player.total_score;
+
+        div.innerText = `score: ${score}`;
+        return div;
+    }
+
     card_count(): HTMLElement {
         const div = document.createElement("div");
 
@@ -2056,11 +2067,16 @@ class PhysicalPlayer {
         const div = this.div;
         div.innerHTML = "";
 
-        const h3 = document.createElement("h3");
-        h3.innerText = player.name;
-        h3.style.color = heading_color();
+        const name = document.createElement("div");
+        name.innerText = player.name;
+        name.style.fontWeight = "bold";
+        name.style.fontSize = "19px";
+        name.style.marginTop = "20";
+        name.style.marginBottom = "5px";
+        name.style.color = heading_color();
 
-        div.append(h3);
+        div.append(name);
+        div.append(this.score());
 
         if (this.player.active) {
             div.append(this.physical_hand.dom());
