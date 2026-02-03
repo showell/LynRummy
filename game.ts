@@ -2381,8 +2381,8 @@ class PhysicalGame {
                 Popup.getInstance().show({
                     content:
                         "You didn't make any progress at all.\
-                        \n I'm going back to my nap!\
-                        \nYou will get 3 new cards on your next hand.",
+                        \n\n I'm going back to my nap!\
+                        \n\nYou will get 3 new cards on your next hand.",
                     type: "warning",
                     required_action_string: "Meh",
                     avatar: PopupAvatar.OLIVER,
