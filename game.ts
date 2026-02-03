@@ -2392,9 +2392,10 @@ class PhysicalGame {
                 SoundEffects.play_bark_sound();
                 const turn_score = ActivePlayer.get_turn_score();
                 Popup.getInstance().show({
-                    content: `You did well! I am rewarding you with ${turn_score} points for this turn!\
-                         \nLet's see how your opponent (you again, maybe?) does!`,
-                    type: "warning",
+                    content: `Great job!\
+                         \n\n I am rewarding you with ${turn_score} points for this turn!\
+                         \n\nLet's see how your opponent (you again, maybe?) does!`,
+                    type: "success",
                     required_action_string: "See if they can try!",
                     avatar: PopupAvatar.STEVE,
                 });
@@ -2549,7 +2550,7 @@ class Popup {
                 this.popup_element.style.backgroundColor = "#ADD8E6";
                 break;
             case "success":
-                this.popup_element.style.backgroundColor = "lightgreen";
+                this.popup_element.style.backgroundColor = "white";
                 break;
             case "warning":
                 this.popup_element.style.backgroundColor = "#FFFFE0";
