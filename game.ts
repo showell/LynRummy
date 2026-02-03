@@ -2566,7 +2566,9 @@ class PhysicalGame {
             self.populate_player_area();
             self.populate_board_area();
 
-            StatusBar.update_text("Your turn! THINK!!!!");
+            StatusBar.update_text(
+                `${ActivePlayer.name}, you may begin your turn.`,
+            );
         }
     }
 
