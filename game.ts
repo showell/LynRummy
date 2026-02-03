@@ -2374,6 +2374,9 @@ class PhysicalGame {
                     confirm_button_text: "Oy vey, ok",
                     type: "warning",
                     avatar: PopupAvatar.ANGRY_CAT,
+                    callback() {
+                        console.log("fail");
+                    },
                 });
                 return;
             case CompleteTurnResult.SUCCESS_BUT_NEEDS_CARDS:
@@ -2386,6 +2389,9 @@ class PhysicalGame {
                     type: "warning",
                     confirm_button_text: "Meh",
                     avatar: PopupAvatar.OLIVER,
+                    callback() {
+                        console.log("no progress");
+                    },
                 });
                 break;
             case CompleteTurnResult.SUCCESS:
@@ -2398,6 +2404,9 @@ class PhysicalGame {
                     type: "success",
                     confirm_button_text: "See if they can try!",
                     avatar: PopupAvatar.STEVE,
+                    callback() {
+                        console.log("great job");
+                    },
                 });
                 break;
         }
@@ -2495,6 +2504,7 @@ type PopupOptions = {
     type: PopupType;
     confirm_button_text: string;
     avatar: PopupAvatar;
+    callback: () => void;
 };
 
 // We reuse the same popup structure every time and
@@ -2611,6 +2621,7 @@ class PopupSingleton {
         this.popup_element.innerHTML = "";
         this.popup_element.remove();
         this.popup_element.setAttribute("closedby", "any");
+        info.callback();
     }
 }
 
@@ -3006,6 +3017,9 @@ class MainGamePage {
             type: "info",
             confirm_button_text: "Thanks, Mr. Professor!",
             avatar: PopupAvatar.CAT_PROFESSOR,
+            callback() {
+                console.log("professor");
+            },
         });
     }
 }
