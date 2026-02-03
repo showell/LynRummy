@@ -2092,7 +2092,9 @@ class PhysicalPlayer {
 
         const score = this.player.total_score;
 
-        div.innerText = `score: ${score}`;
+        div.innerText = `Score: ${score}`;
+        div.style.color = "maroon";
+        div.style.marginBottom = "4px";
         return div;
     }
 
