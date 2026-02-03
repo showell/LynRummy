@@ -1643,7 +1643,7 @@ class PhysicalEmptyShelfSpot {
         const shelf_index = this.shelf_idx;
 
         if (HandCardDragAction.in_progress()) {
-            HandCardDragAction.move_card_from_hand_to_board();
+            EventManager.move_card_from_hand_to_board();
         } else {
             CardStackDragAction.move_dragged_card_stack_to_end_of_shelf(
                 shelf_index,
@@ -2243,6 +2243,16 @@ class EventManagerSingleton {
         // TODO: better hooks to show score
         console.log("EVENT SCORE!", ActivePlayer.get_turn_score());
     }
+
+    // MOVING TO EMPTY SPOTS
+    move_card_from_hand_to_board(): void {
+        HandCardDragAction.move_card_from_hand_to_board();
+        StatusBar.update_text(
+            "You moved a card to the board! Do you have a plan? (You can click on other cards to break them out of stacks.)",
+        );
+    }
+
+    // SCORING MOVES
 
     merge_hand_card_to_board_stack(stack_location: StackLocation): void {
         HandCardDragAction.merge_hand_card_to_board_stack(stack_location);
