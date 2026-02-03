@@ -1268,6 +1268,13 @@ function render_shelf(): HTMLElement {
     return div;
 }
 
+function render_player_advice(): HTMLElement {
+    const div = document.createElement("div");
+    div.innerText = `
+        Play as both players to maximize the fun!`;
+    return div;
+}
+
 function render_complete_turn_button(): HTMLElement {
     const button = document.createElement("button");
     button.classList.add("button", "complete-turn-button");
@@ -2040,6 +2047,8 @@ class PhysicalPlayer {
         this.complete_turn_button = new CompleteTurnButton(physical_game);
         this.div = document.createElement("div");
         this.div.style.minWidth = "200px";
+        this.div.style.paddingBottom = "15px";
+        this.div.style.borderBottom = "1px #000080 solid";
     }
 
     dom(): HTMLElement {
@@ -2509,6 +2518,7 @@ class PhysicalGame {
             physical_player.populate();
             this.player_area.append(physical_player.dom());
         }
+        this.player_area.append(render_player_advice());
     }
 
     populate_board_area() {
