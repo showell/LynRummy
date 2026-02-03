@@ -1346,8 +1346,7 @@ function button_color() {
 type ClickHandler = (e: MouseEvent) => void;
 
 function opponent_card_color(): string {
-    // kind of a pale blue
-    return "rgba(0, 0, 255, 0.1)";
+    return "violet";
 }
 
 function new_card_color(): string {
