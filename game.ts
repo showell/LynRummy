@@ -2522,7 +2522,6 @@ class PopupSingleton {
         s.flexDirection = "column";
         s.gap = "0.5rem";
         s.alignItems = "center";
-        dialog.addEventListener("close", () => this.remove_and_cleanup());
         return dialog;
     }
 
@@ -2556,8 +2555,6 @@ class PopupSingleton {
         button.style.color = "white";
 
         button.innerText = text;
-        button.addEventListener("click", () => this.remove_and_cleanup());
-
         return button;
     }
 
@@ -2594,6 +2591,7 @@ class PopupSingleton {
         right.append(content_div);
 
         const button = this.make_button(info.confirm_button_text);
+        button.addEventListener("click", () => this.finish(info));
         right.append(button);
 
         // PUT THEM ALL TOGETHER
@@ -2607,7 +2605,8 @@ class PopupSingleton {
         this.popup_element.showModal();
     }
 
-    remove_and_cleanup() {
+    finish(info: PopupOptions) {
+        console.log("close", info.confirm_button_text);
         this.popup_element.close();
         this.popup_element.innerHTML = "";
         this.popup_element.remove();
