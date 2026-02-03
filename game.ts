@@ -2349,7 +2349,7 @@ class EventManagerSingleton {
         } else if (stack_size >= 3) {
             SoundEffects.play_ding_sound();
             StatusBar.update_text(
-                "Very efficient! Extending piles will gets you points!",
+                "Very efficient! Extending piles gets you points!",
             );
         } else {
             StatusBar.update_text(
