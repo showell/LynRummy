@@ -1316,7 +1316,7 @@ class PhysicalHandCard {
 
     handle_dragstart(e): void {
         const hand_card = this.hand_card;
-        const tray_width = this.get_width();
+        const tray_width = this.get_width() * 2.5; // give them a nice target to hit
         HandCardDragAction.start_drag_hand_card({ hand_card, tray_width });
     }
 
