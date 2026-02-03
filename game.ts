@@ -1309,7 +1309,7 @@ function opponent_card_color(): string {
 }
 
 function new_card_color(): string {
-    return "rgba(0, 255, 0, 0.4)";
+    return "lightpink";
 }
 
 class PhysicalHandCard {
