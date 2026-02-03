@@ -1770,13 +1770,12 @@ class PhysicalBoard {
     physical_game: PhysicalGame;
     div: HTMLElement;
     physical_shelves: PhysicalShelf[];
-    undo_button: UndoButton;
 
     constructor(physical_game: PhysicalGame) {
         this.physical_game = physical_game;
         this.div = this.make_div();
         this.physical_shelves = this.build_physical_shelves();
-        this.undo_button = new UndoButton(physical_game);
+        UndoButton = new UndoButtonSingleton();
 
         CardStackDragAction = new CardStackDragActionSingleton(
             this,
@@ -1937,7 +1936,7 @@ class PhysicalBoard {
             div.append(physical_shelf.dom());
         }
 
-        div.append(this.undo_button.dom());
+        div.append(UndoButton.dom());
     }
 
     add_card_to_top_shelf(hand_card: HandCard): void {
@@ -2245,6 +2244,7 @@ class EventManagerSingleton {
     undo_mistakes(): void {
         this.physical_game.rollback_moves_to_last_clean_state();
         StatusBar.update_text("PHEW!");
+        UndoButton.update_visibility();
     }
 
     // SPLITTING UP STACKS
@@ -2253,6 +2253,7 @@ class EventManagerSingleton {
         StatusBar.update_text(
             "Split! Moves like this can be tricky, even for experts. You have the undo button if you need it.",
         );
+        UndoButton.update_visibility();
     }
 
     // MOVING TO EMPTY SPOTS
@@ -2261,6 +2262,7 @@ class EventManagerSingleton {
         StatusBar.update_text(
             "You moved a card to the board! Do you have a plan? (You can click on other cards to break them out of stacks.)",
         );
+        UndoButton.update_visibility();
     }
 
     move_dragged_card_stack_to_end_of_shelf(new_shelf_index: number): void {
@@ -2281,6 +2283,8 @@ class EventManagerSingleton {
         StatusBar.update_text("Merged right from the hand to the board!");
         this.game.maybe_update_snapshot();
         this.show_score();
+
+        UndoButton.update_visibility();
     }
 
     drop_stack_on_stack(info: {
@@ -2291,6 +2295,8 @@ class EventManagerSingleton {
         StatusBar.update_text("Combined!");
         this.game.maybe_update_snapshot();
         this.show_score();
+
+        UndoButton.update_visibility();
     }
 }
 
@@ -2436,19 +2442,30 @@ class CompleteTurnButton {
     }
 }
 
-class UndoButton {
+let UndoButton: UndoButtonSingleton;
+
+class UndoButtonSingleton {
     button: HTMLElement;
 
-    constructor(physical_game: PhysicalGame) {
+    constructor() {
         const button = render_undo_button();
         button.addEventListener("click", () => {
             EventManager.undo_mistakes();
         });
         this.button = button;
+        this.button.hidden = true;
     }
 
     dom(): HTMLElement {
         return this.button;
+    }
+
+    update_visibility(): void {
+        if (CurrentBoard.is_clean()) {
+            this.button.hidden = true;
+        } else {
+            this.button.hidden = false;
+        }
     }
 }
 
