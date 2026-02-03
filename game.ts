@@ -658,7 +658,7 @@ class Shelf {
         return longer_stack;
     }
 
-    split_card_from_stack(info: {
+    split_stack(info: {
         stack_index: number;
         card_index: number;
     }): SplitResult {
@@ -671,11 +671,16 @@ class Shelf {
             return SplitResult.DID_NOTHING;
         }
 
+        let left_count = card_index;
+
+        if (left_count + 1 < board_cards.length / 2) {
+            left_count += 1;
+        }
+
         const new_card_arrays = [
-            board_cards.slice(0, card_index),
-            [board_cards[card_index]],
-            board_cards.slice(card_index + 1),
-        ].filter((arr) => arr.length > 0);
+            board_cards.slice(0, left_count),
+            board_cards.slice(left_count),
+        ];
 
         const new_card_stacks = new_card_arrays.map(
             (arr) => new CardStack(arr),
@@ -1400,7 +1405,7 @@ class PhysicalBoardCard {
         this.reset_click_listener(); // there can only be ONE!
 
         this.click_handler = (e) => {
-            EventManager.split_card_from_stack(self.card_location);
+            EventManager.split_stack(self.card_location);
             e.stopPropagation();
         };
 
@@ -1766,11 +1771,11 @@ class PhysicalShelf {
         return physical_card_stacks;
     }
 
-    split_card_from_stack(info: {
+    split_stack(info: {
         stack_index: number;
         card_index: number;
     }): SplitResult {
-        const result = this.shelf.split_card_from_stack(info);
+        const result = this.shelf.split_stack(info);
         this.populate();
         return result;
     }
@@ -1913,12 +1918,12 @@ class PhysicalBoard {
     }
 
     // ACTION
-    split_card_from_stack(card_location: ShelfCardLocation): SplitResult {
+    split_stack(card_location: ShelfCardLocation): SplitResult {
         const { shelf_index, stack_index, card_index } = card_location;
 
         const shelf = this.physical_shelves[shelf_index];
 
-        const result = shelf.split_card_from_stack({
+        const result = shelf.split_stack({
             stack_index,
             card_index,
         });
@@ -2265,8 +2270,8 @@ class EventManagerSingleton {
     }
 
     // SPLITTING UP STACKS
-    split_card_from_stack(card_location: ShelfCardLocation): void {
-        const result = this.physical_board.split_card_from_stack(card_location);
+    split_stack(card_location: ShelfCardLocation): void {
+        const result = this.physical_board.split_stack(card_location);
         switch (result) {
             case SplitResult.SUCCESS:
                 StatusBar.update_text(
@@ -3057,13 +3062,28 @@ class MainGamePage {
     show_professor(): void {
         Popup.show({
             content:
-                "Welcome to Lyn Rummy! You can:\n\
-                \n    1) Drag a card from your hand straight to a pile.\
-                \n    2) Drag a card from your hand to the top shelf.\
-                \n    3) Click on any board card to remove it from its pile.\
-                \n    4) Organize the board by dragging piles to empty spots.\
-                \n    5) Combine piles together to score more points.\
-                \n\nGood luck, and have fun!",
+                "Welcome to Lyn Rummy!\
+                \n\
+                \n    Newbies:\
+                \n\
+                \n        1) Drag a card from your hand straight to a pile!\
+                \n\
+                \n           (But it must extend a run, set, or alternating run.)\
+                \n\
+                \n        2) If you have full piles in your hand:\
+                \n\
+                \n             a) Drag the first card to the top shelf.\
+                \n             b) Drag the rest of the cards on top of your growing pile.\
+                \n\
+                \n    Experts:\
+                \n\
+                \n        1) Click on end cards to split them off.\
+                \n        2) Click in the middle of a pile for trickier moves.\
+                \n        3) Drag hand cards out to the top shelf if you need to.\
+                \n        4) Organize the board by dragging piles to empty spots.\
+                \n        5) Combine piles together to score more points.\
+                \n\
+                \nGood luck, and have fun!",
             type: "info",
             confirm_button_text: "Thanks, Mr. Professor!",
             avatar: PopupAvatar.CAT_PROFESSOR,
