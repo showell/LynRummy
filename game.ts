@@ -102,6 +102,7 @@ enum SplitResult {
 enum CompleteTurnResult {
     SUCCESS,
     SUCCESS_BUT_NEEDS_CARDS,
+    FINSIHED_CARDS_IN_HARD_AND_NEEDS_CARDS,
     FAILURE,
 }
 
@@ -963,7 +964,11 @@ class Player {
         const board_score = CurrentBoard.score() - this.starting_board_score;
         const num_cards_played = this.starting_hand_size - this.hand.size();
         const cards_score = Score.for_cards_played(num_cards_played);
-        return board_score + cards_score;
+        // TODO: Update this to something better that incentivizes players
+        // who finish their cards first, maybe also factor in the number of
+        // cards the other players still have in hand to calculate the bonus.
+        const hand_finish_score = this.finished_cards_in_hard() ? 1000 : 0;
+        return board_score + cards_score + hand_finish_score;
     }
 
     end_turn(): void {
@@ -980,6 +985,10 @@ class Player {
     take_cards_from_deck(cnt: number): void {
         const cards = TheDeck.take_from_top(cnt);
         this.hand.add_cards(cards, HandCardState.FRESHLY_DRAWN);
+    }
+
+    finished_cards_in_hard(): boolean {
+        return this.hand.size() === 0;
     }
 }
 
@@ -1124,6 +1133,11 @@ class Game {
         if (ActivePlayer.can_get_new_cards()) {
             ActivePlayer.take_cards_from_deck(3);
             turn_result = CompleteTurnResult.SUCCESS_BUT_NEEDS_CARDS;
+        } else if (ActivePlayer.finished_cards_in_hard()) {
+            // Draw 5 new cards from deck to continue playing.
+            ActivePlayer.take_cards_from_deck(5);
+            turn_result =
+                CompleteTurnResult.FINSIHED_CARDS_IN_HARD_AND_NEEDS_CARDS;
         } else {
             turn_result = CompleteTurnResult.SUCCESS;
         }
@@ -2498,6 +2512,28 @@ class PhysicalGame {
                     },
                 });
                 break;
+            case CompleteTurnResult.FINSIHED_CARDS_IN_HARD_AND_NEEDS_CARDS: {
+                const turn_score = ActivePlayer.get_turn_score();
+                SoundEffects.play_victory_sound();
+                Popup.show({
+                    content: `WOOT!\
+                    \n\
+                    Looks like you got rid of all your cards!\
+                    \n\
+                    I am rewarding you extra points for that!\
+                    \n\
+                    Your scored a whopping ${turn_score} for this turn!!\
+                    \n\
+                    Keep trucking!`,
+                    avatar: PopupAvatar.STEVE,
+                    confirm_button_text: "haha",
+                    callback() {
+                        continue_on_to_next_turn();
+                    },
+                    type: "success",
+                });
+                break;
+            }
             case CompleteTurnResult.SUCCESS:
                 SoundEffects.play_nice_sound();
                 const turn_score = ActivePlayer.get_turn_score();
@@ -3229,6 +3265,8 @@ class SoundEffectsSingleton {
     good_job: HTMLAudioElement;
     nice: HTMLAudioElement;
     heard_nice: boolean;
+    welcome: HTMLAudioElement;
+    victory: HTMLAudioElement;
 
     constructor() {
         // It might be overkill to pre-load these, but I can't
@@ -3238,12 +3276,16 @@ class SoundEffectsSingleton {
         this.bark = document.createElement("audio");
         this.good_job = document.createElement("audio");
         this.nice = document.createElement("audio");
+        this.welcome = document.createElement("audio");
+        this.victory = document.createElement("audio");
         this.ding.src = "ding.mp3";
         this.purr.src = "purr.mp3";
         this.bark.src = "bark.mp3";
         this.good_job.src = "steve.m4a";
         this.nice.src = "nice.m4a";
         this.heard_nice = false;
+        this.welcome.src = "welcome.mp3";
+        this.victory.src = "victory.mp3";
     }
 
     play_ding_sound() {
@@ -3267,6 +3309,10 @@ class SoundEffectsSingleton {
             this.nice.play();
             this.heard_nice = true;
         }
+    }
+
+    play_victory_sound() {
+        this.victory.play();
     }
 }
 
