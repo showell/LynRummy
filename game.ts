@@ -94,6 +94,11 @@ enum BoardCardState {
     FRESHLY_PLAYED_BY_LAST_PLAYER,
 }
 
+enum SplitResult {
+    SUCCESS,
+    DID_NOTHING,
+}
+
 enum CompleteTurnResult {
     SUCCESS,
     SUCCESS_BUT_NEEDS_CARDS,
@@ -656,11 +661,15 @@ class Shelf {
     split_card_from_stack(info: {
         stack_index: number;
         card_index: number;
-    }): void {
+    }): SplitResult {
         const { stack_index, card_index } = info;
         const card_stacks = this.card_stacks;
         const card_stack = card_stacks[stack_index];
         const board_cards = card_stack.board_cards;
+
+        if (board_cards.length === 1) {
+            return SplitResult.DID_NOTHING;
+        }
 
         const new_card_arrays = [
             board_cards.slice(0, card_index),
@@ -673,6 +682,7 @@ class Shelf {
         );
 
         card_stacks.splice(stack_index, 1, ...new_card_stacks);
+        return SplitResult.SUCCESS;
     }
 
     add_singleton_card(hand_card: HandCard) {
@@ -1759,9 +1769,10 @@ class PhysicalShelf {
     split_card_from_stack(info: {
         stack_index: number;
         card_index: number;
-    }): void {
-        this.shelf.split_card_from_stack(info);
+    }): SplitResult {
+        const result = this.shelf.split_card_from_stack(info);
         this.populate();
+        return result;
     }
 
     add_singleton_card(hand_card: HandCard) {
@@ -1902,17 +1913,17 @@ class PhysicalBoard {
     }
 
     // ACTION
-    split_card_from_stack(card_location: ShelfCardLocation) {
+    split_card_from_stack(card_location: ShelfCardLocation): SplitResult {
         const { shelf_index, stack_index, card_index } = card_location;
 
         const shelf = this.physical_shelves[shelf_index];
 
-        // Right now the only action when you click on a shelf card
-        // is to split it from the reset of the stack.
-        shelf.split_card_from_stack({
+        const result = shelf.split_card_from_stack({
             stack_index,
             card_index,
         });
+
+        return result;
     }
 
     make_div(): HTMLElement {
@@ -2257,10 +2268,20 @@ class EventManagerSingleton {
 
     // SPLITTING UP STACKS
     split_card_from_stack(card_location: ShelfCardLocation): void {
-        this.physical_board.split_card_from_stack(card_location);
-        StatusBar.update_text(
-            "Split! Moves like this can be tricky, even for experts. You have the undo button if you need it.",
-        );
+        const result = this.physical_board.split_card_from_stack(card_location);
+        switch (result) {
+            case SplitResult.SUCCESS:
+                StatusBar.update_text(
+                    "Split! Moves like this can be tricky, even for experts. You have the undo button if you need it.",
+                );
+                break;
+            case SplitResult.DID_NOTHING:
+                StatusBar.update_text(
+                    "Clicking here does nothing. Maybe you want to drag it instead?",
+                );
+                break;
+        }
+
         UndoButton.update_visibility();
     }
 
