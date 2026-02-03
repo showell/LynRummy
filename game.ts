@@ -2285,7 +2285,9 @@ class EventManagerSingleton {
 
     merge_hand_card_to_board_stack(stack_location: StackLocation): void {
         HandCardDragAction.merge_hand_card_to_board_stack(stack_location);
-        StatusBar.update_text("Merged right from the hand to the board!");
+        StatusBar.update_text(
+            "Very efficient! Extending piles will gets you points!",
+        );
         this.game.maybe_update_snapshot();
         this.show_score();
 
