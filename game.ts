@@ -2292,7 +2292,7 @@ class EventManagerSingleton {
     move_card_from_hand_to_board(): void {
         HandCardDragAction.move_card_from_hand_to_board();
         StatusBar.update_text(
-            "You moved a card to the board! Do you have a plan? (You can click on other cards to break them out of stacks.)",
+            "You moved a card to the board! Drag other cards on top of it to create a pile.)",
         );
         UndoButton.update_visibility();
     }
