@@ -2670,13 +2670,7 @@ type PopupOptions = {
     callback: () => void;
 };
 
-// We reuse the same popup structure every time and
-// just repopulate the innards. We instantiate this
-// in gui (so we can even use it in LandingPage if
-// we ever want to).
-let Popup: PopupSingleton;
-
-class PopupSingleton {
+class DialogShell {
     popup_element: HTMLDialogElement;
 
     constructor() {
@@ -2696,6 +2690,37 @@ class PopupSingleton {
         s.gap = "0.5rem";
         s.alignItems = "center";
         return dialog;
+    }
+
+    invoke_with_custom_html(html: HTMLElement, background_color: string) {
+        document.body.append(this.popup_element);
+        this.popup_element.style.backgroundColor = background_color;
+
+        // Ensures it is closed by nothing apart from what we define
+        this.popup_element.setAttribute("closedby", "none");
+        this.popup_element.append(html);
+        this.popup_element.showModal();
+    }
+
+    finish(): void {
+        this.popup_element.close();
+        this.popup_element.innerHTML = "";
+        this.popup_element.remove();
+        this.popup_element.setAttribute("closedby", "any");
+    }
+}
+
+// We reuse the same popup structure every time and
+// just repopulate the innards. We instantiate this
+// in gui (so we can even use it in LandingPage if
+// we ever want to).
+let Popup: PopupSingleton;
+
+class PopupSingleton {
+    dialog_shell: DialogShell;
+
+    constructor() {
+        this.dialog_shell = new DialogShell();
     }
 
     avatar_img(avatar) {
@@ -2735,23 +2760,21 @@ class PopupSingleton {
         return button;
     }
 
-    show(info: PopupOptions) {
-        document.body.append(this.popup_element);
-
-        // Ensures it is closed by nothing apart from what we define
-        this.popup_element.setAttribute("closedby", "none");
-
-        switch (info.type) {
+    get_background_color(info_type: string): string {
+        switch (info_type) {
             case "info":
-                this.popup_element.style.backgroundColor = "#ADD8E6";
-                break;
+                return "#ADD8E6";
             case "success":
-                this.popup_element.style.backgroundColor = "white";
-                break;
+                return "white";
             case "warning":
-                this.popup_element.style.backgroundColor = "#FFFFE0";
-                break;
+                return "#FFFFE0";
         }
+
+        return "transparent";
+    }
+
+    show(info: PopupOptions) {
+        const self = this;
 
         // AVATAR in left
         const left = document.createElement("div");
@@ -2768,7 +2791,7 @@ class PopupSingleton {
         right.append(content_div);
 
         const button = this.make_button(info.confirm_button_text);
-        button.addEventListener("click", () => this.finish(info));
+        button.addEventListener("click", () => self.finish(info));
         right.append(button);
 
         // PUT THEM ALL TOGETHER
@@ -2777,9 +2800,11 @@ class PopupSingleton {
         flex_div.style.display = "flex";
         flex_div.append(left);
         flex_div.append(right);
-        this.popup_element.append(flex_div);
 
-        this.popup_element.showModal();
+        this.dialog_shell.invoke_with_custom_html(
+            flex_div,
+            this.get_background_color(info.type),
+        );
     }
 
     clean_multi_string(text: string) {
@@ -2790,11 +2815,7 @@ class PopupSingleton {
     }
 
     finish(info: PopupOptions) {
-        console.log("close", info.confirm_button_text);
-        this.popup_element.close();
-        this.popup_element.innerHTML = "";
-        this.popup_element.remove();
-        this.popup_element.setAttribute("closedby", "any");
+        this.dialog_shell.finish();
         info.callback();
     }
 }
