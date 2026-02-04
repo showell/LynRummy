@@ -3397,7 +3397,7 @@ function talk_to_zulip() {
 
     const config = {
         username: my_email,
-        apiKey: "x1D2df6fjdIjOOW6pUxuseFHHLQq7UD0",
+        api_key: "x1D2df6fjdIjOOW6pUxuseFHHLQq7UD0",
     };
 
     const base_url = `${site}/api/v1/users/${my_email}`;
@@ -3405,7 +3405,7 @@ function talk_to_zulip() {
 
     // now for the technical piece
     const url = new URL(base_url);
-    const auth = btoa(`${config.username}:${config.apiKey}`);
+    const auth = btoa(`${config.username}:${config.api_key}`);
     const auth_header = `Basic ${auth}`;
     const options = { method, headers: { Authorization: auth_header } };
 
