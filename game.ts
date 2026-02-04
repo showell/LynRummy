@@ -103,7 +103,7 @@ enum CompleteTurnResult {
     SUCCESS,
     SUCCESS_BUT_NEEDS_CARDS,
     SUCCESS_WITH_HAND_EMPTIED,
-    SUCCESS_AS_SUPREME_VICTOR_LORDING_OVER_ALL_SUBJECTS,
+    SUCCESS_AS_VICTOR,
     FAILURE,
 }
 
@@ -903,6 +903,10 @@ class Hand {
         this.hand_cards = [];
     }
 
+    is_empty() {
+        return this.hand_cards.length === 0;
+    }
+
     add_cards(cards: Card[], state: HandCardState): void {
         for (const card of cards) {
             this.hand_cards.push(new HandCard(card, state));
@@ -934,90 +938,149 @@ class Hand {
     }
 }
 
-let ActivePlayer: Player;
-
-class Player {
-    name: string;
-    hand: Hand;
-    total_score: number;
-    starting_hand_size: number;
+class PlayerTurn {
     starting_board_score: number;
-    active: boolean;
     cards_played_during_turn: number;
-    did_claim_victory_bonus: boolean;
-    victory_bonus_for_game: number;
+    empty_hand_bonus: number;
+    victory_bonus: number;
 
-    constructor(info: { name: string }) {
-        this.name = info.name;
-        this.hand = new Hand();
-        this.total_score = 0;
-        this.active = false;
-        this.cards_played_during_turn = 0;
-        this.did_claim_victory_bonus = false;
-        this.victory_bonus_for_game = 0;
-    }
-
-    reset_hand_state(): void {
-        this.hand.reset_state();
-    }
-
-    start_turn(): void {
-        this.active = true;
-        this.starting_hand_size = this.hand.size();
+    constructor() {
         this.starting_board_score = CurrentBoard.score();
         this.cards_played_during_turn = 0;
-        // This will only be set to a non-zero value for one turn
-        // during the entire game.
-        this.victory_bonus_for_game = 0;
+        this.empty_hand_bonus = 0;
+        this.victory_bonus = 0;
     }
 
-    get_turn_score(): number {
+    get_score(): number {
         const board_score = CurrentBoard.score() - this.starting_board_score;
         const cards_score = Score.for_cards_played(
             this.cards_played_during_turn,
         );
-        // TODO: Update this to something better that incentivizes players
-        // by factoring in the number of cards the other players still
-        // have in hand to calculate the bonus.
-        const empty_hand_bonus = this.finished_cards_in_hard() ? 1000 : 0;
-        if (!TheGame.has_victor_already && !this.did_claim_victory_bonus) {
-            // We reward extra points to the supreme(the very first) victor.
-            this.victory_bonus_for_game = 500;
-            this.did_claim_victory_bonus = true;
-        }
+
         return (
             board_score +
             cards_score +
-            this.victory_bonus_for_game +
-            empty_hand_bonus
+            this.victory_bonus +
+            this.empty_hand_bonus
         );
     }
 
-    end_turn(): void {
-        this.active = false;
-        const turn_score = this.get_turn_score();
-        this.total_score += turn_score;
-        console.log("scores", turn_score, this.total_score);
+    get_num_cards_played(): number {
+        return this.cards_played_during_turn;
     }
 
-    can_get_new_cards(): boolean {
-        return this.hand.size() === this.starting_hand_size;
+    emptied_hand(): boolean {
+        return this.empty_hand_bonus > 0;
+    }
+
+    got_victory_bonus(): boolean {
+        return this.victory_bonus > 0;
+    }
+
+    update_score_after_move() {
+        // We get called once and only once each time
+        // a card is released to the board.
+        this.cards_played_during_turn += 1;
+    }
+
+    update_score_for_empty_hand() {
+        this.empty_hand_bonus = 1000;
+
+        if (TheGame.declares_me_victor()) {
+            this.victory_bonus = 500;
+        }
+    }
+
+    turn_result(): CompleteTurnResult {
+        if (this.get_num_cards_played() === 0) {
+            return CompleteTurnResult.SUCCESS_BUT_NEEDS_CARDS;
+        } else if (this.emptied_hand()) {
+            if (this.got_victory_bonus()) {
+                return CompleteTurnResult.SUCCESS_AS_VICTOR;
+            } else {
+                return CompleteTurnResult.SUCCESS_WITH_HAND_EMPTIED;
+            }
+        } else {
+            // vanilla success...we played some cards
+            return CompleteTurnResult.SUCCESS;
+        }
+    }
+}
+
+let ActivePlayer: Player;
+
+class Player {
+    name: string;
+    active: boolean;
+    hand: Hand;
+    total_score: number;
+    player_turn: PlayerTurn;
+
+    constructor(info: { name: string }) {
+        this.name = info.name;
+        this.active = false;
+        this.hand = new Hand();
+        this.total_score = 0;
+    }
+
+    get_turn_score(): number {
+        return this.player_turn.get_score();
+    }
+
+    start_turn(): void {
+        this.active = true;
+        this.player_turn = new PlayerTurn();
+    }
+
+    end_turn(): CompleteTurnResult {
+        // This sets all the freshly-drawn cards to normal.
+        this.hand.reset_state();
+
+        const turn_result = this.player_turn.turn_result();
+
+        // Draw cards (if necessary) for our next turn.
+        switch (turn_result) {
+            case CompleteTurnResult.SUCCESS_BUT_NEEDS_CARDS:
+                // Draw cards since the user's current cards don't
+                // seem to play to the board. (By the way, this often
+                // happens in a two-player game because the
+                // **opponent** didn't add any cards to the board.)
+                this.take_cards_from_deck(3);
+                break;
+
+            case CompleteTurnResult.SUCCESS_AS_VICTOR:
+            case CompleteTurnResult.SUCCESS_WITH_HAND_EMPTIED:
+                // Draw 5 new cards from deck to continue playing.
+                ActivePlayer.take_cards_from_deck(5);
+                break;
+        }
+
+        this.active = false;
+
+        // Finally bump up the player's overall score.
+        this.total_score += this.get_turn_score();
+        console.log("scores", this.get_turn_score(), this.total_score);
+
+        return turn_result;
     }
 
     release_card(hand_card: HandCard) {
+        // We get called once and only once each time
+        // a card is released to the board.
         this.hand.remove_card_from_hand(hand_card);
-        // This action only happens when we place a card on the board,
-        // so it's safe to increment the number of cards played here.
-        this.cards_played_during_turn++;
+
+        // they get a bonus for playing a card
+        this.player_turn.update_score_after_move();
+
+        // When we empty our hand, we get additional bonuses.
+        if (this.hand.is_empty()) {
+            this.player_turn.update_score_for_empty_hand();
+        }
     }
 
     take_cards_from_deck(cnt: number): void {
         const cards = TheDeck.take_from_top(cnt);
         this.hand.add_cards(cards, HandCardState.FRESHLY_DRAWN);
-    }
-
-    finished_cards_in_hard(): boolean {
-        return this.hand.size() === 0;
     }
 }
 
@@ -1109,6 +1172,18 @@ class Game {
         this.update_snapshot();
     }
 
+    declares_me_victor(): boolean {
+        // Players only call us if they empty their hand.
+        // We only return true for the first player.
+        if (this.has_victor_already) {
+            return false; // there can only be one winner
+        }
+
+        // We have a winner!
+        this.has_victor_already = true;
+        return true;
+    }
+
     update_snapshot(): void {
         this.snapshot = {
             hand_cards: ActivePlayer.hand.hand_cards.map((hand_card) =>
@@ -1152,32 +1227,12 @@ class Game {
     }
 
     complete_turn(): CompleteTurnResult {
+        // We return failure so that Angry Cat can complain
+        // about the dirty board.
         if (!CurrentBoard.is_clean()) return CompleteTurnResult.FAILURE;
 
-        ActivePlayer.reset_hand_state();
-
-        // Important to do this now for scoring (before we draw cards).
-        ActivePlayer.end_turn();
-
-        let turn_result;
-
-        if (ActivePlayer.can_get_new_cards()) {
-            ActivePlayer.take_cards_from_deck(3);
-            turn_result = CompleteTurnResult.SUCCESS_BUT_NEEDS_CARDS;
-        } else if (ActivePlayer.finished_cards_in_hard()) {
-            // Draw 5 new cards from deck to continue playing.
-            ActivePlayer.take_cards_from_deck(5);
-            if (this.has_victor_already) {
-                turn_result = CompleteTurnResult.SUCCESS_WITH_HAND_EMPTIED;
-            } else {
-                turn_result =
-                    CompleteTurnResult.SUCCESS_AS_SUPREME_VICTOR_LORDING_OVER_ALL_SUBJECTS;
-                this.has_victor_already = true;
-            }
-        } else {
-            turn_result = CompleteTurnResult.SUCCESS;
-        }
-
+        // Let the player decide all the other conditions.
+        const turn_result = ActivePlayer.end_turn();
         return turn_result;
     }
 }
@@ -2559,7 +2614,7 @@ class PhysicalGame {
                     },
                 });
                 break;
-            case CompleteTurnResult.SUCCESS_AS_SUPREME_VICTOR_LORDING_OVER_ALL_SUBJECTS: {
+            case CompleteTurnResult.SUCCESS_AS_VICTOR: {
                 const turn_score = ActivePlayer.get_turn_score();
                 // Only play this for the first time a player gets
                 // rid of all the cards in their hand.
