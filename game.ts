@@ -3492,4 +3492,4 @@ function talk_to_zulip() {
     post_to_channel();
 }
 
-talk_to_zulip();
+// talk_to_zulip();
