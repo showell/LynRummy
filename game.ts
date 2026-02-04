@@ -942,12 +942,14 @@ class Player {
     starting_hand_size: number;
     starting_board_score: number;
     active: boolean;
+    cards_played_during_turn: number;
 
     constructor(info: { name: string }) {
         this.name = info.name;
         this.hand = new Hand();
         this.total_score = 0;
         this.active = false;
+        this.cards_played_during_turn = 0;
     }
 
     reset_hand_state(): void {
@@ -958,12 +960,14 @@ class Player {
         this.active = true;
         this.starting_hand_size = this.hand.size();
         this.starting_board_score = CurrentBoard.score();
+        this.cards_played_during_turn = 0;
     }
 
     get_turn_score(): number {
         const board_score = CurrentBoard.score() - this.starting_board_score;
-        const num_cards_played = this.starting_hand_size - this.hand.size();
-        const cards_score = Score.for_cards_played(num_cards_played);
+        const cards_score = Score.for_cards_played(
+            this.cards_played_during_turn,
+        );
         // TODO: Update this to something better that incentivizes players
         // who finish their cards first, maybe also factor in the number of
         // cards the other players still have in hand to calculate the bonus.
@@ -980,6 +984,13 @@ class Player {
 
     can_get_new_cards(): boolean {
         return this.hand.size() === this.starting_hand_size;
+    }
+
+    release_card(hand_card: HandCard) {
+        this.hand.remove_card_from_hand(hand_card);
+        // This action only happens when we place a card on the board,
+        // so it's safe to increment the number of cards played here.
+        this.cards_played_during_turn++;
     }
 
     take_cards_from_deck(cnt: number): void {
@@ -2034,11 +2045,6 @@ class PhysicalHand {
             }
         }
     }
-
-    remove_card_from_hand(hand_card: HandCard) {
-        this.hand.remove_card_from_hand(hand_card);
-        this.populate();
-    }
 }
 
 class PhysicalPlayer {
@@ -2107,6 +2113,11 @@ class PhysicalPlayer {
             div.append(this.card_count());
         }
     }
+
+    release_card(hand_card: HandCard) {
+        this.player.release_card(hand_card);
+        this.physical_hand.populate();
+    }
 }
 
 let PlayerArea: PlayerAreaSingleton;
@@ -2129,6 +2140,10 @@ class PlayerAreaSingleton {
 
     get_physical_hand_for_player(player_index: number): PhysicalHand {
         return this.physical_players[player_index].physical_hand;
+    }
+
+    get_physical_player(player_index: number): PhysicalPlayer {
+        return this.physical_players[player_index];
     }
 
     populate(): void {
@@ -2277,6 +2292,11 @@ class HandCardDragActionSingleton {
         return this.physical_game.get_physical_hand();
     }
 
+    get_current_physical_player() {
+        const player_idx = TheGame.current_player_index;
+        return PlayerArea.get_physical_player(player_idx);
+    }
+
     // ACTION
     merge_hand_card_to_board_stack(stack_location: StackLocation): number {
         const hand_card = this.dragged_hand_card;
@@ -2287,7 +2307,8 @@ class HandCardDragActionSingleton {
             stack_location,
             hand_card,
         );
-        physical_hand.remove_card_from_hand(hand_card);
+        const physical_player = this.get_current_physical_player();
+        physical_player.release_card(hand_card);
 
         return stack_size;
     }
@@ -2298,7 +2319,8 @@ class HandCardDragActionSingleton {
         const physical_board = this.physical_board;
         const physical_hand = this.get_physical_hand();
 
-        physical_hand.remove_card_from_hand(hand_card);
+        const physical_player = this.get_current_physical_player();
+        physical_player.release_card(hand_card);
         physical_board.add_card_to_top_shelf(hand_card);
 
         // no need to call maybe_update_snapshot() here
