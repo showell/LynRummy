@@ -1818,10 +1818,7 @@ class PhysicalBoard {
         this.physical_shelves = this.build_physical_shelves();
         UndoButton = new UndoButtonSingleton();
 
-        CardStackDragAction = new CardStackDragActionSingleton(
-            this,
-            physical_game.game,
-        );
+        CardStackDragAction = new CardStackDragActionSingleton(this);
     }
 
     build_physical_shelves(): PhysicalShelf[] {
@@ -2150,12 +2147,10 @@ let CardStackDragAction: CardStackDragActionSingleton;
 
 class CardStackDragActionSingleton {
     physical_board: PhysicalBoard;
-    game: Game;
     dragged_stack_location: StackLocation | undefined;
 
-    constructor(physical_board: PhysicalBoard, game: Game) {
+    constructor(physical_board: PhysicalBoard) {
         this.physical_board = physical_board;
-        this.game = game;
         this.dragged_stack_location = undefined;
     }
 
@@ -2195,7 +2190,6 @@ class CardStackDragActionSingleton {
 
     // ACTION
     move_dragged_card_stack_to_end_of_shelf(new_shelf_index: number) {
-        const game = this.game;
         const physical_board = this.physical_board;
 
         const stack_location = this.dragged_stack_location!;
@@ -2217,7 +2211,6 @@ class CardStackDragActionSingleton {
         const { source_location, target_location } = info;
 
         const physical_board = this.physical_board;
-        const game = this.game;
 
         const merged_stack = CurrentBoard.merge_card_stacks({
             source: source_location,
@@ -2241,17 +2234,11 @@ let HandCardDragAction: HandCardDragActionSingleton;
 class HandCardDragActionSingleton {
     physical_game: PhysicalGame;
     physical_board: PhysicalBoard;
-    game: Game;
     dragged_hand_card: HandCard;
 
-    constructor(
-        physical_game: PhysicalGame,
-        physical_board: PhysicalBoard,
-        game: Game,
-    ) {
+    constructor(physical_game: PhysicalGame, physical_board: PhysicalBoard) {
         this.physical_game = physical_game;
         this.physical_board = physical_board;
-        this.game = game;
         this.dragged_hand_card = undefined;
     }
 
