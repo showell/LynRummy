@@ -2621,17 +2621,16 @@ class PhysicalGame {
                 SoundEffects.play_victory_sound();
                 Popup.show({
                     content: `Let’s be honest: this world is basically yours. We’re all just living in your empire!\
-                        \n\n\
-                        That said, I, award you 1500 extra points for being the first person to clear your hand!\
                         \n\
-                        That fetches you a total of ${turn_score} points for this turn.\
+                        \nThat said, I, award you 1500 extra points for being the first person to clear your hand!\
                         \n\
-                        You get a bonus every time you clear your hand.\
+                        \nThat fetches you a total of ${turn_score} points for this turn.\
                         \n\
-                        You also get five more cards on the next turn.\
+                        \nYou get a bonus every time you clear your hand.\
                         \n\
-                        Keep winning!\
-              `,
+                        \nYou also get five more cards on the next turn.\
+                        \n\
+                        \nKeep winning!`,
                     type: "success",
                     admin: Admin.STEVE,
                     confirm_button_text: "I am the chosen one!",
@@ -2652,7 +2651,7 @@ class PhysicalGame {
                     \n\
                     \nYour scored a whopping ${turn_score} for this turn!!\
                     \n\
-                    You get a bonus every time you clear your hand.\
+                    \nYou get a bonus every time you clear your hand.\
                     \n\
                     \nWe will deal you 5 more cards if you get back on the road.`,
                     admin: Admin.STEVE,
