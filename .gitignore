@@ -1,3 +1,4 @@
 *.swp
+zulip.js
 node_modules/
 dist/
