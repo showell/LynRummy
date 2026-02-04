@@ -1494,29 +1494,23 @@ class PhysicalHandCard {
         return this.card_span.clientWidth;
     }
 
-    handle_dragstart(e): void {
-        const hand_card = this.hand_card;
-        const tray_width = this.get_width() * 2.5; // give them a nice target to hit
-        HandCardDragAction.start_drag_hand_card({ hand_card, tray_width });
-    }
-
-    handle_dragend(): void {
-        HandCardDragAction.end_drag_hand_card();
-    }
-
     allow_dragging() {
         const self = this;
         const div = this.card_span;
 
-        div.draggable = true;
-        div.style.userSelect = undefined;
-
-        div.addEventListener("dragstart", (e) => {
-            self.handle_dragstart(e);
-        });
-
-        div.addEventListener("dragend", () => {
-            self.handle_dragend();
+        DragDropHelper.enable_drag({
+            div,
+            handle_dragstart(): void {
+                const hand_card = self.hand_card;
+                const tray_width = self.get_width() * 2.5; // give them a nice target to hit
+                HandCardDragAction.start_drag_hand_card({
+                    hand_card,
+                    tray_width,
+                });
+            },
+            handle_dragend(): void {
+                HandCardDragAction.end_drag_hand_card();
+            },
         });
     }
 
@@ -1617,7 +1611,6 @@ class PhysicalCardStack {
         const card_spans = this.physical_board_cards.map((psc) => psc.dom());
 
         this.div = render_card_stack(card_spans);
-        this.enable_drop();
         this.allow_dragging();
     }
 
@@ -1636,107 +1629,55 @@ class PhysicalCardStack {
     }
 
     show_as_mergeable(): void {
-        this.div.style.backgroundColor = "hsl(105, 72.70%, 87.10%)";
+        const self = this;
+        const div = this.div;
+        div.style.backgroundColor = "hsl(105, 72.70%, 87.10%)";
+
+        DragDropHelper.accept_drop(div, () => {
+            if (HandCardDragAction.in_progress()) {
+                EventManager.merge_hand_card_to_board_stack(
+                    this.stack_location,
+                );
+            }
+
+            if (CardStackDragAction.in_progress()) {
+                const source_location =
+                    CardStackDragAction.get_dragged_stack_location();
+                const target_location = this.stack_location;
+                EventManager.drop_stack_on_stack({
+                    source_location,
+                    target_location,
+                });
+            }
+        });
     }
 
     hide_as_mergeable(): void {
         this.div.style.backgroundColor = "transparent";
     }
 
-    /* accept DROP (either hand card or stack) */
-
-    can_drop_card(): boolean {
-        const dragged_card = HandCardDragAction.get_card();
-        return this.stack.is_mergeable_with_card(dragged_card);
-    }
-
-    dragged_stack(): CardStack {
-        const stack_location = CardStackDragAction.get_dragged_stack_location();
-        return CurrentBoard.get_stack_for(stack_location);
-    }
-
-    can_drop_stack(): boolean {
-        return this.stack.is_mergeable_with(this.dragged_stack());
-    }
-
-    accepts_drop(): boolean {
-        if (HandCardDragAction.in_progress()) {
-            return this.can_drop_card();
-        }
-
-        if (CardStackDragAction.in_progress()) {
-            return this.can_drop_stack();
-        }
-
-        return false; // unforeseen future draggable
-    }
-
-    handle_stack_drop(): void {
-        const source_location =
-            CardStackDragAction.get_dragged_stack_location();
-        const target_location = this.stack_location;
-        EventManager.drop_stack_on_stack({
-            source_location,
-            target_location,
-        });
-    }
-
-    handle_drop(): void {
-        if (HandCardDragAction.in_progress()) {
-            EventManager.merge_hand_card_to_board_stack(this.stack_location);
-        }
-
-        if (CardStackDragAction.in_progress()) {
-            this.handle_stack_drop();
-        }
-    }
-
-    enable_drop(): void {
-        const self = this;
-        const div = this.div;
-
-        div.addEventListener("dragover", (e) => {
-            if (self.accepts_drop()) {
-                e.preventDefault();
-            }
-        });
-
-        div.addEventListener("drop", () => {
-            self.handle_drop();
-        });
-    }
-
     // DRAG **from** the stack
-
-    handle_dragstart(e): void {
-        const card_stack = this.stack;
-        const stack_location = this.stack_location;
-        const tray_width = this.get_stack_width();
-
-        CardStackDragAction.start_drag_stack({
-            card_stack,
-            stack_location,
-            tray_width,
-        });
-    }
-
-    handle_dragend(): void {
-        CardStackDragAction.end_drag_stack();
-    }
 
     allow_dragging() {
         const self = this;
         const div = this.div;
 
-        div.draggable = true;
-        div.style.userSelect = undefined;
+        DragDropHelper.enable_drag({
+            div,
+            handle_dragstart(): void {
+                const card_stack = self.stack;
+                const stack_location = self.stack_location;
+                const tray_width = self.get_stack_width();
 
-        div.addEventListener("dragstart", (e) => {
-            self.handle_dragstart(e);
-        });
-
-        div.addEventListener("dragend", () => {
-            self.handle_dragend();
+                CardStackDragAction.start_drag_stack({
+                    card_stack,
+                    stack_location,
+                    tray_width,
+                });
+            },
+            handle_dragend(): void {
+                CardStackDragAction.end_drag_stack();
+            },
         });
     }
 }
@@ -1762,7 +1703,6 @@ class PhysicalEmptyShelfSpot {
     constructor(shelf_idx: number) {
         this.shelf_idx = shelf_idx;
         this.div = render_empty_shelf_spot();
-        this.enable_drop();
     }
 
     hide() {
@@ -1770,50 +1710,27 @@ class PhysicalEmptyShelfSpot {
     }
 
     show(tray_width: number) {
-        this.div.style.display = "block";
-        this.div.style.width = tray_width + "px";
+        const self = this;
+        const div = this.div;
+        const shelf_index = this.shelf_idx;
+
+        div.style.display = "block";
+        div.style.width = tray_width + "px";
+
+        DragDropHelper.accept_drop(div, () => {
+            if (HandCardDragAction.in_progress()) {
+                EventManager.move_card_from_hand_to_board();
+            } else {
+                EventManager.move_dragged_card_stack_to_end_of_shelf(
+                    shelf_index,
+                );
+            }
+        });
     }
 
     dom() {
         this.hide();
         return this.div;
-    }
-
-    accepts_drop(): boolean {
-        if (HandCardDragAction.in_progress()) {
-            return true;
-        }
-
-        if (CardStackDragAction.in_progress()) {
-            return true;
-        }
-
-        return false; // unknown "future" draggable
-    }
-
-    handle_drop(): void {
-        const shelf_index = this.shelf_idx;
-
-        if (HandCardDragAction.in_progress()) {
-            EventManager.move_card_from_hand_to_board();
-        } else {
-            EventManager.move_dragged_card_stack_to_end_of_shelf(shelf_index);
-        }
-    }
-
-    enable_drop(): void {
-        const self = this;
-        const div = this.div;
-
-        div.addEventListener("dragover", (e) => {
-            if (self.accepts_drop()) {
-                e.preventDefault();
-            }
-        });
-
-        div.addEventListener("drop", () => {
-            self.handle_drop();
-        });
     }
 }
 
@@ -2964,6 +2881,81 @@ class PopupSingleton {
 
 /***********************************************
 
+DRAG AND DROP vvvv
+
+***********************************************/
+
+let DragDropHelper: DragDropHelperSingleton;
+
+class DragDropHelperSingleton {
+    seq: number;
+    callbacks: Map<string, () => void>;
+
+    constructor() {
+        this.seq = 0;
+        this.callbacks = new Map();
+    }
+
+    enable_drag(info: {
+        div: HTMLElement;
+        handle_dragstart: () => void;
+        handle_dragend: () => void;
+    }): void {
+        const { div, handle_dragstart, handle_dragend } = info;
+
+        div.draggable = true;
+        div.style.userSelect = undefined;
+        div.style.touchAction = "none";
+
+        let dragging = false;
+
+        div.addEventListener("pointerdown", (event) => {
+            event.preventDefault();
+
+            handle_dragstart();
+
+            div.setPointerCapture(event.pointerId);
+            dragging = true;
+        });
+
+        div.addEventListener("pointermove", (event) => {
+            if (!dragging) return false;
+        });
+
+        div.addEventListener("pointerup", (event) => {
+            console.log("DROPPING CLASS ON YO ASS");
+            event.preventDefault();
+            dragging = false;
+            div.releasePointerCapture(event.pointerId);
+
+            const elements = document.elementsFromPoint(
+                event.clientX,
+                event.clientY,
+            ) as HTMLElement[];
+
+            for (const element of elements) {
+                if (element.dataset.drop_key) {
+                    console.log(element);
+                    const drop_key = element.dataset.drop_key;
+                    const callback = this.callbacks.get(drop_key);
+                    callback();
+                }
+            }
+            handle_dragend();
+        });
+    }
+
+    accept_drop(div: HTMLElement, callback: () => void) {
+        this.seq += 1;
+        div.dataset.drop_target = "drop_me";
+        const key = `${this.seq}`;
+        div.dataset.drop_key = key;
+        this.callbacks.set(key, callback);
+    }
+}
+
+/***********************************************
+
 EXAMPLE SYSTEM vvvv
 
 ***********************************************/
@@ -3558,6 +3550,7 @@ let SoundEffects: SoundEffectsSingleton;
 
 // This is the entry point for static/index.html
 function gui() {
+    DragDropHelper = new DragDropHelperSingleton();
     Popup = new PopupSingleton();
     SoundEffects = new SoundEffectsSingleton();
     new LandingPage();
