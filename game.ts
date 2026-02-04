@@ -3383,6 +3383,36 @@ class SoundEffectsSingleton {
     }
 }
 
+function talk_to_zulip() {
+    const site = "https://macandcheese.zulipchat.com";
+
+    const my_email = "showell30@yahoo.com";
+
+    const config = {
+        username: my_email,
+        apiKey: "x1D2df6fjdIjOOW6pUxuseFHHLQq7UD0",
+    };
+
+    const base_url = `${site}/api/v1/users/${my_email}`;
+    const method = "GET";
+
+    // now for the technical piece
+    const url = new URL(base_url);
+    const auth = btoa(`${config.username}:${config.apiKey}`);
+    const auth_header = `Basic ${auth}`;
+    const options = { method, headers: { Authorization: auth_header } };
+
+    const promise = fetch(url.href, options);
+    promise.then((response) => {
+        const json_promise = response.json();
+        json_promise.then((data) => {
+            console.log(data);
+        });
+    });
+}
+
+talk_to_zulip();
+
 // SINGLETONS get initialized in gui().
 let SoundEffects: SoundEffectsSingleton;
 
