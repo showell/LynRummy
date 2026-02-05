@@ -2622,7 +2622,7 @@ class PhysicalGame {
     }
 
     populate_board_area() {
-        DragDropHelper.clear_click_handlers();
+        DragDropHelper.reset();
 
         UndoButton = new UndoButtonSingleton();
 
@@ -2897,8 +2897,10 @@ class DragDropHelperSingleton {
         this.on_click_callbacks = new Map();
     }
 
-    clear_click_handlers(): void {
+    reset(): void {
+        console.log(this.seq);
         this.on_click_callbacks.clear();
+        this.drop_targets.clear();
     }
 
     enable_drag(info: {
