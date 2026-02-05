@@ -3738,7 +3738,7 @@ function get_headers() {
     return { Authorization: auth_header };
 }
 
-function form_data(params) {
+function form_data(params: Record<string, string>) {
     const form_data = new FormData();
     Object.keys(params).forEach((key) => {
         let data = params[key];
