@@ -2384,6 +2384,7 @@ class EventManagerSingleton {
 
     constructor(physical_game: PhysicalGame) {
         this.physical_game = physical_game;
+        assert(physical_game.physical_board !== undefined);
         this.physical_board = physical_game.physical_board;
         this.game = TheGame;
     }
