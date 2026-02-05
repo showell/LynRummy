@@ -2956,7 +2956,7 @@ class DragDropHelperSingleton {
         const self = this;
 
         div.draggable = true;
-        div.style.userSelect = undefined;
+        div.style.userSelect = "";
         div.style.touchAction = "none";
 
         let dragging = false;
