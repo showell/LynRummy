@@ -3094,7 +3094,9 @@ class DragDropHelperSingleton {
                 if (element.dataset.drop_key) {
                     const drop_key = element.dataset.drop_key;
                     const target = this.drop_targets.get(drop_key);
-                    target.on_drop();
+                    if (target) {
+                        target.on_drop();
+                    }
                 }
             }
 
