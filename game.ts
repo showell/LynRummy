@@ -2945,17 +2945,20 @@ class DragDropHelperSingleton {
         div.style.touchAction = "none";
 
         let dragging = false;
-        let active_click_key: string | undefined = undefined;
-        let active_target: DropTarget | undefined = undefined;
+        let active_click_key: string | undefined;
+        let active_target: DropTarget | undefined;
+        let offsetX = 0;
+        let offsetY = 0;
+        let ghost;
 
-        div.addEventListener("pointerdown", (event) => {
-            event.preventDefault();
+        div.addEventListener("pointerdown", (e) => {
+            e.preventDefault();
 
             self.drop_targets.clear();
 
             const elements = document.elementsFromPoint(
-                event.clientX,
-                event.clientY,
+                e.clientX,
+                e.clientY,
             ) as HTMLElement[];
 
             for (const element of elements) {
@@ -2968,16 +2971,33 @@ class DragDropHelperSingleton {
 
             handle_dragstart();
 
-            div.setPointerCapture(event.pointerId);
+            const rect = div.getBoundingClientRect();
+            offsetX = e.clientX - rect.left;
+            offsetY = e.clientY - rect.top;
+
+            div.setPointerCapture(e.pointerId);
             dragging = true;
         });
 
-        div.addEventListener("pointermove", (event) => {
+        div.addEventListener("pointermove", (e) => {
             if (!dragging) return false;
 
+            if (!ghost) {
+                ghost = div.cloneNode(true);
+                ghost.style.position = "absolute";
+                ghost.style.opacity = "0.5";
+                ghost.style.pointerEvents = "none"; // Essential
+                ghost.style.zIndex = "1000";
+
+                document.body.appendChild(ghost);
+            }
+
+            ghost.style.left = e.clientX - offsetX + "px";
+            ghost.style.top = e.clientY - offsetY + "px";
+
             const elements = document.elementsFromPoint(
-                event.clientX,
-                event.clientY,
+                e.clientX,
+                e.clientY,
             ) as HTMLElement[];
 
             for (const element of elements) {
@@ -2997,20 +3017,25 @@ class DragDropHelperSingleton {
             }
         });
 
-        div.addEventListener("pointerup", (event) => {
-            event.preventDefault();
+        div.addEventListener("pointerup", (e) => {
+            e.preventDefault();
             dragging = false;
+
+            if (ghost) {
+                ghost.remove();
+                ghost = undefined;
+            }
 
             if (active_target) {
                 active_target.on_leave();
                 active_target = undefined;
             }
 
-            div.releasePointerCapture(event.pointerId);
+            div.releasePointerCapture(e.pointerId);
 
             const elements = document.elementsFromPoint(
-                event.clientX,
-                event.clientY,
+                e.clientX,
+                e.clientY,
             ) as HTMLElement[];
 
             // First assume it's a click or long press.
