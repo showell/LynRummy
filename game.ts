@@ -2266,7 +2266,7 @@ class CardStackDragActionSingleton {
     drop_stack_on_stack(info: {
         source_location: StackLocation;
         target_location: StackLocation;
-    }): CardStack {
+    }): CardStack | undefined {
         const { source_location, target_location } = info;
 
         const merged_stack = CurrentBoard.merge_card_stacks({
@@ -2280,7 +2280,7 @@ class CardStackDragActionSingleton {
                 source_location,
                 target_location,
             );
-            return;
+            return undefined;
         }
 
         return merged_stack;
@@ -2601,7 +2601,14 @@ class EventManagerSingleton {
         source_location: StackLocation;
         target_location: StackLocation;
     }): void {
-        const size = CardStackDragAction.drop_stack_on_stack(info).size();
+        const merged_stack = CardStackDragAction.drop_stack_on_stack(info);
+        if (merged_stack === undefined) {
+            console.trace(
+                "dropped stack is unmergable with the target stack, when trying to drop stack on stack!!!",
+            );
+            return;
+        }
+        const size = merged_stack.size();
 
         if (size >= 8) {
             SoundEffects.play_bark_sound();
