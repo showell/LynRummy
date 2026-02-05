@@ -16,7 +16,7 @@ cleanup() {
 trap cleanup EXIT
 
 ls game.ts | entr -r bash -c '
-  npx tsc --lib es2022,dom --outDir dist game.ts &&
+  npx tsc --strict --lib es2022,dom --outDir dist game.ts &&
   npx prettier game.ts --write &&
   node dist/game.js
 '
