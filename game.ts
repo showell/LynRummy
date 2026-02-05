@@ -140,7 +140,7 @@ class StackLocation {
     }
 }
 
-function is_pair_of_dups(card1: Card, card2): boolean {
+function is_pair_of_dups(card1: Card, card2: Card): boolean {
     // In a two-deck game, two cards can be both be
     // the Ace of Hearts, to use an example,
     // but you can't put dups in a set.
