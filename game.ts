@@ -3780,3 +3780,12 @@ function talk_to_zulip() {
 }
 
 // talk_to_zulip();
+
+function assert(
+    condition: boolean,
+    msg = "Assertion failed",
+): asserts condition {
+    if (!condition) {
+        throw new Error(msg);
+    }
+}
