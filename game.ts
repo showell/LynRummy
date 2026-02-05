@@ -1633,10 +1633,21 @@ class PhysicalCardStack {
     show_as_mergeable(): void {
         const self = this;
         const div = this.div;
-        div.style.backgroundColor = "hsl(105, 72.70%, 87.10%)";
+
+        function style_as_mergeable(): void {
+            div.style.backgroundColor = "hsl(105, 72.70%, 87.10%)";
+        }
+
+        style_as_mergeable();
 
         DragDropHelper.accept_drop({
             div,
+            on_over() {
+                div.style.backgroundColor = "pink";
+            },
+            on_leave() {
+                style_as_mergeable();
+            },
             on_drop() {
                 if (HandCardDragAction.in_progress()) {
                     EventManager.merge_hand_card_to_board_stack(
@@ -1722,8 +1733,16 @@ class PhysicalEmptyShelfSpot {
         div.style.display = "block";
         div.style.width = tray_width + "px";
 
+        const orig_color = div.style.backgroundColor;
+
         DragDropHelper.accept_drop({
             div,
+            on_over() {
+                div.style.backgroundColor = "pink";
+            },
+            on_leave() {
+                div.style.backgroundColor = orig_color;
+            },
             on_drop() {
                 if (HandCardDragAction.in_progress()) {
                     EventManager.move_card_from_hand_to_board();
@@ -2895,6 +2914,8 @@ DRAG AND DROP vvvv
 
 type DropTarget = {
     div: HTMLElement;
+    on_over: () => void;
+    on_leave: () => void;
     on_drop: () => void;
 };
 
@@ -2925,6 +2946,7 @@ class DragDropHelperSingleton {
 
         let dragging = false;
         let active_click_key: string | undefined = undefined;
+        let active_target: DropTarget | undefined = undefined;
 
         div.addEventListener("pointerdown", (event) => {
             event.preventDefault();
@@ -2952,11 +2974,38 @@ class DragDropHelperSingleton {
 
         div.addEventListener("pointermove", (event) => {
             if (!dragging) return false;
+
+            const elements = document.elementsFromPoint(
+                event.clientX,
+                event.clientY,
+            ) as HTMLElement[];
+
+            for (const element of elements) {
+                if (element.dataset.drop_key) {
+                    if (active_target) {
+                        active_target.on_leave();
+                    }
+                    const drop_key = element.dataset.drop_key;
+                    active_target = this.drop_targets.get(drop_key);
+                    active_target.on_over();
+                    return;
+                }
+            }
+
+            if (active_target) {
+                active_target.on_leave();
+            }
         });
 
         div.addEventListener("pointerup", (event) => {
             event.preventDefault();
             dragging = false;
+
+            if (active_target) {
+                active_target.on_leave();
+                active_target = undefined;
+            }
+
             div.releasePointerCapture(event.pointerId);
 
             const elements = document.elementsFromPoint(
@@ -2987,6 +3036,7 @@ class DragDropHelperSingleton {
                     target.on_drop();
                 }
             }
+
             handle_dragend();
         });
     }
