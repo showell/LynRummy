@@ -3076,9 +3076,11 @@ class DragDropHelperSingleton {
                     if (active_click_key === element.dataset.click_key) {
                         const on_click =
                             this.on_click_callbacks.get(active_click_key);
-                        on_click();
-                        active_click_key = undefined;
-                        handle_dragend();
+                        if (on_click !== undefined) {
+                            on_click();
+                            active_click_key = undefined;
+                            handle_dragend();
+                        }
                         return;
                     }
                 }
