@@ -1633,22 +1633,25 @@ class PhysicalCardStack {
         const div = this.div;
         div.style.backgroundColor = "hsl(105, 72.70%, 87.10%)";
 
-        DragDropHelper.accept_drop(div, () => {
-            if (HandCardDragAction.in_progress()) {
-                EventManager.merge_hand_card_to_board_stack(
-                    this.stack_location,
-                );
-            }
+        DragDropHelper.accept_drop({
+            div,
+            on_drop() {
+                if (HandCardDragAction.in_progress()) {
+                    EventManager.merge_hand_card_to_board_stack(
+                        self.stack_location,
+                    );
+                }
 
-            if (CardStackDragAction.in_progress()) {
-                const source_location =
-                    CardStackDragAction.get_dragged_stack_location();
-                const target_location = this.stack_location;
-                EventManager.drop_stack_on_stack({
-                    source_location,
-                    target_location,
-                });
-            }
+                if (CardStackDragAction.in_progress()) {
+                    const source_location =
+                        CardStackDragAction.get_dragged_stack_location();
+                    const target_location = self.stack_location;
+                    EventManager.drop_stack_on_stack({
+                        source_location,
+                        target_location,
+                    });
+                }
+            },
         });
     }
 
@@ -1717,14 +1720,17 @@ class PhysicalEmptyShelfSpot {
         div.style.display = "block";
         div.style.width = tray_width + "px";
 
-        DragDropHelper.accept_drop(div, () => {
-            if (HandCardDragAction.in_progress()) {
-                EventManager.move_card_from_hand_to_board();
-            } else {
-                EventManager.move_dragged_card_stack_to_end_of_shelf(
-                    shelf_index,
-                );
-            }
+        DragDropHelper.accept_drop({
+            div,
+            on_drop() {
+                if (HandCardDragAction.in_progress()) {
+                    EventManager.move_card_from_hand_to_board();
+                } else {
+                    EventManager.move_dragged_card_stack_to_end_of_shelf(
+                        shelf_index,
+                    );
+                }
+            },
         });
     }
 
@@ -2889,11 +2895,11 @@ let DragDropHelper: DragDropHelperSingleton;
 
 class DragDropHelperSingleton {
     seq: number;
-    callbacks: Map<string, () => void>;
+    on_drop_callbacks: Map<string, () => void>;
 
     constructor() {
         this.seq = 0;
-        this.callbacks = new Map();
+        this.on_drop_callbacks = new Map();
     }
 
     enable_drag(info: {
@@ -2902,6 +2908,7 @@ class DragDropHelperSingleton {
         handle_dragend: () => void;
     }): void {
         const { div, handle_dragstart, handle_dragend } = info;
+        const self = this;
 
         div.draggable = true;
         div.style.userSelect = undefined;
@@ -2911,6 +2918,9 @@ class DragDropHelperSingleton {
 
         div.addEventListener("pointerdown", (event) => {
             event.preventDefault();
+
+            console.log("CLEARING MAP");
+            self.on_drop_callbacks.clear();
 
             handle_dragstart();
 
@@ -2923,7 +2933,6 @@ class DragDropHelperSingleton {
         });
 
         div.addEventListener("pointerup", (event) => {
-            console.log("DROPPING CLASS ON YO ASS");
             event.preventDefault();
             dragging = false;
             div.releasePointerCapture(event.pointerId);
@@ -2937,20 +2946,22 @@ class DragDropHelperSingleton {
                 if (element.dataset.drop_key) {
                     console.log(element);
                     const drop_key = element.dataset.drop_key;
-                    const callback = this.callbacks.get(drop_key);
-                    callback();
+                    const on_drop = this.on_drop_callbacks.get(drop_key);
+                    on_drop();
                 }
             }
             handle_dragend();
         });
     }
 
-    accept_drop(div: HTMLElement, callback: () => void) {
+    accept_drop(info: { div: HTMLElement; on_drop: () => void }): void {
+        const { div, on_drop } = info;
+
         this.seq += 1;
         div.dataset.drop_target = "drop_me";
         const key = `${this.seq}`;
         div.dataset.drop_key = key;
-        this.callbacks.set(key, callback);
+        this.on_drop_callbacks.set(key, on_drop);
     }
 }
 
