@@ -1648,13 +1648,17 @@ class PhysicalCardStack {
                 style_as_mergeable();
             },
             on_drop() {
+                console.log("on_drop");
+
                 if (HandCardDragAction.in_progress()) {
+                    console.log("hand -> stack");
                     EventManager.merge_hand_card_to_board_stack(
                         self.stack_location,
                     );
                 }
 
                 if (CardStackDragAction.in_progress()) {
+                    console.log("stack -> stack");
                     const source_location =
                         CardStackDragAction.get_dragged_stack_location();
                     const target_location = self.stack_location;
@@ -2988,18 +2992,33 @@ class DragDropHelperSingleton {
 
             for (const element of elements) {
                 if (element.dataset.drop_key) {
-                    if (active_target) {
-                        active_target.on_leave();
-                    }
                     const drop_key = element.dataset.drop_key;
-                    active_target = this.drop_targets.get(drop_key);
-                    active_target.on_over();
-                    return;
+                    const hovered_target = this.drop_targets.get(drop_key);
+
+                    if (hovered_target === undefined) {
+                        continue;
+                    }
+
+                    if (active_target === undefined) {
+                        hovered_target.on_over();
+                        active_target = hovered_target;
+                        return;
+                    } else if (hovered_target === active_target) {
+                        // just ignore repeated hovers
+                        return;
+                    } else {
+                        active_target.on_leave();
+                        hovered_target.on_over();
+                        active_target = hovered_target;
+                        return;
+                    }
                 }
             }
 
             if (active_target) {
+                console.log("hovering over non-target, need to leave");
                 active_target.on_leave();
+                active_target = undefined;
             }
         });
 
@@ -3032,6 +3051,7 @@ class DragDropHelperSingleton {
                             this.on_click_callbacks.get(active_click_key);
                         on_click();
                         active_click_key = undefined;
+                        handle_dragend();
                         return;
                     }
                 }
