@@ -2092,17 +2092,15 @@ class PhysicalHand {
 }
 
 class PhysicalPlayer {
-    physical_game: PhysicalGame;
     player: Player;
     physical_hand: PhysicalHand;
     complete_turn_button: CompleteTurnButton;
     div: HTMLElement;
 
-    constructor(physical_game: PhysicalGame, player: Player) {
-        this.physical_game = physical_game;
+    constructor(player: Player) {
         this.player = player;
         this.physical_hand = new PhysicalHand(player.hand);
-        this.complete_turn_button = new CompleteTurnButton(physical_game);
+        this.complete_turn_button = new CompleteTurnButton();
         this.div = document.createElement("div");
         this.div.style.minWidth = "200px";
         this.div.style.paddingBottom = "15px";
@@ -2170,14 +2168,10 @@ class PlayerAreaSingleton {
     physical_players: PhysicalPlayer[];
     div: HTMLElement;
 
-    constructor(
-        physical_game: PhysicalGame,
-        players: Player[],
-        player_area: HTMLElement,
-    ) {
+    constructor(players: Player[], player_area: HTMLElement) {
         this.div = player_area;
         this.physical_players = players.map(
-            (player) => new PhysicalPlayer(physical_game, player),
+            (player) => new PhysicalPlayer(player),
         );
         this.populate();
     }
@@ -2389,6 +2383,142 @@ class EventManagerSingleton {
         console.log("EVENT SCORE!", ActivePlayer.get_turn_score());
     }
 
+    // COMPLETE TURN
+
+    maybe_complete_turn(): void {
+        const physical_game = this.physical_game;
+        const self = this;
+
+        const turn_result = TheGame.complete_turn();
+
+        switch (turn_result) {
+            case CompleteTurnResult.FAILURE:
+                SoundEffects.play_purr_sound();
+                Popup.show({
+                    content: `The board is not clean!\
+                        \n\n(nor is my litter box)\
+                        \n\nUse the "Undo mistakes" button if you need to.`,
+                    confirm_button_text: "Oy vey, ok",
+                    type: "warning",
+                    admin: Admin.ANGRY_CAT,
+                    callback() {
+                        // TODO: add quick animation on undo button or something
+                        console.log("fail");
+                    },
+                });
+                return;
+
+            case CompleteTurnResult.SUCCESS_BUT_NEEDS_CARDS:
+                SoundEffects.play_purr_sound();
+                Popup.show({
+                    content:
+                        "You didn't make any progress at all.\
+                        \n\
+                        \nI'm going back to my nap!\
+                        \n\
+                        \nYou will get 3 new cards on your next hand.",
+                    type: "warning",
+                    confirm_button_text: "Meh",
+                    admin: Admin.OLIVER,
+                    callback() {
+                        continue_on_to_next_turn();
+                    },
+                });
+                break;
+
+            case CompleteTurnResult.SUCCESS_AS_VICTOR: {
+                const turn_score = ActivePlayer.get_turn_score();
+                // Only play this for the first time a player gets
+                // rid of all the cards in their hand.
+                SoundEffects.play_victory_sound();
+                Popup.show({
+                    content: `Let’s be honest: this world is basically yours. We’re all just living in your empire!\
+                        \n\
+                        \nThat said, I, award you 1500 extra points for being the first person to clear your hand!\
+                        \n\
+                        \nThat fetches you a total of ${turn_score} points for this turn.\
+                        \n\
+                        \nYou get a bonus every time you clear your hand.\
+                        \n\
+                        \nYou also get five more cards on the next turn.\
+                        \n\
+                        \nKeep winning!`,
+                    type: "success",
+                    admin: Admin.STEVE,
+                    confirm_button_text: "I am the chosen one!",
+                    callback() {
+                        continue_on_to_next_turn();
+                    },
+                });
+                break;
+            }
+
+            case CompleteTurnResult.SUCCESS_WITH_HAND_EMPTIED: {
+                const turn_score = ActivePlayer.get_turn_score();
+                Popup.show({
+                    content: `WOOT!\
+                    \n\
+                    \nLooks like you got rid of all your cards!\
+                    \n\
+                    \nI am rewarding you extra points for that!\
+                    \n\
+                    \nYour scored a whopping ${turn_score} for this turn!!\
+                    \n\
+                    \nYou get a bonus every time you clear your hand.\
+                    \n\
+                    \nWe will deal you 5 more cards if you get back on the road.`,
+                    admin: Admin.STEVE,
+                    confirm_button_text: "Back on the road!",
+                    callback() {
+                        continue_on_to_next_turn();
+                    },
+                    type: "success",
+                });
+                break;
+            }
+
+            case CompleteTurnResult.SUCCESS:
+                const turn_score = ActivePlayer.get_turn_score();
+
+                if (turn_score > 600) {
+                    // This is Steve saying "Nice!" in a very bad
+                    // audio recording. We only play it once during
+                    // the game.
+                    SoundEffects.play_nice_sound();
+                }
+
+                Popup.show({
+                    content: `Good job!\
+                         \n\
+                         \nI am rewarding you with ${turn_score} points for this turn!\
+                         \n\
+                         \nLet's see how your opponent does! (oh yeah, that's you again)`,
+                    type: "success",
+                    confirm_button_text: "See if they can try!",
+                    admin: Admin.STEVE,
+                    callback() {
+                        continue_on_to_next_turn();
+                    },
+                });
+                break;
+        }
+
+        function continue_on_to_next_turn() {
+            CurrentBoard.age_cards();
+            TheGame.advance_turn_to_next_player();
+            ActivePlayer.start_turn();
+
+            TheGame.update_snapshot();
+
+            PlayerArea.populate();
+            physical_game.populate_board_area();
+
+            StatusBar.update_text(
+                `${ActivePlayer.name}, you may begin your turn.`,
+            );
+        }
+    }
+
     // Undo mistakes
 
     undo_mistakes(): void {
@@ -2519,11 +2649,7 @@ class PhysicalGame {
         const player_area = this.player_area;
 
         this.physical_board = new PhysicalBoard(physical_game);
-        PlayerArea = new PlayerAreaSingleton(
-            physical_game,
-            players,
-            player_area,
-        );
+        PlayerArea = new PlayerAreaSingleton(players, player_area);
 
         HandCardDragAction = new HandCardDragActionSingleton(
             physical_game,
@@ -2536,137 +2662,6 @@ class PhysicalGame {
     get_physical_hand(): PhysicalHand {
         const index = TheGame.current_player_index;
         return PlayerArea.get_physical_hand_for_player(index);
-    }
-
-    // ACTION
-    complete_turn() {
-        const game = TheGame;
-        const self = this;
-
-        const turn_result = game.complete_turn();
-
-        switch (turn_result) {
-            case CompleteTurnResult.FAILURE:
-                SoundEffects.play_purr_sound();
-                Popup.show({
-                    content: `The board is not clean!\
-                        \n\n(nor is my litter box)\
-                        \n\nUse the "Undo mistakes" button if you need to.`,
-                    confirm_button_text: "Oy vey, ok",
-                    type: "warning",
-                    admin: Admin.ANGRY_CAT,
-                    callback() {
-                        // TODO: add quick animation on undo button or something
-                        console.log("fail");
-                    },
-                });
-                return;
-            case CompleteTurnResult.SUCCESS_BUT_NEEDS_CARDS:
-                SoundEffects.play_purr_sound();
-                Popup.show({
-                    content:
-                        "You didn't make any progress at all.\
-                        \n\
-                        \nI'm going back to my nap!\
-                        \n\
-                        \nYou will get 3 new cards on your next hand.",
-                    type: "warning",
-                    confirm_button_text: "Meh",
-                    admin: Admin.OLIVER,
-                    callback() {
-                        continue_on_to_next_turn();
-                    },
-                });
-                break;
-            case CompleteTurnResult.SUCCESS_AS_VICTOR: {
-                const turn_score = ActivePlayer.get_turn_score();
-                // Only play this for the first time a player gets
-                // rid of all the cards in their hand.
-                SoundEffects.play_victory_sound();
-                Popup.show({
-                    content: `Let’s be honest: this world is basically yours. We’re all just living in your empire!\
-                        \n\
-                        \nThat said, I, award you 1500 extra points for being the first person to clear your hand!\
-                        \n\
-                        \nThat fetches you a total of ${turn_score} points for this turn.\
-                        \n\
-                        \nYou get a bonus every time you clear your hand.\
-                        \n\
-                        \nYou also get five more cards on the next turn.\
-                        \n\
-                        \nKeep winning!`,
-                    type: "success",
-                    admin: Admin.STEVE,
-                    confirm_button_text: "I am the chosen one!",
-                    callback() {
-                        continue_on_to_next_turn();
-                    },
-                });
-                break;
-            }
-            case CompleteTurnResult.SUCCESS_WITH_HAND_EMPTIED: {
-                const turn_score = ActivePlayer.get_turn_score();
-                Popup.show({
-                    content: `WOOT!\
-                    \n\
-                    \nLooks like you got rid of all your cards!\
-                    \n\
-                    \nI am rewarding you extra points for that!\
-                    \n\
-                    \nYour scored a whopping ${turn_score} for this turn!!\
-                    \n\
-                    \nYou get a bonus every time you clear your hand.\
-                    \n\
-                    \nWe will deal you 5 more cards if you get back on the road.`,
-                    admin: Admin.STEVE,
-                    confirm_button_text: "Back on the road!",
-                    callback() {
-                        continue_on_to_next_turn();
-                    },
-                    type: "success",
-                });
-                break;
-            }
-            case CompleteTurnResult.SUCCESS:
-                const turn_score = ActivePlayer.get_turn_score();
-
-                if (turn_score > 600) {
-                    // This is Steve saying "Nice!" in a very bad
-                    // audio recording. We only play it once during
-                    // the game.
-                    SoundEffects.play_nice_sound();
-                }
-
-                Popup.show({
-                    content: `Good job!\
-                         \n\
-                         \nI am rewarding you with ${turn_score} points for this turn!\
-                         \n\
-                         \nLet's see how your opponent does! (oh yeah, that's you again)`,
-                    type: "success",
-                    confirm_button_text: "See if they can try!",
-                    admin: Admin.STEVE,
-                    callback() {
-                        continue_on_to_next_turn();
-                    },
-                });
-                break;
-        }
-
-        function continue_on_to_next_turn() {
-            CurrentBoard.age_cards();
-            game.advance_turn_to_next_player();
-            ActivePlayer.start_turn();
-
-            game.update_snapshot();
-
-            PlayerArea.populate();
-            self.populate_board_area();
-
-            StatusBar.update_text(
-                `${ActivePlayer.name}, you may begin your turn.`,
-            );
-        }
     }
 
     populate_board_area() {
@@ -2684,10 +2679,10 @@ class PhysicalGame {
 class CompleteTurnButton {
     button: HTMLElement;
 
-    constructor(physical_game: PhysicalGame) {
+    constructor() {
         const button = render_complete_turn_button();
         button.addEventListener("click", () => {
-            physical_game.complete_turn();
+            EventManager.maybe_complete_turn();
         });
         this.button = button;
     }
