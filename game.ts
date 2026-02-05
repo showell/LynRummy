@@ -2893,16 +2893,21 @@ DRAG AND DROP vvvv
 
 ***********************************************/
 
+type DropTarget = {
+    div: HTMLElement;
+    on_drop: () => void;
+};
+
 let DragDropHelper: DragDropHelperSingleton;
 
 class DragDropHelperSingleton {
     seq: number;
-    on_drop_callbacks: Map<string, () => void>;
+    drop_targets: Map<string, DropTarget>;
     on_click_callbacks: Map<string, () => void>;
 
     constructor() {
         this.seq = 0;
-        this.on_drop_callbacks = new Map();
+        this.drop_targets = new Map();
         this.on_click_callbacks = new Map();
     }
 
@@ -2924,8 +2929,7 @@ class DragDropHelperSingleton {
         div.addEventListener("pointerdown", (event) => {
             event.preventDefault();
 
-            console.log("CLEARING MAP");
-            self.on_drop_callbacks.clear();
+            self.drop_targets.clear();
 
             const elements = document.elementsFromPoint(
                 event.clientX,
@@ -2936,7 +2940,7 @@ class DragDropHelperSingleton {
                 if (element.dataset.click_key) {
                     console.log(element);
                     active_click_key = element.dataset.click_key;
-                    console.log("set active_click_key", active_click_key);
+                    console.log("CLICK POSSIBLE");
                 }
             }
 
@@ -2964,7 +2968,6 @@ class DragDropHelperSingleton {
             for (const element of elements) {
                 if (element.dataset.click_key) {
                     if (active_click_key === element.dataset.click_key) {
-                        console.log("click confirmed!");
                         const on_click =
                             this.on_click_callbacks.get(active_click_key);
                         on_click();
@@ -2980,30 +2983,31 @@ class DragDropHelperSingleton {
             for (const element of elements) {
                 if (element.dataset.drop_key) {
                     const drop_key = element.dataset.drop_key;
-                    const on_drop = this.on_drop_callbacks.get(drop_key);
-                    on_drop();
+                    const target = this.drop_targets.get(drop_key);
+                    target.on_drop();
                 }
             }
             handle_dragend();
         });
     }
 
+    new_key() {
+        this.seq += 1;
+        return `${this.seq}`;
+    }
+
     accept_click(info: { div: HTMLElement; on_click: () => void }): void {
         const { div, on_click } = info;
 
-        this.seq += 1;
-        const key = `${this.seq}`;
+        const key = this.new_key();
         div.dataset.click_key = key;
         this.on_click_callbacks.set(key, on_click);
     }
 
-    accept_drop(info: { div: HTMLElement; on_drop: () => void }): void {
-        const { div, on_drop } = info;
-
-        this.seq += 1;
-        const key = `${this.seq}`;
-        div.dataset.drop_key = key;
-        this.on_drop_callbacks.set(key, on_drop);
+    accept_drop(drop_target: DropTarget): void {
+        const key = this.new_key();
+        drop_target.div.dataset.drop_key = key;
+        this.drop_targets.set(key, drop_target);
     }
 }
 
