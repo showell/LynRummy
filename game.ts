@@ -1787,7 +1787,7 @@ class PhysicalShelf {
         );
     }
 
-    dom(): HTMLElement {
+    fresh_dom(): HTMLElement {
         this.populate();
         return this.div;
     }
@@ -2012,7 +2012,7 @@ class PhysicalBoard {
         return document.createElement("div");
     }
 
-    dom(): HTMLElement {
+    fresh_dom(): HTMLElement {
         this.populate();
         return this.div;
     }
@@ -2027,7 +2027,7 @@ class PhysicalBoard {
         div.append(render_board_advice());
 
         for (const physical_shelf of physical_shelves) {
-            div.append(physical_shelf.dom());
+            div.append(physical_shelf.fresh_dom());
         }
 
         div.append(UndoButton.dom());
@@ -2663,7 +2663,8 @@ class PhysicalGame {
 
     populate_board_area() {
         this.board_area.innerHTML = "";
-        this.board_area.append(this.physical_board.dom());
+        DragDropHelper.clear_click_handlers();
+        this.board_area.append(this.physical_board.fresh_dom());
     }
 
     start() {
@@ -2924,6 +2925,10 @@ class DragDropHelperSingleton {
         this.on_click_callbacks = new Map();
     }
 
+    clear_click_handlers(): void {
+        this.on_click_callbacks.clear();
+    }
+
     enable_drag(info: {
         div: HTMLElement;
         handle_dragstart: () => void;
@@ -3080,6 +3085,7 @@ class DragDropHelperSingleton {
     accept_click(info: { div: HTMLElement; on_click: () => void }): void {
         const { div, on_click } = info;
 
+        div.style.touchAction = "none";
         const key = this.new_key();
         div.dataset.click_key = key;
         this.on_click_callbacks.set(key, on_click);
