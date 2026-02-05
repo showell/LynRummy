@@ -1537,9 +1537,11 @@ class PhysicalBoardCard {
 
         this.update_state_styles();
 
-        this.card_span.addEventListener("click", (e) => {
-            EventManager.split_stack(card_location);
-            e.stopPropagation();
+        DragDropHelper.accept_click({
+            div: this.card_span,
+            on_click() {
+                EventManager.split_stack(card_location);
+            },
         });
     }
 
@@ -2896,10 +2898,12 @@ let DragDropHelper: DragDropHelperSingleton;
 class DragDropHelperSingleton {
     seq: number;
     on_drop_callbacks: Map<string, () => void>;
+    on_click_callbacks: Map<string, () => void>;
 
     constructor() {
         this.seq = 0;
         this.on_drop_callbacks = new Map();
+        this.on_click_callbacks = new Map();
     }
 
     enable_drag(info: {
@@ -2915,12 +2919,26 @@ class DragDropHelperSingleton {
         div.style.touchAction = "none";
 
         let dragging = false;
+        let active_click_key: string | undefined = undefined;
 
         div.addEventListener("pointerdown", (event) => {
             event.preventDefault();
 
             console.log("CLEARING MAP");
             self.on_drop_callbacks.clear();
+
+            const elements = document.elementsFromPoint(
+                event.clientX,
+                event.clientY,
+            ) as HTMLElement[];
+
+            for (const element of elements) {
+                if (element.dataset.click_key) {
+                    console.log(element);
+                    active_click_key = element.dataset.click_key;
+                    console.log("set active_click_key", active_click_key);
+                }
+            }
 
             handle_dragstart();
 
@@ -2942,9 +2960,25 @@ class DragDropHelperSingleton {
                 event.clientY,
             ) as HTMLElement[];
 
+            // First assume it's a click or long press.
+            for (const element of elements) {
+                if (element.dataset.click_key) {
+                    if (active_click_key === element.dataset.click_key) {
+                        console.log("click confirmed!");
+                        const on_click =
+                            this.on_click_callbacks.get(active_click_key);
+                        on_click();
+                        active_click_key = undefined;
+                        return;
+                    }
+                }
+            }
+
+            active_click_key = undefined;
+
+            // Now look for the drag.
             for (const element of elements) {
                 if (element.dataset.drop_key) {
-                    console.log(element);
                     const drop_key = element.dataset.drop_key;
                     const on_drop = this.on_drop_callbacks.get(drop_key);
                     on_drop();
@@ -2954,11 +2988,19 @@ class DragDropHelperSingleton {
         });
     }
 
+    accept_click(info: { div: HTMLElement; on_click: () => void }): void {
+        const { div, on_click } = info;
+
+        this.seq += 1;
+        const key = `${this.seq}`;
+        div.dataset.click_key = key;
+        this.on_click_callbacks.set(key, on_click);
+    }
+
     accept_drop(info: { div: HTMLElement; on_drop: () => void }): void {
         const { div, on_drop } = info;
 
         this.seq += 1;
-        div.dataset.drop_target = "drop_me";
         const key = `${this.seq}`;
         div.dataset.drop_key = key;
         this.on_drop_callbacks.set(key, on_drop);
