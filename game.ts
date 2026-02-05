@@ -663,12 +663,17 @@ class Shelf {
     extend_stack_with_card(
         stack_index: number,
         hand_card: HandCard,
-    ): CardStack {
+    ): CardStack | undefined {
         const card_stacks = this.card_stacks;
         const card_stack = this.card_stacks[stack_index];
         const new_stack = CardStack.from_hand_card(hand_card);
         const longer_stack = CardStack.merge(card_stack, new_stack);
-
+        if (longer_stack === undefined) {
+            console.trace(
+                "Hand card wasn't mergable with the selected mergable stack",
+            );
+            return undefined;
+        }
         card_stacks[stack_index] = longer_stack;
 
         return longer_stack;
@@ -1993,7 +1998,7 @@ class PhysicalBoard {
     extend_stack_with_card(
         stack_location: StackLocation,
         hand_card: HandCard,
-    ): number {
+    ): number | undefined {
         const shelf_index = stack_location.shelf_index;
         const stack_index = stack_location.stack_index;
         const shelf = CurrentBoard.shelves[shelf_index];
@@ -2002,6 +2007,9 @@ class PhysicalBoard {
             stack_index,
             hand_card,
         );
+        if (longer_stack === undefined) {
+            return undefined;
+        }
         return longer_stack.size();
     }
 
@@ -2326,7 +2334,9 @@ class HandCardDragActionSingleton {
     }
 
     // ACTION
-    merge_hand_card_to_board_stack(stack_location: StackLocation): number {
+    merge_hand_card_to_board_stack(
+        stack_location: StackLocation,
+    ): number | undefined {
         const hand_card = this.dragged_hand_card;
         const physical_hand = this.get_physical_hand();
         const physical_board = this.physical_board;
@@ -2335,6 +2345,7 @@ class HandCardDragActionSingleton {
             stack_location,
             hand_card,
         );
+        if (stack_size === undefined) return undefined;
         const physical_player = this.get_current_physical_player();
         physical_player.release_card(hand_card);
 
@@ -2554,7 +2565,10 @@ class EventManagerSingleton {
     merge_hand_card_to_board_stack(stack_location: StackLocation): void {
         const stack_size =
             HandCardDragAction.merge_hand_card_to_board_stack(stack_location);
-
+        if (stack_size === undefined) {
+            console.log("Cannot merge hand card to board stack");
+            return;
+        }
         if (stack_size >= 8) {
             SoundEffects.play_bark_sound();
             StatusBar.update_text(
