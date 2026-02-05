@@ -1063,7 +1063,6 @@ class Player {
 
         // Finally bump up the player's overall score.
         this.total_score += this.get_turn_score();
-        console.log("scores", this.get_turn_score(), this.total_score);
 
         return turn_result;
     }
@@ -2271,7 +2270,11 @@ class CardStackDragActionSingleton {
         });
 
         if (merged_stack === undefined) {
-            console.log("unexpected merged failure!");
+            console.log(
+                "unexpected merged failure!",
+                source_location,
+                target_location,
+            );
             return;
         }
 
@@ -2378,11 +2381,6 @@ class EventManagerSingleton {
         this.game = TheGame;
     }
 
-    show_score(): void {
-        // TODO: better hooks to show score
-        console.log("EVENT SCORE!", ActivePlayer.get_turn_score());
-    }
-
     // COMPLETE TURN
 
     maybe_complete_turn(): void {
@@ -2401,10 +2399,7 @@ class EventManagerSingleton {
                     confirm_button_text: "Oy vey, ok",
                     type: "warning",
                     admin: Admin.ANGRY_CAT,
-                    callback() {
-                        // TODO: add quick animation on undo button or something
-                        console.log("fail");
-                    },
+                    callback() {},
                 });
                 return;
 
@@ -2589,7 +2584,6 @@ class EventManagerSingleton {
         }
 
         this.game.maybe_update_snapshot();
-        this.show_score();
 
         UndoButton.update_visibility();
     }
@@ -2611,7 +2605,6 @@ class EventManagerSingleton {
         }
 
         this.game.maybe_update_snapshot();
-        this.show_score();
 
         UndoButton.update_visibility();
     }
@@ -2958,9 +2951,7 @@ class DragDropHelperSingleton {
 
             for (const element of elements) {
                 if (element.dataset.click_key) {
-                    console.log(element);
                     active_click_key = element.dataset.click_key;
-                    console.log("CLICK POSSIBLE");
                 }
             }
 
@@ -3556,9 +3547,7 @@ class MainGamePage {
             type: "info",
             confirm_button_text: "Thanks, Mr. Professor!",
             admin: Admin.CAT_PROFESSOR,
-            callback() {
-                console.log("professor");
-            },
+            callback() {},
         });
     }
 }
