@@ -2632,7 +2632,7 @@ let TheGame: Game;
 class PhysicalGame {
     player_area: HTMLElement;
     board_area: HTMLElement;
-    physical_board: PhysicalBoard;
+    physical_board?: PhysicalBoard;
 
     constructor(info: { player_area: HTMLElement; board_area: HTMLElement }) {
         const physical_game = this;
