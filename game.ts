@@ -1396,7 +1396,7 @@ function render_shelf(): HTMLElement {
     const div = document.createElement("div");
     div.classList.add("shelf");
     div.style.display = "flex";
-    div.style.minWidth = "600px";
+    div.style.minWidth = "100%";
     div.style.alignItems = "flex-end";
     div.style.paddingBottom = "2px";
     div.style.borderBottom = "3px solid blue";
@@ -3403,10 +3403,12 @@ class MainGamePage {
     constructor() {
         const page = document.createElement("div");
         page.style.display = "flex";
-        page.style.justifyContent = "center";
+        page.style.paddingLeft = "50px";
+        page.style.paddingRight = "50px";
         document.body.append(page);
 
         const div = document.createElement("div");
+        div.style.minWidth = "100%";
         div.append(this.make_top_line());
         div.append(this.make_bottom_area());
         page.append(div);
@@ -3482,8 +3484,9 @@ class MainGamePage {
 
     make_top_bar(): HTMLElement {
         const top_bar = document.createElement("div");
-        top_bar.style.padding = "4px";
         top_bar.style.display = "flex";
+        top_bar.style.minWidth = "100%";
+        top_bar.style.alignItems = "stretch";
 
         top_bar.append(this.make_title_bar());
         top_bar.append(this.make_about());
@@ -3493,6 +3496,8 @@ class MainGamePage {
     make_bottom_area(): HTMLElement {
         const bottom = document.createElement("div");
         bottom.style.display = "flex";
+        bottom.style.alignItems = "stretch";
+        bottom.style.minWidth = "100%";
         const left_panel = this.make_left_panel();
         const right_panel = this.make_right_panel();
         bottom.append(left_panel);
@@ -3515,6 +3520,7 @@ class MainGamePage {
         this.board_area = document.createElement("div");
         const right_panel = document.createElement("div");
         right_panel.append(this.board_area);
+        right_panel.style.width = "100%";
         return right_panel;
     }
 
