@@ -1169,8 +1169,8 @@ class Game {
 
     constructor() {
         this.players = [
-            new Player({ name: "Player One" }),
-            new Player({ name: "Player Two" }),
+            new Player({ name: "Susan" }),
+            new Player({ name: "Lyn" }),
         ];
         this.has_victor_already = false;
         TheDeck = new Deck();
