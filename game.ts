@@ -1158,6 +1158,16 @@ function render_hand_advice(): HTMLElement {
     return div;
 }
 
+function render_board(): HTMLElement {
+    const div = document.createElement("div");
+    div.innerText = "TBD";
+    div.style.border = "1px solid #000080";
+    div.style.position = "relative";
+    div.style.height = "420px";
+    div.style.marginTop = "8px";
+    return div;
+}
+
 function render_board_advice(): HTMLElement {
     const div = document.createElement("div");
     div.innerText = "Grab piles to move them. Click on piles to break them up.";
@@ -1439,10 +1449,14 @@ class PhysicalCardStack {
 let PhysicalBoard: PhysicalBoardSingleton;
 
 class PhysicalBoardSingleton {
+    div: HTMLElement;
+
+    constructor() {
+        this.div = render_board();
+    }
+
     dom() {
-        const div = document.createElement("div");
-        div.innerText = "TBD";
-        return div;
+        return this.div;
     }
 }
 
