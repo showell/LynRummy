@@ -1353,9 +1353,8 @@ class PhysicalCardStack {
         div.style.left = pixels(stack.loc.left);
         div.style.position = "absolute";
 
-        // this.allow_dragging();
-
         this.div = div;
+        this.allow_dragging();
     }
 
     dom(): HTMLElement {
@@ -1420,6 +1419,7 @@ class PhysicalCardStack {
     hide_as_mergeable(): void {
         this.div.style.backgroundColor = "transparent";
     }
+    */
 
     allow_dragging() {
         const self = this;
@@ -1428,6 +1428,7 @@ class PhysicalCardStack {
         DragDropHelper.enable_drag({
             div,
             handle_dragstart(): void {
+                /*
                 const card_stack = self.stack;
                 const stack_location = self.stack_location;
                 const tray_width = self.get_stack_width();
@@ -1437,13 +1438,15 @@ class PhysicalCardStack {
                     stack_location,
                     tray_width,
                 });
+                */
             },
             handle_dragend(): void {
+                /*
                 CardStackDragAction.end_drag_stack();
+                */
             },
         });
     }
-    */
 }
 
 let PhysicalBoard: PhysicalBoardSingleton;
@@ -1967,9 +1970,23 @@ class DragDropHelperSingleton {
         let dragging = false;
         let active_click_key: string | undefined;
         let active_target: DropTarget | undefined;
-        let offsetX = 0;
-        let offsetY = 0;
-        let ghost: HTMLElement | undefined;
+        let orig_x = 0;
+        let orig_y = 0;
+        let orig_top = 0;
+        let orig_left = 0;
+
+        function start_move(e: PointerEvent) {
+            orig_x = e.clientX;
+            orig_y = e.clientY;
+
+            orig_left = div.offsetLeft;
+            orig_top = div.offsetTop;
+        }
+
+        function move_div(e: PointerEvent) {
+            div.style.left = pixels(orig_left + e.clientX - orig_x);
+            div.style.top = pixels(orig_top + e.clientY - orig_y);
+        }
 
         div.addEventListener("pointerdown", (e) => {
             e.preventDefault();
@@ -1993,9 +2010,7 @@ class DragDropHelperSingleton {
 
             handle_dragstart();
 
-            const rect = div.getBoundingClientRect();
-            offsetX = e.clientX - rect.left;
-            offsetY = e.clientY - rect.top;
+            start_move(e);
 
             div.setPointerCapture(e.pointerId);
         });
@@ -2003,20 +2018,7 @@ class DragDropHelperSingleton {
         div.addEventListener("pointermove", (e) => {
             if (!dragging) return false;
 
-            if (!ghost) {
-                const clone = div.cloneNode(true);
-                assert(clone instanceof HTMLElement);
-                ghost = clone;
-                ghost.style.position = "absolute";
-                ghost.style.opacity = "0.5";
-                ghost.style.pointerEvents = "none"; // Essential
-                ghost.style.zIndex = "1000";
-
-                document.body.appendChild(ghost);
-            }
-
-            ghost.style.left = e.clientX - offsetX + "px";
-            ghost.style.top = e.clientY - offsetY + "px";
+            move_div(e);
 
             const elements = document.elementsFromPoint(
                 e.clientX,
@@ -2057,11 +2059,6 @@ class DragDropHelperSingleton {
         div.addEventListener("pointerup", (e) => {
             e.preventDefault();
             dragging = false;
-
-            if (ghost) {
-                ghost.remove();
-                ghost = undefined;
-            }
 
             if (active_target) {
                 active_target.on_leave();
@@ -2153,7 +2150,6 @@ class StatusBarSingleton {
     }
 
     update_text(text: string) {
-        console.log("status", text);
         this.text_div.innerText = text;
     }
 }
