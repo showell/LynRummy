@@ -1407,27 +1407,29 @@ class PhysicalCardStack {
         }
     }
 
+    style_as_mergeable(div: HTMLElement): void {
+        div.style.backgroundColor = "hsl(105, 72.70%, 87.10%)";
+        div.style.width = pixels(CARD_WIDTH);
+    }
+
+    style_for_hover(div: HTMLElement): void {
+        div.style.backgroundColor = "pink";
+    }
+
     show_as_mergeable(wing_div: HTMLElement): void {
         const self = this;
 
-        function style_as_mergeable(): void {
-            wing_div.style.backgroundColor = "hsl(105, 72.70%, 87.10%)";
-            wing_div.style.width = pixels(CARD_WIDTH);
-        }
-
-        style_as_mergeable();
+        self.style_as_mergeable(wing_div);
 
         DragDropHelper.accept_drop({
             div: wing_div,
             on_over() {
-                wing_div.style.backgroundColor = "pink";
+                self.style_for_hover(wing_div);
             },
             on_leave() {
-                style_as_mergeable();
+                self.style_as_mergeable(wing_div);
             },
             on_drop() {
-                console.log("on_drop");
-
                 /*
                 if (HandCardDragAction.in_progress()) {
                     console.log("hand -> stack");
@@ -1449,10 +1451,6 @@ class PhysicalCardStack {
                 */
             },
         });
-    }
-
-    hide_as_mergeable(): void {
-        this.div.style.backgroundColor = "transparent";
     }
 
     allow_dragging() {
@@ -1996,7 +1994,6 @@ class DragDropHelperSingleton {
     }
 
     reset(): void {
-        console.log(this.seq);
         this.on_click_callbacks.clear();
         this.drop_targets.clear();
     }
@@ -2365,7 +2362,7 @@ class MainGamePage {
 }
 
 function test() {
-    console.log("V2 IN PROGRESS!");
+    console.log("V2 MOVING!");
 }
 
 test(); // runs in node
