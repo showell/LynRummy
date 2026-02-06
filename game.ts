@@ -501,43 +501,32 @@ class CardStack {
         );
     }
 
-    is_mergeable_with(other_stack: CardStack): boolean {
-        if (this.equals(other_stack)) {
+    is_left_mergeable_with(other_stack: CardStack): boolean {
+        return CardStack.merge(other_stack, this) !== undefined;
+    }
+
+    is_right_mergeable_with(other_stack: CardStack): boolean {
+        return CardStack.merge(this, other_stack) !== undefined;
+    }
+
+    static merge(s1: CardStack, s2: CardStack): CardStack | undefined {
+        if (s1.equals(s2)) {
             // This is mostly to prevent us from literally trying
             // to merge our own stack on top of itself. But there's
             // also never a reason to merge two identical piles.
             // Sets don't allow duplicates, and we don't have room
             // in the UI for 26-card-long runs.
-            return false;
+            return undefined;
         }
 
-        return CardStack.merge(this, other_stack) !== undefined;
-    }
-
-    is_mergeable_with_card(hand_card: HandCard): boolean {
-        return true;
-        /*
-        const board_card = BoardCard.from_hand_card(hand_card);
-        return this.is_mergeable_with(new CardStack([board_card]));
-        */
-    }
-
-    static merge(s1: CardStack, s2: CardStack): CardStack | undefined {
-        const stack1 = new CardStack(
+        const new_stack = new CardStack(
             [...s1.board_cards, ...s2.board_cards],
             s1.loc,
         );
-        if (!stack1.problematic()) {
-            return stack1;
+        if (new_stack.problematic()) {
+            return undefined;
         }
-        const stack2 = new CardStack(
-            [...s2.board_cards, ...s1.board_cards],
-            s1.loc,
-        );
-        if (!stack2.problematic()) {
-            return stack2;
-        }
-        return undefined;
+        return new_stack;
     }
 
     static from(
@@ -869,7 +858,7 @@ class Player {
 function initial_board(): Board {
     function stack(row: number, sig: string): CardStack {
         const col = (row * 8) % 5;
-        const loc = { top: 5 + row * 70, left: 20 + col * 50 };
+        const loc = { top: 5 + row * 50, left: 20 + col * 50 };
         return CardStack.from(sig, OriginDeck.DECK_ONE, loc);
     }
 
@@ -881,6 +870,7 @@ function initial_board(): Board {
         stack(4, "AC,AD,AH"),
         stack(5, "2C,3D,4C,5H"),
         stack(6, "6S"),
+        stack(7, "QS"),
     ];
 
     return new Board(stacks);
@@ -1404,8 +1394,11 @@ class PhysicalCardStack {
     }
 
     maybe_show_as_mergeable(card_stack: CardStack): void {
-        if (this.stack.is_mergeable_with(card_stack)) {
+        if (this.stack.is_left_mergeable_with(card_stack)) {
             this.show_as_mergeable(this.left_wing);
+        }
+
+        if (this.stack.is_right_mergeable_with(card_stack)) {
             this.show_as_mergeable(this.right_wing);
         }
     }
