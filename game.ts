@@ -1992,6 +1992,7 @@ class DragDropHelperSingleton {
             orig_top = div.offsetTop;
 
             div.style.position = "absolute";
+            div.style.zIndex = "2";
         }
 
         function move_div(e: PointerEvent) {
@@ -2026,6 +2027,22 @@ class DragDropHelperSingleton {
             div.setPointerCapture(e.pointerId);
         });
 
+        function get_hovered_target(
+            elements: HTMLElement[],
+        ): DropTarget | undefined {
+            for (const element of elements) {
+                if (element.dataset.drop_key) {
+                    const drop_key = element.dataset.drop_key;
+                    const hovered_target = self.drop_targets.get(drop_key);
+
+                    if (hovered_target !== undefined) {
+                        return hovered_target;
+                    }
+                }
+            }
+            return undefined;
+        }
+
         div.addEventListener("pointermove", (e) => {
             if (!dragging) return false;
 
@@ -2036,28 +2053,22 @@ class DragDropHelperSingleton {
                 e.clientY,
             ) as HTMLElement[];
 
-            for (const element of elements) {
-                if (element.dataset.drop_key) {
-                    const drop_key = element.dataset.drop_key;
-                    const hovered_target = this.drop_targets.get(drop_key);
+            const hovered_target = get_hovered_target(elements);
 
-                    if (hovered_target === undefined) {
-                        continue;
-                    }
-
-                    if (active_target === undefined) {
-                        hovered_target.on_over();
-                        active_target = hovered_target;
-                        return;
-                    } else if (hovered_target === active_target) {
-                        // just ignore repeated hovers
-                        return;
-                    } else {
-                        active_target.on_leave();
-                        hovered_target.on_over();
-                        active_target = hovered_target;
-                        return;
-                    }
+            if (hovered_target !== undefined) {
+                console.log("PINK YO!");
+                if (active_target === undefined) {
+                    hovered_target.on_over();
+                    active_target = hovered_target;
+                    return;
+                } else if (hovered_target === active_target) {
+                    // just ignore repeated hovers
+                    return;
+                } else {
+                    active_target.on_leave();
+                    hovered_target.on_over();
+                    active_target = hovered_target;
+                    return;
                 }
             }
 
