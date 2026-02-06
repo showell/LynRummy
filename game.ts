@@ -64,38 +64,10 @@ enum CompleteTurnResult {
     FAILURE,
 }
 
-class BoardLocation {
-    shelf_index: number;
-    stack_index: number;
-    card_index: number;
-
-    constructor(info: {
-        shelf_index: number;
-        stack_index: number;
-        card_index: number;
-    }) {
-        this.shelf_index = info.shelf_index;
-        this.stack_index = info.stack_index;
-        this.card_index = info.card_index;
-    }
-}
-
-class StackLocation {
-    shelf_index: number;
-    stack_index: number;
-
-    constructor(info: { shelf_index: number; stack_index: number }) {
-        this.shelf_index = info.shelf_index;
-        this.stack_index = info.stack_index;
-    }
-
-    equals(other: StackLocation) {
-        return (
-            this.shelf_index === other.shelf_index &&
-            this.stack_index === other.stack_index
-        );
-    }
-}
+type BoardLocation = {
+    top: number;
+    left: number;
+};
 
 function is_pair_of_dups(card1: Card, card2: Card): boolean {
     // In a two-deck game, two cards can be both be
@@ -483,14 +455,17 @@ class BoardCard {
 class CardStack {
     board_cards: BoardCard[]; // Order does matter here!
     stack_type: CardStackType;
+    loc: BoardLocation;
 
-    constructor(board_cards: BoardCard[]) {
+    constructor(board_cards: BoardCard[], loc: BoardLocation) {
         this.board_cards = board_cards;
         this.stack_type = this.get_stack_type();
+        this.loc = loc;
     }
 
     clone(): CardStack {
-        return new CardStack(this.board_cards.map((card) => card.clone()));
+        const board_cards = this.board_cards.map((card) => card.clone());
+        return new CardStack(board_cards, this.loc);
     }
 
     get_cards(): Card[] {
@@ -540,185 +515,109 @@ class CardStack {
     }
 
     is_mergeable_with_card(hand_card: HandCard): boolean {
+        return true;
+        /*
         const board_card = BoardCard.from_hand_card(hand_card);
         return this.is_mergeable_with(new CardStack([board_card]));
+        */
     }
 
     static merge(s1: CardStack, s2: CardStack): CardStack | undefined {
-        const stack1 = new CardStack([...s1.board_cards, ...s2.board_cards]);
+        const stack1 = new CardStack(
+            [...s1.board_cards, ...s2.board_cards],
+            s1.loc,
+        );
         if (!stack1.problematic()) {
             return stack1;
         }
-        const stack2 = new CardStack([...s2.board_cards, ...s1.board_cards]);
+        const stack2 = new CardStack(
+            [...s2.board_cards, ...s1.board_cards],
+            s1.loc,
+        );
         if (!stack2.problematic()) {
             return stack2;
         }
         return undefined;
     }
 
-    static from(shorthand: string, origin_deck: OriginDeck): CardStack {
+    static from(
+        shorthand: string,
+        origin_deck: OriginDeck,
+        loc: BoardLocation,
+    ): CardStack {
         const card_labels = shorthand.split(",");
         const board_cards = card_labels.map((label) =>
             BoardCard.from(label, origin_deck),
         );
-        return new CardStack(board_cards);
+        return new CardStack(board_cards, loc);
     }
 
+    /*
     static from_hand_card(hand_card: HandCard): CardStack {
         const board_card = BoardCard.from_hand_card(hand_card);
         return new CardStack([board_card]);
     }
+    */
 }
 
 let CurrentBoard: Board;
 
 class Board {
-    /*
-        This is where the players lay out all the common cards.
-        In the in-person game the "board" would be on the table that
-        the users sit around.
-    */
+    card_stacks: CardStack[];
 
-    shelves: Shelf[];
-
-    constructor(shelves: Shelf[]) {
-        this.shelves = shelves;
+    constructor(card_stacks: CardStack[]) {
+        this.card_stacks = card_stacks;
     }
 
     clone(): Board {
-        return new Board(this.shelves.map((shelf) => shelf.clone()));
+        return new Board(
+            this.card_stacks.map((card_stack) => card_stack.clone()),
+        );
     }
 
     str(): string {
-        return this.shelves.map((shelf) => shelf.str()).join("\n");
-    }
+        const card_stacks = this.card_stacks;
 
-    is_clean(): boolean {
-        return this.shelves.every((shelf) => shelf.is_clean());
+        if (card_stacks.length === 0) {
+            return "(empty)";
+        }
+
+        return card_stacks.map((card_stack) => card_stack.str()).join(" | ");
     }
 
     get_cards(): BoardCard[] {
-        const shelves = this.shelves;
-
         const result: BoardCard[] = [];
-        for (const shelf of shelves) {
-            for (const card_stack of shelf.card_stacks) {
-                for (const board_card of card_stack.board_cards) {
-                    result.push(board_card);
-                }
+        for (const card_stack of this.card_stacks) {
+            for (const board_card of card_stack.board_cards) {
+                result.push(board_card);
             }
         }
 
         return result;
     }
 
-    move_card_stack_to_end_of_shelf(
-        card_stack_location: StackLocation,
-        new_shelf_idx: number,
-    ) {
-        const old_shelf_idx = card_stack_location.shelf_index;
-        const old_stack_idx = card_stack_location.stack_index;
-        const [stack] = this.shelves[old_shelf_idx].card_stacks.splice(
-            old_stack_idx,
-            1,
-        );
-        this.shelves[new_shelf_idx].card_stacks.push(stack);
-    }
-
-    get_stack_locations(): StackLocation[] {
-        const shelves = this.shelves;
-
-        const locs: StackLocation[] = [];
-
-        for (let i = 0; i < this.shelves.length; i++) {
-            const shelf = shelves[i];
-
-            for (let j = 0; j < shelf.card_stacks.length; j++) {
-                const loc = new StackLocation({
-                    shelf_index: i,
-                    stack_index: j,
-                });
-                locs.push(loc);
-            }
-        }
-        return locs;
-    }
-
-    get_stack_for(stack_location: StackLocation): CardStack {
-        const { shelf_index, stack_index } = stack_location;
-        const shelf = this.shelves[shelf_index];
-
-        return shelf.card_stacks[stack_index];
-    }
-
-    get_stacks(): CardStack[] {
-        return this.get_stack_locations().map((loc) => this.get_stack_for(loc));
-    }
-
     score(): number {
-        const stacks = this.get_stacks();
-        return Score.for_stacks(stacks);
+        return Score.for_stacks(this.card_stacks);
     }
 
-    // Returns the merged stack or undefined
-    merge_card_stacks(info: {
-        source: StackLocation;
-        target: StackLocation;
-    }): CardStack | undefined {
-        if (info.source.equals(info.target)) {
-            return undefined;
-        }
+    is_clean(): boolean {
+        const card_stacks = this.card_stacks;
 
-        const shelves = this.shelves;
-
-        const source_shelf_index = info.source.shelf_index;
-        const source_stack_index = info.source.stack_index;
-        const target_shelf_index = info.target.shelf_index;
-        const target_stack_index = info.target.stack_index;
-
-        const source_shelf = shelves[source_shelf_index];
-        const target_shelf = shelves[target_shelf_index];
-
-        const source_stacks = source_shelf.card_stacks;
-        const target_stacks = target_shelf.card_stacks;
-
-        const source_stack = source_stacks[source_stack_index];
-        const target_stack = target_stacks[target_stack_index];
-
-        const merged_stack = CardStack.merge(source_stack, target_stack);
-
-        if (merged_stack === undefined) {
-            return undefined;
-        }
-
-        const is_same_shelf_rightward_merge =
-            source_shelf_index === target_shelf_index &&
-            source_stack_index < target_stack_index;
-
-        const final_index = is_same_shelf_rightward_merge
-            ? target_stack_index - 1
-            : target_stack_index;
-
-        source_stacks.splice(source_stack_index, 1);
-        target_stacks[final_index] = merged_stack;
-
-        return merged_stack;
-    }
-    // This is called after the player's turn ends.
-    age_cards(): void {
-        for (const board_card of this.get_cards()) {
-            switch (board_card.state) {
-                case BoardCardState.FRESHLY_PLAYED_BY_LAST_PLAYER:
-                    board_card.state = BoardCardState.FIRMLY_ON_BOARD;
-                    break;
-                case BoardCardState.FRESHLY_PLAYED:
-                    board_card.state =
-                        BoardCardState.FRESHLY_PLAYED_BY_LAST_PLAYER;
-                    break;
+        for (const card_stack of card_stacks) {
+            if (card_stack.incomplete() || card_stack.problematic()) {
+                return false;
             }
         }
+
+        return true;
     }
 }
+
+/***********************************************
+
+PLAYER, DECK, ETC. vvvv
+
+***********************************************/
 
 let TheDeck: Deck;
 
@@ -968,21 +867,21 @@ class Player {
 }
 
 function initial_board(): Board {
-    function shelf(sig: string): Shelf {
-        return new Shelf([CardStack.from(sig, OriginDeck.DECK_ONE)]);
+    function stack(row: number, sig: string): CardStack {
+        const loc = { top: 5 + row * 30, left: 20 };
+        return CardStack.from(sig, OriginDeck.DECK_ONE, loc);
     }
 
-    const shelves = [
-        empty_shelf(),
-        shelf("KS,AS,2S,3S"),
-        shelf("TD,JD,QD,KD"),
-        shelf("2H,3H,4H"),
-        shelf("7S,7D,7C"),
-        shelf("AC,AD,AH"),
-        shelf("2C,3D,4C,5H"),
+    const stacks = [
+        stack(0, "KS,AS,2S,3S"),
+        stack(1, "TD,JD,QD,KD"),
+        stack(2, "2H,3H,4H"),
+        stack(3, "7S,7D,7C"),
+        stack(4, "AC,AD,AH"),
+        stack(5, "2C,3D,4C,5H"),
     ];
 
-    return new Board(shelves);
+    return new Board(stacks);
 }
 
 class ScoreSingleton {
@@ -1322,7 +1221,7 @@ class PhysicalHandCard {
         this.card = hand_card.card;
         this.card_span = render_playing_card(this.card);
         this.card_span.style.cursor = "grab";
-        this.allow_dragging();
+        // this.allow_dragging();
         this.update_state_styles();
     }
 
@@ -1334,6 +1233,7 @@ class PhysicalHandCard {
         return this.card_span.clientWidth;
     }
 
+    /*
     allow_dragging() {
         const self = this;
         const div = this.card_span;
@@ -1353,6 +1253,7 @@ class PhysicalHandCard {
             },
         });
     }
+    */
 
     update_state_styles(): void {
         const span = this.card_span;
@@ -1370,19 +1271,21 @@ class PhysicalBoardCard {
     card: Card;
     card_span: HTMLElement;
 
-    constructor(card_location: BoardLocation, board_card: BoardCard) {
+    constructor(board_card: BoardCard) {
         this.board_card = board_card;
         this.card = board_card.card;
         this.card_span = render_playing_card(this.card);
 
         this.update_state_styles();
 
+        /*
         DragDropHelper.accept_click({
             div: this.card_span,
             on_click() {
                 EventManager.split_stack(card_location);
             },
         });
+       */
     }
 
     dom(): HTMLElement {
@@ -1404,56 +1307,47 @@ class PhysicalBoardCard {
 }
 
 function build_physical_board_cards(
-    stack_location: StackLocation,
     board_cards: BoardCard[],
 ): PhysicalBoardCard[] {
+    // TODO: inline this
     const physical_board_cards: PhysicalBoardCard[] = [];
-    const { shelf_index, stack_index } = stack_location;
 
-    for (let card_index = 0; card_index < board_cards.length; ++card_index) {
-        const board_card = board_cards[card_index];
-
-        const card_location = new BoardLocation({
-            shelf_index,
-            stack_index,
-            card_index,
-        });
-
-        const physical_board_card = new PhysicalBoardCard(
-            card_location,
-            board_card,
-        );
+    for (const board_card of board_cards) {
+        const physical_board_card = new PhysicalBoardCard(board_card);
         physical_board_cards.push(physical_board_card);
     }
 
     return physical_board_cards;
 }
 
+function pixels(num: number): string {
+    return `${num}px`;
+}
+
 class PhysicalCardStack {
     physical_board: PhysicalBoard;
-    stack_location: StackLocation;
     stack: CardStack;
     physical_board_cards: PhysicalBoardCard[];
     div: HTMLElement;
 
-    constructor(
-        physical_board: PhysicalBoard,
-        stack_location: StackLocation,
-        stack: CardStack,
-    ) {
+    constructor(physical_board: PhysicalBoard, stack: CardStack) {
         this.physical_board = physical_board;
-        this.stack_location = stack_location;
         this.stack = stack;
 
         this.physical_board_cards = build_physical_board_cards(
-            stack_location,
             stack.board_cards,
         );
 
         const card_spans = this.physical_board_cards.map((psc) => psc.dom());
 
-        this.div = render_card_stack(card_spans);
-        this.allow_dragging();
+        const div = render_card_stack(card_spans);
+        div.style.top = pixels(stack.loc.top);
+        div.style.left = pixels(stack.loc.left);
+        div.style.position = "absolute";
+
+        // this.allow_dragging();
+
+        this.div = div;
     }
 
     dom(): HTMLElement {
@@ -1465,11 +1359,14 @@ class PhysicalCardStack {
     }
 
     maybe_show_as_mergeable(card_stack: CardStack): void {
+        /*
         if (this.stack.is_mergeable_with(card_stack)) {
             this.show_as_mergeable();
         }
+        */
     }
 
+    /*
     show_as_mergeable(): void {
         const self = this;
         const div = this.div;
@@ -1516,8 +1413,6 @@ class PhysicalCardStack {
         this.div.style.backgroundColor = "transparent";
     }
 
-    // DRAG **from** the stack
-
     allow_dragging() {
         const self = this;
         const div = this.div;
@@ -1540,163 +1435,14 @@ class PhysicalCardStack {
             },
         });
     }
+    */
 }
 
 class PhysicalBoard {
-    div: HTMLElement;
-    physical_shelves: PhysicalShelf[];
-
-    constructor() {
-        this.div = this.make_div();
-        this.physical_shelves = this.build_physical_shelves();
-
-        const div = this.div;
-        const physical_shelves = this.physical_shelves;
-
-        div.append(render_board_heading());
-        div.append(render_board_advice());
-
-        for (const physical_shelf of physical_shelves) {
-            div.append(physical_shelf.dom());
-        }
-
-        div.append(UndoButton.dom());
-    }
-
-    dom(): HTMLElement {
-        return this.div;
-    }
-
-    build_physical_shelves(): PhysicalShelf[] {
-        const physical_board = this;
-        const physical_shelves: PhysicalShelf[] = [];
-        const shelves = CurrentBoard.shelves;
-
-        for (let shelf_index = 0; shelf_index < shelves.length; ++shelf_index) {
-            const shelf = shelves[shelf_index];
-            const physical_shelf = new PhysicalShelf({
-                physical_board,
-                shelf_index,
-                shelf,
-            });
-            physical_shelves.push(physical_shelf);
-        }
-
-        return physical_shelves;
-    }
-
-    top_physical_shelf(): PhysicalShelf {
-        return this.physical_shelves[0];
-    }
-
-    get_physical_card_stacks(): PhysicalCardStack[] {
-        const result = [];
-
-        for (const physical_shelf of this.physical_shelves) {
-            for (const physical_card_stack of physical_shelf.physical_card_stacks) {
-                result.push(physical_card_stack);
-            }
-        }
-
-        return result;
-    }
-
-    display_mergeable_stacks_for(card_stack: CardStack): void {
-        for (const physical_card_stack of this.get_physical_card_stacks()) {
-            physical_card_stack.maybe_show_as_mergeable(card_stack);
-        }
-    }
-
-    display_mergeable_stacks_for_card(hand_card: HandCard): void {
-        const card_stack = CardStack.from_hand_card(hand_card);
-
-        this.display_mergeable_stacks_for(card_stack);
-    }
-
-    get_physical_shelves_for_stack_drag(
-        stack_location: StackLocation,
-    ): PhysicalShelf[] {
-        const result: PhysicalShelf[] = [];
-
-        const stack_shelf_idx = stack_location.shelf_index;
-
-        for (let i = 0; i < this.physical_shelves.length; i++) {
-            const physical_shelf = this.physical_shelves[i];
-
-            if (i !== stack_shelf_idx) {
-                // We can always push to OTHER shelves.
-                result.push(physical_shelf);
-            } else {
-                // We can push to our own shelf as long as we're
-                // not the last stack
-                if (!physical_shelf.shelf.is_last_stack(stack_location)) {
-                    result.push(physical_shelf);
-                }
-            }
-        }
-        return result;
-    }
-
-    display_empty_shelf_spots(
-        physical_shelves: PhysicalShelf[],
-        tray_width: number,
-    ): void {
-        for (const physical_shelf of physical_shelves) {
-            physical_shelf.show_empty_spot(tray_width);
-        }
-    }
-
-    hide_empty_spots(): void {
-        for (const physical_shelf of this.physical_shelves) {
-            physical_shelf.hide_empty_spot();
-        }
-    }
-
-    hide_mergeable_stacks(): void {
-        for (const physical_shelf of this.physical_shelves) {
-            physical_shelf.hide_mergeable_stacks();
-        }
-    }
-
-    extend_stack_with_card(
-        stack_location: StackLocation,
-        hand_card: HandCard,
-    ): number | undefined {
-        const shelf_index = stack_location.shelf_index;
-        const stack_index = stack_location.stack_index;
-        const shelf = CurrentBoard.shelves[shelf_index];
-
-        const longer_stack = shelf.extend_stack_with_card(
-            stack_index,
-            hand_card,
-        );
-        if (longer_stack === undefined) {
-            return undefined;
-        }
-        return longer_stack.size();
-    }
-
-    // ACTION
-    split_stack(card_location: BoardLocation): SplitResult {
-        const { shelf_index, stack_index, card_index } = card_location;
-
-        const shelf = this.physical_shelves[shelf_index];
-
-        const result = shelf.split_stack({
-            stack_index,
-            card_index,
-        });
-
-        return result;
-    }
-
-    make_div(): HTMLElement {
-        // no special styling for now
-        return document.createElement("div");
-    }
-
-    add_card_to_top_shelf(hand_card: HandCard): void {
-        this.physical_shelves[0].add_singleton_card(hand_card);
+    dom() {
+        const div = document.createElement("div");
+        div.innerText = "TBD";
+        return div;
     }
 }
 
@@ -1861,432 +1607,8 @@ class PlayerAreaSingleton {
     }
 }
 
-let CardStackDragAction: CardStackDragActionSingleton;
-
-class CardStackDragActionSingleton {
-    physical_board: PhysicalBoard;
-    dragged_stack_location: StackLocation | undefined;
-
-    constructor(physical_board: PhysicalBoard) {
-        this.physical_board = physical_board;
-        this.dragged_stack_location = undefined;
-    }
-
-    in_progress(): boolean {
-        return this.dragged_stack_location !== undefined;
-    }
-
-    get_dragged_stack_location(): StackLocation {
-        assert(this.dragged_stack_location !== undefined);
-        return this.dragged_stack_location;
-    }
-
-    start_drag_stack(info: {
-        card_stack: CardStack;
-        stack_location: StackLocation;
-        tray_width: number;
-    }): void {
-        const { card_stack, stack_location, tray_width } = info;
-
-        const physical_board = this.physical_board;
-
-        this.dragged_stack_location = stack_location;
-
-        physical_board.display_mergeable_stacks_for(card_stack);
-
-        const physical_shelves =
-            physical_board.get_physical_shelves_for_stack_drag(stack_location);
-        physical_board.display_empty_shelf_spots(physical_shelves, tray_width);
-    }
-
-    end_drag_stack(): void {
-        const physical_board = this.physical_board;
-
-        physical_board.hide_mergeable_stacks();
-        physical_board.hide_empty_spots();
-        this.dragged_stack_location = undefined;
-    }
-
-    // ACTION
-    move_dragged_card_stack_to_end_of_shelf(new_shelf_index: number) {
-        const physical_board = this.physical_board;
-
-        const stack_location = this.dragged_stack_location!;
-
-        CurrentBoard.move_card_stack_to_end_of_shelf(
-            stack_location,
-            new_shelf_index,
-        );
-    }
-
-    // ACTION
-    drop_stack_on_stack(info: {
-        source_location: StackLocation;
-        target_location: StackLocation;
-    }): CardStack | undefined {
-        const { source_location, target_location } = info;
-
-        const merged_stack = CurrentBoard.merge_card_stacks({
-            source: source_location,
-            target: target_location,
-        });
-
-        if (merged_stack === undefined) {
-            console.log(
-                "unexpected merged failure!",
-                source_location,
-                target_location,
-            );
-            return undefined;
-        }
-
-        return merged_stack;
-    }
-}
-
-let HandCardDragAction: HandCardDragActionSingleton;
-
-class HandCardDragActionSingleton {
-    physical_game: PhysicalGame;
-    physical_board: PhysicalBoard;
-    dragged_hand_card: HandCard | undefined;
-
-    constructor(physical_game: PhysicalGame, physical_board: PhysicalBoard) {
-        this.physical_game = physical_game;
-        this.physical_board = physical_board;
-        this.dragged_hand_card = undefined;
-    }
-
-    in_progress(): boolean {
-        return this.dragged_hand_card !== undefined;
-    }
-
-    get_card(): HandCard {
-        return this.dragged_hand_card!;
-    }
-
-    start_drag_hand_card(info: {
-        hand_card: HandCard;
-        tray_width: number;
-    }): void {
-        const { hand_card, tray_width } = info;
-        const physical_board = this.physical_board;
-        const top_physical_shelf = physical_board.top_physical_shelf();
-
-        physical_board.display_mergeable_stacks_for_card(hand_card);
-        physical_board.display_empty_shelf_spots(
-            [top_physical_shelf],
-            tray_width,
-        );
-
-        this.dragged_hand_card = hand_card;
-    }
-
-    end_drag_hand_card(): void {
-        this.dragged_hand_card = undefined;
-        this.physical_board.hide_mergeable_stacks();
-        this.physical_board.hide_empty_spots();
-    }
-
-    get_physical_hand(): PhysicalHand {
-        return this.physical_game.get_physical_hand();
-    }
-
-    get_current_physical_player() {
-        const player_idx = TheGame.current_player_index;
-        return PlayerArea.get_physical_player(player_idx);
-    }
-
-    // ACTION
-    merge_hand_card_to_board_stack(
-        stack_location: StackLocation,
-    ): number | undefined {
-        const hand_card = this.dragged_hand_card;
-        assert(hand_card !== undefined);
-        const physical_hand = this.get_physical_hand();
-        const physical_board = this.physical_board;
-
-        const stack_size = physical_board.extend_stack_with_card(
-            stack_location,
-            hand_card,
-        );
-        if (stack_size === undefined) return undefined;
-        const physical_player = this.get_current_physical_player();
-        physical_player.release_card(hand_card);
-
-        return stack_size;
-    }
-
-    // ACTION
-    move_card_from_hand_to_board(): void {
-        const hand_card = this.dragged_hand_card;
-        assert(hand_card !== undefined);
-        const physical_board = this.physical_board;
-        const physical_hand = this.get_physical_hand();
-
-        const physical_player = this.get_current_physical_player();
-        physical_player.release_card(hand_card);
-        physical_board.add_card_to_top_shelf(hand_card);
-
-        // no need to call maybe_update_snapshot() here
-    }
-}
-
-let EventManager: EventManagerSingleton;
-
-class EventManagerSingleton {
-    physical_game: PhysicalGame;
-    physical_board: PhysicalBoard;
-    game: Game;
-
-    constructor(physical_game: PhysicalGame) {
-        this.physical_game = physical_game;
-        assert(physical_game.physical_board !== undefined);
-        this.physical_board = physical_game.physical_board;
-        this.game = TheGame;
-    }
-
-    // COMPLETE TURN
-
-    maybe_complete_turn(): void {
-        const physical_game = this.physical_game;
-        const self = this;
-
-        const turn_result = TheGame.complete_turn();
-
-        switch (turn_result) {
-            case CompleteTurnResult.FAILURE:
-                SoundEffects.play_purr_sound();
-                Popup.show({
-                    content: `The board is not clean!\
-                        \n\n(nor is my litter box)\
-                        \n\nUse the "Undo mistakes" button if you need to.`,
-                    confirm_button_text: "Oy vey, ok",
-                    type: "warning",
-                    admin: Admin.ANGRY_CAT,
-                    callback() {},
-                });
-                return;
-
-            case CompleteTurnResult.SUCCESS_BUT_NEEDS_CARDS:
-                SoundEffects.play_purr_sound();
-                Popup.show({
-                    content:
-                        "You didn't make any progress at all.\
-                        \n\
-                        \nI'm going back to my nap!\
-                        \n\
-                        \nYou will get 3 new cards on your next hand.",
-                    type: "warning",
-                    confirm_button_text: "Meh",
-                    admin: Admin.OLIVER,
-                    callback() {
-                        continue_on_to_next_turn();
-                    },
-                });
-                break;
-
-            case CompleteTurnResult.SUCCESS_AS_VICTOR: {
-                const turn_score = ActivePlayer.get_turn_score();
-                // Only play this for the first time a player gets
-                // rid of all the cards in their hand.
-                SoundEffects.play_victory_sound();
-                Popup.show({
-                    content: `Let’s be honest: this world is basically yours. We’re all just living in your empire!\
-                        \n\
-                        \nThat said, I, award you 1500 extra points for being the first person to clear your hand!\
-                        \n\
-                        \nThat fetches you a total of ${turn_score} points for this turn.\
-                        \n\
-                        \nYou get a bonus every time you clear your hand.\
-                        \n\
-                        \nYou also get five more cards on the next turn.\
-                        \n\
-                        \nKeep winning!`,
-                    type: "success",
-                    admin: Admin.STEVE,
-                    confirm_button_text: "I am the chosen one!",
-                    callback() {
-                        continue_on_to_next_turn();
-                    },
-                });
-                break;
-            }
-
-            case CompleteTurnResult.SUCCESS_WITH_HAND_EMPTIED: {
-                const turn_score = ActivePlayer.get_turn_score();
-                Popup.show({
-                    content: `WOOT!\
-                    \n\
-                    \nLooks like you got rid of all your cards!\
-                    \n\
-                    \nI am rewarding you extra points for that!\
-                    \n\
-                    \nYour scored a whopping ${turn_score} for this turn!!\
-                    \n\
-                    \nYou get a bonus every time you clear your hand.\
-                    \n\
-                    \nWe will deal you 5 more cards if you get back on the road.`,
-                    admin: Admin.STEVE,
-                    confirm_button_text: "Back on the road!",
-                    callback() {
-                        continue_on_to_next_turn();
-                    },
-                    type: "success",
-                });
-                break;
-            }
-
-            case CompleteTurnResult.SUCCESS:
-                const turn_score = ActivePlayer.get_turn_score();
-
-                if (turn_score > 600) {
-                    // This is Steve saying "Nice!" in a very bad
-                    // audio recording. We only play it once during
-                    // the game.
-                    SoundEffects.play_nice_sound();
-                }
-
-                Popup.show({
-                    content: `Good job!\
-                         \n\
-                         \nI am rewarding you with ${turn_score} points for this turn!\
-                         \n\
-                         \nLet's see how your opponent does! (oh yeah, that's you again)`,
-                    type: "success",
-                    confirm_button_text: "See if they can try!",
-                    admin: Admin.STEVE,
-                    callback() {
-                        continue_on_to_next_turn();
-                    },
-                });
-                break;
-        }
-
-        function continue_on_to_next_turn() {
-            CurrentBoard.age_cards();
-            TheGame.advance_turn_to_next_player();
-            ActivePlayer.start_turn();
-
-            TheGame.update_snapshot();
-
-            PlayerArea.populate();
-            physical_game.populate_board_area();
-
-            StatusBar.update_text(
-                `${ActivePlayer.name}, you may begin your turn.`,
-            );
-        }
-    }
-
-    // Undo mistakes
-
-    undo_mistakes(): void {
-        this.physical_game.rollback_moves_to_last_clean_state();
-        StatusBar.update_text("PHEW!");
-        this.physical_game.populate_board_area();
-    }
-
-    // SPLITTING UP STACKS
-    split_stack(card_location: BoardLocation): void {
-        const result = this.physical_board.split_stack(card_location);
-        switch (result) {
-            case SplitResult.SUCCESS:
-                StatusBar.update_text(
-                    "Split! Moves like this can be tricky, even for experts. You have the undo button if you need it.",
-                );
-                break;
-            case SplitResult.DID_NOTHING:
-                StatusBar.update_text(
-                    "Clicking here does nothing. Maybe you want to drag it instead?",
-                );
-                break;
-        }
-
-        this.physical_game.populate_board_area();
-    }
-
-    // MOVING TO EMPTY SPOTS
-    move_card_from_hand_to_board(): void {
-        HandCardDragAction.move_card_from_hand_to_board();
-        StatusBar.update_text(
-            "You moved a card to the board! Drag other cards on top of it to create a pile.)",
-        );
-        this.physical_game.populate_board_area();
-    }
-
-    move_dragged_card_stack_to_end_of_shelf(new_shelf_index: number): void {
-        CardStackDragAction.move_dragged_card_stack_to_end_of_shelf(
-            new_shelf_index,
-        );
-        StatusBar.update_text(
-            "Organizing the board is a key part of the game!",
-        );
-
-        this.game.maybe_update_snapshot();
-        this.physical_game.populate_board_area();
-    }
-
-    // SCORING MOVES
-
-    merge_hand_card_to_board_stack(stack_location: StackLocation): void {
-        const stack_size =
-            HandCardDragAction.merge_hand_card_to_board_stack(stack_location);
-        if (stack_size === undefined) {
-            console.log("Cannot merge hand card to board stack");
-            return;
-        }
-        if (stack_size >= 8) {
-            SoundEffects.play_bark_sound();
-            StatusBar.update_text(
-                "You are trucking now! Don't gloat! The other players hate when you gloat.",
-            );
-        } else if (stack_size >= 3) {
-            SoundEffects.play_ding_sound();
-            StatusBar.update_text(
-                "Nice work! Extending piles gets you points!",
-            );
-        } else {
-            StatusBar.update_text(
-                "That's a good start, but you will need at least 3 cards.",
-            );
-        }
-
-        this.game.maybe_update_snapshot();
-
-        this.physical_game.populate_board_area();
-    }
-
-    drop_stack_on_stack(info: {
-        source_location: StackLocation;
-        target_location: StackLocation;
-    }): void {
-        const merged_stack = CardStackDragAction.drop_stack_on_stack(info);
-        if (merged_stack === undefined) {
-            console.trace(
-                "dropped stack is unmergable with the target stack, when trying to drop stack on stack!!!",
-            );
-            return;
-        }
-        const size = merged_stack.size();
-
-        if (size >= 8) {
-            SoundEffects.play_bark_sound();
-            StatusBar.update_text("Look at you go!");
-        } else if (size >= 3) {
-            SoundEffects.play_ding_sound();
-            StatusBar.update_text("Combined!");
-        } else {
-            StatusBar.update_text("Nice, but where's the third card?");
-        }
-
-        this.game.maybe_update_snapshot();
-
-        this.physical_game.populate_board_area();
-    }
-}
-
 let TheGame: Game;
+
 class PhysicalGame {
     player_area: HTMLElement;
     board_area: HTMLElement;
@@ -2324,14 +1646,16 @@ class PhysicalGame {
     }
 
     populate_board_area() {
-        DragDropHelper.reset();
+        // DragDropHelper.reset();
 
         UndoButton = new UndoButtonSingleton();
 
         this.physical_board = new PhysicalBoard();
-        const physical_game = this;
+
+        // const physical_game = this;
         const physical_board = this.physical_board;
 
+        /*
         HandCardDragAction = new HandCardDragActionSingleton(
             physical_game,
             physical_board,
@@ -2340,6 +1664,8 @@ class PhysicalGame {
         CardStackDragAction = new CardStackDragActionSingleton(physical_board);
 
         EventManager = new EventManagerSingleton(physical_game);
+        */
+
         this.board_area.innerHTML = "";
         this.board_area.append(physical_board.dom());
     }
@@ -2388,6 +1714,18 @@ class UndoButtonSingleton {
 
     dom(): HTMLElement {
         return this.button;
+    }
+}
+
+let EventManager: EventManagerSingleton;
+
+class EventManagerSingleton {
+    maybe_complete_turn(): void {
+        // TODO
+    }
+
+    undo_mistakes(): void {
+        // TODO
     }
 }
 
@@ -2951,7 +2289,7 @@ class MainGamePage {
 }
 
 function test() {
-    console.log("V2 COMING!");
+    console.log("V2 IN PROGRESS!");
 }
 
 test(); // runs in node
