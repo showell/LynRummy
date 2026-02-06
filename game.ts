@@ -552,12 +552,12 @@ class CardStack {
         return new CardStack(board_cards, loc);
     }
 
-    /*
     static from_hand_card(hand_card: HandCard): CardStack {
         const board_card = BoardCard.from_hand_card(hand_card);
-        return new CardStack([board_card]);
+        const dummy_loc = { top: 0, left: 0 };
+
+        return new CardStack([board_card], dummy_loc);
     }
-    */
 }
 
 let CurrentBoard: Board;
@@ -1246,20 +1246,12 @@ class PhysicalHandCard {
     allow_dragging() {
         const self = this;
         const div = this.card_span;
-
-        console.log(div.offsetLeft, div.offsetTop);
+        const hand_card = this.hand_card;
 
         DragDropHelper.enable_drag({
             div,
             handle_dragstart(): void {
-                /*
-                const hand_card = self.hand_card;
-                const tray_width = self.get_width() * 2.5; // give them a nice target to hit
-                HandCardDragAction.start_drag_hand_card({
-                    hand_card,
-                    tray_width,
-                });
-                */
+                PhysicalBoard.display_mergeable_stacks_for_card(hand_card);
             },
             handle_dragend(): void {
                 /*
@@ -1372,14 +1364,11 @@ class PhysicalCardStack {
     }
 
     maybe_show_as_mergeable(card_stack: CardStack): void {
-        /*
         if (this.stack.is_mergeable_with(card_stack)) {
             this.show_as_mergeable();
         }
-        */
     }
 
-    /*
     show_as_mergeable(): void {
         const self = this;
         const div = this.div;
@@ -1390,6 +1379,7 @@ class PhysicalCardStack {
 
         style_as_mergeable();
 
+        /*
         DragDropHelper.accept_drop({
             div,
             on_over() {
@@ -1420,12 +1410,12 @@ class PhysicalCardStack {
                 }
             },
         });
+       */
     }
 
     hide_as_mergeable(): void {
         this.div.style.backgroundColor = "transparent";
     }
-    */
 
     allow_dragging() {
         const self = this;
@@ -1461,14 +1451,32 @@ let PhysicalBoard: PhysicalBoardSingleton;
 
 class PhysicalBoardSingleton {
     div: HTMLElement;
+    physical_card_stacks: PhysicalCardStack[];
 
     constructor() {
         this.div = render_board();
 
-        for (const card_stack of CurrentBoard.card_stacks) {
-            const physical_card_stack = new PhysicalCardStack(card_stack);
+        this.physical_card_stacks = CurrentBoard.card_stacks.map(
+            (card_stack) => {
+                return new PhysicalCardStack(card_stack);
+            },
+        );
+
+        for (const physical_card_stack of this.physical_card_stacks) {
             this.div.append(physical_card_stack.dom());
         }
+    }
+
+    display_mergeable_stacks_for(card_stack: CardStack): void {
+        for (const physical_card_stack of this.physical_card_stacks) {
+            physical_card_stack.maybe_show_as_mergeable(card_stack);
+        }
+    }
+
+    display_mergeable_stacks_for_card(hand_card: HandCard): void {
+        const card_stack = CardStack.from_hand_card(hand_card);
+
+        this.display_mergeable_stacks_for(card_stack);
     }
 
     dom() {
