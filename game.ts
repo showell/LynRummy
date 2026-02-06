@@ -1099,6 +1099,7 @@ function render_playing_card(card: Card): HTMLElement {
     span.append(s_node);
 
     span.style.color = css_color(card.color);
+    span.style.backgroundColor = "white";
     span.style.textAlign = "center";
     span.style.fontSize = "17px";
     span.style.border = "1px blue solid";
@@ -1270,7 +1271,7 @@ class PhysicalHandCard {
         if (this.hand_card.state === HandCardState.FRESHLY_DRAWN) {
             span.style.backgroundColor = new_card_color();
         } else {
-            span.style.backgroundColor = "transparent";
+            span.style.backgroundColor = "white";
         }
     }
 }
@@ -1310,7 +1311,7 @@ class PhysicalBoardCard {
         } else if (state === BoardCardState.FRESHLY_PLAYED_BY_LAST_PLAYER) {
             span.style.backgroundColor = opponent_card_color();
         } else {
-            span.style.backgroundColor = "transparent";
+            span.style.backgroundColor = "white";
         }
     }
 }
