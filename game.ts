@@ -1231,7 +1231,7 @@ class PhysicalHandCard {
         this.card = hand_card.card;
         this.card_span = render_playing_card(this.card);
         this.card_span.style.cursor = "grab";
-        // this.allow_dragging();
+        this.allow_dragging();
         this.update_state_styles();
     }
 
@@ -1243,27 +1243,31 @@ class PhysicalHandCard {
         return this.card_span.clientWidth;
     }
 
-    /*
     allow_dragging() {
         const self = this;
         const div = this.card_span;
 
+        console.log(div.offsetLeft, div.offsetTop);
+
         DragDropHelper.enable_drag({
             div,
             handle_dragstart(): void {
+                /*
                 const hand_card = self.hand_card;
                 const tray_width = self.get_width() * 2.5; // give them a nice target to hit
                 HandCardDragAction.start_drag_hand_card({
                     hand_card,
                     tray_width,
                 });
+                */
             },
             handle_dragend(): void {
+                /*
                 HandCardDragAction.end_drag_hand_card();
+                */
             },
         });
     }
-    */
 
     update_state_styles(): void {
         const span = this.card_span;
@@ -1981,6 +1985,8 @@ class DragDropHelperSingleton {
 
             orig_left = div.offsetLeft;
             orig_top = div.offsetTop;
+
+            div.style.position = "absolute";
         }
 
         function move_div(e: PointerEvent) {
