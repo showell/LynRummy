@@ -1265,6 +1265,8 @@ class PhysicalHandCard {
                 /*
                 HandCardDragAction.end_drag_hand_card();
                 */
+                PlayerArea.populate();
+                BoardArea.populate();
             },
         });
     }
@@ -1448,6 +1450,8 @@ class PhysicalCardStack {
                 /*
                 CardStackDragAction.end_drag_stack();
                 */
+                PlayerArea.populate();
+                BoardArea.populate();
             },
         });
     }
@@ -1649,6 +1653,8 @@ class BoardAreaSingleton {
         const div = this.div;
 
         div.innerHTML = "";
+
+        PhysicalBoard = new PhysicalBoardSingleton();
 
         div.append(render_board_heading());
         div.append(render_board_advice());
@@ -2088,8 +2094,8 @@ class DragDropHelperSingleton {
                             on_click();
                             active_click_key = undefined;
                             handle_dragend();
+                            return;
                         }
-                        return;
                     }
                 }
             }
