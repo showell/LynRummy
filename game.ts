@@ -868,7 +868,8 @@ class Player {
 
 function initial_board(): Board {
     function stack(row: number, sig: string): CardStack {
-        const loc = { top: 5 + row * 30, left: 20 };
+        const col = (row * 8) % 5;
+        const loc = { top: 5 + row * 70, left: 20 + col * 60 };
         return CardStack.from(sig, OriginDeck.DECK_ONE, loc);
     }
 
@@ -1160,7 +1161,6 @@ function render_hand_advice(): HTMLElement {
 
 function render_board(): HTMLElement {
     const div = document.createElement("div");
-    div.innerText = "TBD";
     div.style.border = "1px solid #000080";
     div.style.position = "relative";
     div.style.height = "420px";
@@ -1453,6 +1453,11 @@ class PhysicalBoardSingleton {
 
     constructor() {
         this.div = render_board();
+
+        for (const card_stack of CurrentBoard.card_stacks) {
+            const physical_card_stack = new PhysicalCardStack(card_stack);
+            this.div.append(physical_card_stack.dom());
+        }
     }
 
     dom() {
