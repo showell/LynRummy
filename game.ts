@@ -2059,11 +2059,27 @@ class DragDropHelperSingleton {
             div.setPointerCapture(e.pointerId);
         });
 
-        function get_hovered_target(
-            elements: HTMLElement[],
-        ): DropTarget | undefined {
+        function overlap(e1: HTMLElement, e2: HTMLElement) {
+            const rect1 = e1.getBoundingClientRect();
+            const rect2 = e2.getBoundingClientRect();
+
+            // Check if the rectangles do NOT overlap in any direction
+            // If none of these conditions are true, the rectangles MUST overlap
+            const overlap = !(
+                rect1.right < rect2.left ||
+                rect1.left > rect2.right ||
+                rect1.bottom < rect2.top ||
+                rect1.top > rect2.bottom
+            );
+
+            return overlap;
+        }
+
+        function get_hovered_target(): DropTarget | undefined {
+            const elements = document.querySelectorAll(".drop_target") as any;
+
             for (const element of elements) {
-                if (element.dataset.drop_key) {
+                if (overlap(div, element)) {
                     const drop_key = element.dataset.drop_key;
                     const hovered_target = self.drop_targets.get(drop_key);
 
@@ -2080,12 +2096,7 @@ class DragDropHelperSingleton {
 
             move_div(e);
 
-            const elements = document.elementsFromPoint(
-                e.clientX,
-                e.clientY,
-            ) as HTMLElement[];
-
-            const hovered_target = get_hovered_target(elements);
+            const hovered_target = get_hovered_target();
 
             if (hovered_target !== undefined) {
                 if (active_target === undefined) {
