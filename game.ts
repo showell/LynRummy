@@ -1163,7 +1163,9 @@ function render_hand_advice(): HTMLElement {
 
 function render_board(): HTMLElement {
     const div = document.createElement("div");
+    div.style.backgroundColor = "khaki";
     div.style.border = "1px solid #000080";
+    div.style.borderRadius = "15px";
     div.style.position = "relative";
     div.style.height = "600px";
     div.style.marginTop = "8px";
@@ -2057,7 +2059,6 @@ class DragDropHelperSingleton {
             const hovered_target = get_hovered_target(elements);
 
             if (hovered_target !== undefined) {
-                console.log("PINK YO!");
                 if (active_target === undefined) {
                     hovered_target.on_over();
                     active_target = hovered_target;
