@@ -1603,7 +1603,6 @@ class PlayerAreaSingleton {
         this.physical_players = players.map(
             (player) => new PhysicalPlayer(player),
         );
-        this.populate();
     }
 
     get_physical_hand_for_player(player_index: number): PhysicalHand {
@@ -1647,7 +1646,7 @@ class BoardAreaSingleton {
         div.append(render_board_heading());
         div.append(render_board_advice());
         div.append(PhysicalBoard.dom());
-        div.append(UndoButton.dom());
+        // div.append(UndoButton.dom());
     }
 }
 
@@ -2154,6 +2153,7 @@ class StatusBarSingleton {
     }
 
     update_text(text: string) {
+        console.log("status", text);
         this.text_div.innerText = text;
     }
 }
