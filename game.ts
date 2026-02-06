@@ -1085,32 +1085,57 @@ function css_color(card_color: CardColor): string {
     return card_color == CardColor.RED ? "red" : "black";
 }
 
+function set_common_card_styles(node: HTMLElement): void {
+    node.style.display = "inline-block";
+    node.style.width = "27px";
+    node.style.height = "40px";
+    node.style.padding = "1px";
+    node.style.margin = "1px";
+    node.style.userSelect = "none";
+    node.style.textAlign = "center";
+    node.style.verticalAlign = "center";
+    node.style.fontSize = "17px";
+}
+
+function render_card_char(c: string): HTMLElement {
+    const div = document.createElement("div");
+    div.style.display = "block";
+    div.style.userSelect = "none";
+    div.innerText = c;
+    return div;
+}
+
 function render_playing_card(card: Card): HTMLElement {
-    const span = document.createElement("span");
-    const v_node = document.createElement("span");
-    const s_node = document.createElement("span");
-    v_node.style.display = "block";
-    v_node.style.userSelect = "none";
-    s_node.style.display = "block";
-    s_node.style.userSelect = "none";
-    v_node.innerText = value_str(card.value);
-    s_node.innerText = suit_emoji_str(card.suit);
-    span.append(v_node);
-    span.append(s_node);
+    const div = document.createElement("div");
+    const v_node = render_card_char(value_str(card.value));
+    const s_node = render_card_char(suit_emoji_str(card.suit));
+    div.append(v_node);
+    div.append(s_node);
 
-    span.style.color = css_color(card.color);
-    span.style.backgroundColor = "white";
-    span.style.textAlign = "center";
-    span.style.fontSize = "17px";
-    span.style.border = "1px blue solid";
-    span.style.padding = "1px";
-    span.style.margin = "1px";
-    span.style.display = "inline-block";
-    span.style.minWidth = "27px";
-    span.style.minHeight = "38px";
+    div.style.color = css_color(card.color);
+    div.style.backgroundColor = "white";
+    div.style.border = "1px blue solid";
 
-    span.style.userSelect = "none";
-    return span;
+    set_common_card_styles(div);
+
+    return div;
+}
+
+function render_wing(): HTMLElement {
+    const div = document.createElement("div");
+    div.style.backgroundColor = "transparent";
+
+    const v_node = render_card_char("+");
+    const s_node = render_card_char("+");
+    v_node.style.color = "transparent";
+    s_node.style.color = "transparent";
+
+    div.append(v_node);
+    div.append(s_node);
+
+    set_common_card_styles(div);
+
+    return div;
 }
 
 function render_hand_card_row(card_spans: HTMLElement[]): HTMLElement {
@@ -1122,15 +1147,19 @@ function render_hand_card_row(card_spans: HTMLElement[]): HTMLElement {
     return div;
 }
 
-function render_card_stack(card_spans: HTMLElement[]): HTMLElement {
+function render_card_stack(
+    left_wing: HTMLElement,
+    card_spans: HTMLElement[],
+    right_wing: HTMLElement,
+): HTMLElement {
     const div = document.createElement("div");
-    div.style.marginLeft = "15px";
-    div.style.marginRight = "15px";
     div.style.userSelect = "none";
 
+    div.append(left_wing);
     for (const card_span of card_spans) {
         div.append(card_span);
     }
+    div.append(right_wing);
 
     return div;
 }
@@ -1340,6 +1369,8 @@ class PhysicalCardStack {
     stack: CardStack;
     physical_board_cards: PhysicalBoardCard[];
     div: HTMLElement;
+    left_wing: HTMLElement;
+    right_wing: HTMLElement;
 
     constructor(stack: CardStack) {
         this.stack = stack;
@@ -1350,12 +1381,17 @@ class PhysicalCardStack {
 
         const card_spans = this.physical_board_cards.map((psc) => psc.dom());
 
-        const div = render_card_stack(card_spans);
+        const left_wing = render_wing();
+        const right_wing = render_wing();
+
+        const div = render_card_stack(left_wing, card_spans, right_wing);
         div.style.top = pixels(stack.loc.top);
         div.style.left = pixels(stack.loc.left);
         div.style.position = "absolute";
 
         this.div = div;
+        this.left_wing = left_wing;
+        this.right_wing = right_wing;
         this.allow_dragging();
     }
 
@@ -1369,13 +1405,13 @@ class PhysicalCardStack {
 
     maybe_show_as_mergeable(card_stack: CardStack): void {
         if (this.stack.is_mergeable_with(card_stack)) {
-            this.show_as_mergeable();
+            this.show_as_mergeable(this.left_wing);
+            this.show_as_mergeable(this.right_wing);
         }
     }
 
-    show_as_mergeable(): void {
+    show_as_mergeable(div: HTMLElement): void {
         const self = this;
-        const div = this.div;
 
         function style_as_mergeable(): void {
             div.style.backgroundColor = "hsl(105, 72.70%, 87.10%)";
