@@ -1,3 +1,32 @@
+populate_board_area() {
+    // DragDropHelper.reset();
+
+    UndoButton = new UndoButtonSingleton();
+
+    this.physical_board = new PhysicalBoard();
+
+    // const physical_game = this;
+    const physical_board = this.physical_board;
+
+    /*
+    HandCardDragAction = new HandCardDragActionSingleton(
+        physical_game,
+        physical_board,
+    );
+
+    CardStackDragAction = new CardStackDragActionSingleton(physical_board);
+
+    EventManager = new EventManagerSingleton(physical_game);
+    */
+
+    this.board_area.innerHTML = "";
+    this.board_area.append(physical_board.dom());
+}
+
+
+        for (const physical_shelf of physical_shelves) {
+            div.append(physical_shelf.dom());
+        }
 
 class PhysicalBoard {
     div: HTMLElement;

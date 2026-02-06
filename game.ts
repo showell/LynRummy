@@ -1325,13 +1325,11 @@ function pixels(num: number): string {
 }
 
 class PhysicalCardStack {
-    physical_board: PhysicalBoard;
     stack: CardStack;
     physical_board_cards: PhysicalBoardCard[];
     div: HTMLElement;
 
-    constructor(physical_board: PhysicalBoard, stack: CardStack) {
-        this.physical_board = physical_board;
+    constructor(stack: CardStack) {
         this.stack = stack;
 
         this.physical_board_cards = build_physical_board_cards(
@@ -1438,7 +1436,9 @@ class PhysicalCardStack {
     */
 }
 
-class PhysicalBoard {
+let PhysicalBoard: PhysicalBoardSingleton;
+
+class PhysicalBoardSingleton {
     dom() {
         const div = document.createElement("div");
         div.innerText = "TBD";
@@ -1607,18 +1607,40 @@ class PlayerAreaSingleton {
     }
 }
 
+let BoardArea: BoardAreaSingleton;
+
+class BoardAreaSingleton {
+    div: HTMLElement;
+
+    constructor(board_area: HTMLElement) {
+        this.div = board_area;
+    }
+
+    dom(): HTMLElement {
+        return this.div;
+    }
+
+    populate(): void {
+        const div = this.div;
+
+        div.innerHTML = "";
+
+        div.append(render_board_heading());
+        div.append(render_board_advice());
+        div.append(PhysicalBoard.dom());
+        div.append(UndoButton.dom());
+    }
+}
+
 let TheGame: Game;
 
 class PhysicalGame {
-    player_area: HTMLElement;
-    board_area: HTMLElement;
-    physical_board?: PhysicalBoard;
-
     constructor(info: { player_area: HTMLElement; board_area: HTMLElement }) {
-        const physical_game = this;
+        const { player_area, board_area } = info;
+
         TheGame = new Game();
-        this.player_area = info.player_area;
-        this.board_area = info.board_area;
+        PlayerArea = new PlayerAreaSingleton(TheGame.players, player_area);
+        BoardArea = new BoardAreaSingleton(board_area);
         this.build_physical_game();
         StatusBar.update_text(
             "Begin game. You can drag and drop hand cards or board piles to piles or empty spaces on the board.",
@@ -1632,48 +1654,17 @@ class PhysicalGame {
     }
 
     build_physical_game(): void {
-        const physical_game = this;
         const players = TheGame.players;
-        const player_area = this.player_area;
 
-        PlayerArea = new PlayerAreaSingleton(players, player_area);
-        this.populate_board_area();
+        PhysicalBoard = new PhysicalBoardSingleton();
+
+        PlayerArea.populate();
+        BoardArea.populate();
     }
 
     get_physical_hand(): PhysicalHand {
         const index = TheGame.current_player_index;
         return PlayerArea.get_physical_hand_for_player(index);
-    }
-
-    populate_board_area() {
-        // DragDropHelper.reset();
-
-        UndoButton = new UndoButtonSingleton();
-
-        this.physical_board = new PhysicalBoard();
-
-        // const physical_game = this;
-        const physical_board = this.physical_board;
-
-        /*
-        HandCardDragAction = new HandCardDragActionSingleton(
-            physical_game,
-            physical_board,
-        );
-
-        CardStackDragAction = new CardStackDragActionSingleton(physical_board);
-
-        EventManager = new EventManagerSingleton(physical_game);
-        */
-
-        this.board_area.innerHTML = "";
-        this.board_area.append(physical_board.dom());
-    }
-
-    start() {
-        PlayerArea.populate();
-        // populate common area
-        this.populate_board_area();
     }
 }
 
@@ -2280,11 +2271,11 @@ class MainGamePage {
         const player_area = this.player_area;
         const board_area = this.board_area;
 
+        // simply creating the object starts the game!
         const physical_game = new PhysicalGame({
             player_area: player_area,
             board_area: board_area,
         });
-        physical_game.start();
     }
 }
 
