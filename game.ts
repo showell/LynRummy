@@ -1,46 +1,3 @@
-/*
-    As of January 2026, this is hosted here:
-        https://showell.github.io/LynRummy/
-
-    Lyn Rummy is a fun game where you attempt to keep the "common
-    area" intact with rummy-like stacks of cards:
-
-        sets: 4S, 4H, 4D
-        pure runs: 7S, 8S, 9S
-        red-black runs: 2S, 3H, 4S, 5D, 6C
-
-    All sets and runs must contain at least three cards. Runs
-    can go "around the ace", so QS, KS, AS, 2S, 3S is a valid
-    run.
-
-    Take 2 standard playing-cards decks of 52 cards each. (no jokers)
-    Shuffle the stack of 104 cards.
-
-    Deal out 15 cards to each player. (In this case we still
-    assume one player, so it's the solitaire flavor.)
-
-    Players take turns, as in almost every other card game.
-
-    On each turn, the player tries to get as many as their cards
-    out on to the common area while keeping all the stacks legitimate.
-
-    Here's the kicker, though! You can disturb the existing stacks
-    and move as many cards around as you'd like. The only thing that
-    matters at the end of your turn is that the common area is still
-    clean. (The whole challenge of the game is mutating the board,
-    although it's also perfectly fine just to extend existing sets
-    and runs.)
-
-    If a player can't get any of their cards out, they can draw from
-    the deck for their turn.
-
-    A quick caveat on sets: You cannot have duplicates. In other words,
-    4H 4S 4H is illegal, because you have dups of 4H. Don't make your
-    fellow players scold you with "NO DUPS!".
-*/
-
-type SimpleCallback = () => void;
-
 const enum CardValue {
     ACE = 1,
     TWO = 2,
@@ -107,7 +64,7 @@ enum CompleteTurnResult {
     FAILURE,
 }
 
-class ShelfCardLocation {
+class BoardLocation {
     shelf_index: number;
     stack_index: number;
     card_index: number;
@@ -1554,7 +1511,7 @@ class PhysicalBoardCard {
     card: Card;
     card_span: HTMLElement;
 
-    constructor(card_location: ShelfCardLocation, board_card: BoardCard) {
+    constructor(card_location: BoardLocation, board_card: BoardCard) {
         this.board_card = board_card;
         this.card = board_card.card;
         this.card_span = render_playing_card(this.card);
@@ -1597,7 +1554,7 @@ function build_physical_board_cards(
     for (let card_index = 0; card_index < board_cards.length; ++card_index) {
         const board_card = board_cards[card_index];
 
-        const card_location = new ShelfCardLocation({
+        const card_location = new BoardLocation({
             shelf_index,
             stack_index,
             card_index,
@@ -2020,7 +1977,7 @@ class PhysicalBoard {
     }
 
     // ACTION
-    split_stack(card_location: ShelfCardLocation): SplitResult {
+    split_stack(card_location: BoardLocation): SplitResult {
         const { shelf_index, stack_index, card_index } = card_location;
 
         const shelf = this.physical_shelves[shelf_index];
@@ -2531,7 +2488,7 @@ class EventManagerSingleton {
     }
 
     // SPLITTING UP STACKS
-    split_stack(card_location: ShelfCardLocation): void {
+    split_stack(card_location: BoardLocation): void {
         const result = this.physical_board.split_stack(card_location);
         switch (result) {
             case SplitResult.SUCCESS:
@@ -3294,7 +3251,7 @@ class MainGamePage {
 }
 
 function test() {
-    console.log("V2!");
+    console.log("V2 COMING!");
 }
 
 test(); // runs in node

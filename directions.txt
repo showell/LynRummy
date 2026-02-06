@@ -1,0 +1,41 @@
+/*
+    As of January 2026, this is hosted here:
+        https://showell.github.io/LynRummy/
+
+    Lyn Rummy is a fun game where you attempt to keep the "common
+    area" intact with rummy-like stacks of cards:
+
+        sets: 4S, 4H, 4D
+        pure runs: 7S, 8S, 9S
+        red-black runs: 2S, 3H, 4S, 5D, 6C
+
+    All sets and runs must contain at least three cards. Runs
+    can go "around the ace", so QS, KS, AS, 2S, 3S is a valid
+    run.
+
+    Take 2 standard playing-cards decks of 52 cards each. (no jokers)
+    Shuffle the stack of 104 cards.
+
+    Deal out 15 cards to each player. (In this case we still
+    assume one player, so it's the solitaire flavor.)
+
+    Players take turns, as in almost every other card game.
+
+    On each turn, the player tries to get as many as their cards
+    out on to the common area while keeping all the stacks legitimate.
+
+    Here's the kicker, though! You can disturb the existing stacks
+    and move as many cards around as you'd like. The only thing that
+    matters at the end of your turn is that the common area is still
+    clean. (The whole challenge of the game is mutating the board,
+    although it's also perfectly fine just to extend existing sets
+    and runs.)
+
+    If a player can't get any of their cards out, they can draw from
+    the deck for their turn.
+
+    A quick caveat on sets: You cannot have duplicates. In other words,
+    4H 4S 4H is illegal, because you have dups of 4H. Don't make your
+    fellow players scold you with "NO DUPS!".
+*/
+
