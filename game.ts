@@ -1075,9 +1075,10 @@ function css_color(card_color: CardColor): string {
     return card_color == CardColor.RED ? "red" : "black";
 }
 
+const CARD_WIDTH = 27;
+
 function set_common_card_styles(node: HTMLElement): void {
     node.style.display = "inline-block";
-    node.style.width = "27px";
     node.style.height = "40px";
     node.style.padding = "1px";
     node.style.margin = "1px";
@@ -1105,6 +1106,7 @@ function render_playing_card(card: Card): HTMLElement {
     div.style.color = css_color(card.color);
     div.style.backgroundColor = "white";
     div.style.border = "1px blue solid";
+    div.style.width = pixels(CARD_WIDTH);
 
     set_common_card_styles(div);
 
@@ -1122,6 +1124,7 @@ function render_wing(): HTMLElement {
 
     div.append(v_node);
     div.append(s_node);
+    div.style.width = "0px";
 
     set_common_card_styles(div);
 
@@ -1395,6 +1398,7 @@ class PhysicalCardStack {
 
     maybe_show_as_mergeable(card_stack: CardStack): void {
         if (this.stack.is_left_mergeable_with(card_stack)) {
+            this.div.style.left = pixels(this.stack.loc.left - CARD_WIDTH);
             this.show_as_mergeable(this.left_wing);
         }
 
@@ -1403,19 +1407,20 @@ class PhysicalCardStack {
         }
     }
 
-    show_as_mergeable(div: HTMLElement): void {
+    show_as_mergeable(wing_div: HTMLElement): void {
         const self = this;
 
         function style_as_mergeable(): void {
-            div.style.backgroundColor = "hsl(105, 72.70%, 87.10%)";
+            wing_div.style.backgroundColor = "hsl(105, 72.70%, 87.10%)";
+            wing_div.style.width = pixels(CARD_WIDTH);
         }
 
         style_as_mergeable();
 
         DragDropHelper.accept_drop({
-            div,
+            div: wing_div,
             on_over() {
-                div.style.backgroundColor = "pink";
+                wing_div.style.backgroundColor = "pink";
             },
             on_leave() {
                 style_as_mergeable();
