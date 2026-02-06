@@ -1380,7 +1380,6 @@ class PhysicalCardStack {
 
         style_as_mergeable();
 
-        /*
         DragDropHelper.accept_drop({
             div,
             on_over() {
@@ -1392,6 +1391,7 @@ class PhysicalCardStack {
             on_drop() {
                 console.log("on_drop");
 
+                /*
                 if (HandCardDragAction.in_progress()) {
                     console.log("hand -> stack");
                     EventManager.merge_hand_card_to_board_stack(
@@ -1409,9 +1409,9 @@ class PhysicalCardStack {
                         target_location,
                     });
                 }
+                */
             },
         });
-       */
     }
 
     hide_as_mergeable(): void {
@@ -2132,6 +2132,7 @@ class DragDropHelperSingleton {
 
     accept_drop(drop_target: DropTarget): void {
         const key = this.new_key();
+        drop_target.div.classList.add("drop_target");
         drop_target.div.dataset.drop_key = key;
         this.drop_targets.set(key, drop_target);
     }
