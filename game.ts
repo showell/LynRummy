@@ -2158,7 +2158,9 @@ DRAG AND DROP vvvv
 
 ***********************************************/
 
-function inside(e1: HTMLElement, e2: HTMLElement): boolean {
+function inside_board(e1: HTMLElement): boolean {
+    const e2 = PhysicalBoard.dom();
+
     const rect1 = e1.getBoundingClientRect();
     const rect2 = e2.getBoundingClientRect();
 
@@ -2174,8 +2176,6 @@ function overlap(e1: HTMLElement, e2: HTMLElement) {
     const rect1 = e1.getBoundingClientRect();
     const rect2 = e2.getBoundingClientRect();
 
-    // Check if the rectangles do NOT overlap in any direction
-    // If none of these conditions are true, the rectangles MUST overlap
     const overlap = !(
         rect1.right < rect2.left ||
         rect1.left > rect2.right ||
@@ -2369,8 +2369,8 @@ class DragDropHelperSingleton {
 
             active_click_key = undefined;
 
-            if (!inside(div, PhysicalBoard.dom())) {
-                StatusBar.update_text("DON'T TAKE CARDS OFF THE TABLE!");
+            if (!inside_board(div)) {
+                StatusBar.update_text("DON'T TAKE CARDS OFF THE BOARD!");
                 handle_dragend();
                 return;
             }
@@ -2578,7 +2578,7 @@ class MainGamePage {
 }
 
 function test() {
-    console.log("V2 MOVING!");
+    console.log("V2 IN THE HOUSE!");
 }
 
 test(); // runs in node
