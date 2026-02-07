@@ -501,12 +501,16 @@ class CardStack {
         );
     }
 
-    is_left_mergeable_with(other_stack: CardStack): boolean {
-        return CardStack.merge(other_stack, this) !== undefined;
-    }
+    left_merge(other_stack: CardStack): CardStack | undefined {
+        const new_stack = CardStack.merge(other_stack, this);
 
-    is_right_mergeable_with(other_stack: CardStack): boolean {
-        return CardStack.merge(this, other_stack) !== undefined;
+        if (new_stack === undefined) {
+            return undefined;
+        }
+
+        new_stack.loc.left -= CARD_WIDTH * other_stack.size();
+
+        return new_stack;
     }
 
     static merge(s1: CardStack, s2: CardStack): CardStack | undefined {
@@ -583,6 +587,10 @@ class Board {
         }
 
         return result;
+    }
+
+    add_stack(card_stack: CardStack): void {
+        this.card_stacks.push(card_stack);
     }
 
     score(): number {
@@ -1395,21 +1403,6 @@ class PhysicalCardStack {
         return this.div;
     }
 
-    get_stack_width() {
-        return this.div.clientWidth;
-    }
-
-    maybe_show_as_mergeable(card_stack: CardStack): void {
-        if (this.stack.is_left_mergeable_with(card_stack)) {
-            this.div.style.left = pixels(this.stack.loc.left - CARD_WIDTH);
-            this.show_as_mergeable(this.left_wing);
-        }
-
-        if (this.stack.is_right_mergeable_with(card_stack)) {
-            this.show_as_mergeable(this.right_wing);
-        }
-    }
-
     style_as_mergeable(div: HTMLElement): void {
         div.style.backgroundColor = "hsl(105, 72.70%, 87.10%)";
         div.style.width = pixels(CARD_WIDTH);
@@ -1419,9 +1412,17 @@ class PhysicalCardStack {
         div.style.backgroundColor = "pink";
     }
 
-    show_as_mergeable(wing_div: HTMLElement): void {
-        const self = this;
+    maybe_prep_left_stack_merge(other_stack: CardStack): void {
+        const new_stack = this.stack.left_merge(other_stack);
 
+        if (new_stack === undefined) {
+            return;
+        }
+
+        const self = this;
+        const wing_div = this.left_wing;
+
+        this.div.style.left = pixels(this.stack.loc.left - CARD_WIDTH);
         self.style_as_mergeable(wing_div);
 
         DragDropHelper.accept_drop({
@@ -1433,6 +1434,7 @@ class PhysicalCardStack {
                 self.style_as_mergeable(wing_div);
             },
             on_drop() {
+                CurrentBoard.add_stack(new_stack);
                 /*
                 if (HandCardDragAction.in_progress()) {
                     console.log("hand -> stack");
@@ -1502,14 +1504,16 @@ class PhysicalBoardSingleton {
 
     display_mergeable_stacks_for(card_stack: CardStack): void {
         for (const physical_card_stack of this.physical_card_stacks) {
-            physical_card_stack.maybe_show_as_mergeable(card_stack);
+            physical_card_stack.maybe_prep_left_stack_merge(card_stack);
         }
     }
 
     display_mergeable_stacks_for_card(hand_card: HandCard): void {
+        /*
         const card_stack = CardStack.from_hand_card(hand_card);
 
         this.display_mergeable_stacks_for(card_stack);
+        */
     }
 
     dom() {
