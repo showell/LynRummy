@@ -1342,8 +1342,8 @@ function render_undo_button(): HTMLElement {
     button.style.color = "white";
     button.innerText = "Undo mistakes";
     button.style.position = "absolute";
-    button.style.top = 0;
-    button.style.right = 0;
+    button.style.top = "0";
+    button.style.right = "0";
     return button;
 }
 
