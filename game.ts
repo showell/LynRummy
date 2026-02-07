@@ -2023,7 +2023,7 @@ class EventManagerSingleton {
                 Popup.show({
                     content: `You are the first person to play all their cards!
                         \n\
-                        \nThat earns you a 1500 point bonus.
+                        \nThat earns you a 1500 point bonus.\
                         \n\
                         \nYou got ${turn_score} points for this turn.\
                         \n\
