@@ -69,6 +69,16 @@ type BoardLocation = {
     left: number;
 };
 
+type BoardEvent = {
+    stacks_to_remove: CardStack[];
+    stacks_to_add: CardStack[];
+};
+
+type GameEvent = {
+    board_event: BoardEvent;
+    hand_cards_to_remove: CardStack[];
+};
+
 function is_pair_of_dups(card1: Card, card2: Card): boolean {
     // In a two-deck game, two cards can be both be
     // the Ace of Hearts, to use an example,
@@ -601,15 +611,18 @@ class Board {
         return result;
     }
 
-    update(info: { add: CardStack; remove: CardStack[] }): void {
-        const { add, remove } = info;
-        this.card_stacks.push(add);
+    process_event(board_event: BoardEvent): void {
+        const { stacks_to_remove, stacks_to_add } = board_event;
 
-        for (const card_stack of remove) {
+        for (const card_stack of stacks_to_remove) {
             card_stack._deleted = true;
         }
 
         this.card_stacks = this.card_stacks.filter((stack) => !stack._deleted);
+
+        for (const stack of stacks_to_add) {
+            this.card_stacks.push(stack);
+        }
     }
 
     score(): number {
@@ -1041,6 +1054,11 @@ class Game {
         const turn_result = ActivePlayer.end_turn();
         return turn_result;
     }
+
+    process_event(game_event: GameEvent): void {
+        CurrentBoard.process_event(game_event.board_event);
+        // TODO: hand cards
+    }
 }
 
 function has_duplicate_cards(cards: Card[]): boolean {
@@ -1454,10 +1472,14 @@ class PhysicalCardStack {
                 self.style_as_mergeable(wing_div);
             },
             on_drop() {
-                CurrentBoard.update({
-                    add: new_stack,
-                    remove: [self.stack, other_stack],
-                });
+                const game_event: GameEvent = {
+                    board_event: {
+                        stacks_to_remove: [self.stack, other_stack],
+                        stacks_to_add: [new_stack],
+                    },
+                    hand_cards_to_remove: [],
+                };
+                TheGame.process_event(game_event);
             },
         });
     }
@@ -1483,10 +1505,14 @@ class PhysicalCardStack {
                 self.style_as_mergeable(wing_div);
             },
             on_drop() {
-                CurrentBoard.update({
-                    add: new_stack,
-                    remove: [self.stack, other_stack],
-                });
+                const game_event: GameEvent = {
+                    board_event: {
+                        stacks_to_remove: [self.stack, other_stack],
+                        stacks_to_add: [new_stack],
+                    },
+                    hand_cards_to_remove: [],
+                };
+                TheGame.process_event(game_event);
             },
         });
     }
