@@ -1522,6 +1522,46 @@ class PhysicalCardStack {
         wing_div.style.backgroundColor = "cyan";
     }
 
+    maybe_prep_left_hand_card_merge(hand_card: HandCard): void {
+        const loc = { top: -1, left: -1 };
+        const other_stack = CardStack.from_hand_card(hand_card, loc);
+        const new_stack = this.stack.left_merge(other_stack);
+
+        if (new_stack === undefined) {
+            return;
+        }
+
+        const game_event: GameEvent = {
+            board_event: {
+                stacks_to_remove: [this.stack],
+                stacks_to_add: [new_stack],
+            },
+            hand_cards_to_release: [hand_card],
+        };
+
+        this.prep_left_merge(game_event);
+    }
+
+    maybe_prep_right_hand_card_merge(hand_card: HandCard): void {
+        const loc = { top: -1, left: -1 };
+        const other_stack = CardStack.from_hand_card(hand_card, loc);
+        const new_stack = this.stack.right_merge(other_stack);
+
+        if (new_stack === undefined) {
+            return;
+        }
+
+        const game_event: GameEvent = {
+            board_event: {
+                stacks_to_remove: [this.stack],
+                stacks_to_add: [new_stack],
+            },
+            hand_cards_to_release: [hand_card],
+        };
+
+        this.prep_right_merge(game_event);
+    }
+
     maybe_prep_left_stack_merge(other_stack: CardStack): void {
         const new_stack = this.stack.left_merge(other_stack);
 
@@ -1660,11 +1700,10 @@ class PhysicalBoardSingleton {
     }
 
     display_mergeable_stacks_for_card(hand_card: HandCard): void {
-        /*
-        const card_stack = CardStack.from_hand_card(hand_card);
-
-        this.display_mergeable_stacks_for(card_stack);
-        */
+        for (const physical_card_stack of this.physical_card_stacks) {
+            physical_card_stack.maybe_prep_left_hand_card_merge(hand_card);
+            physical_card_stack.maybe_prep_right_hand_card_merge(hand_card);
+        }
     }
 
     dom() {
