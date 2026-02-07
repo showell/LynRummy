@@ -51,11 +51,6 @@ enum BoardCardState {
     FRESHLY_PLAYED_BY_LAST_PLAYER,
 }
 
-enum SplitResult {
-    SUCCESS,
-    DID_NOTHING,
-}
-
 enum CompleteTurnResult {
     SUCCESS,
     SUCCESS_BUT_NEEDS_CARDS,
@@ -511,6 +506,36 @@ class CardStack {
             this.stack_type === CardStackType.BOGUS ||
             this.stack_type === CardStackType.DUP
         );
+    }
+
+    split(card_index: number): CardStack[] | undefined {
+        const card_stack = this;
+        const board_cards = card_stack.board_cards;
+
+        if (board_cards.length === 1) {
+            return undefined;
+        }
+
+        let left_count = card_index;
+
+        if (left_count + 1 <= board_cards.length / 2) {
+            left_count += 1;
+        }
+
+        const left_board_cards = board_cards.slice(0, left_count);
+        const right_right_board_cards = board_cards.slice(left_count);
+
+        const left_loc = card_stack.loc;
+        const offset = left_count * (CARD_WIDTH + 6) + CARD_WIDTH + 10;
+        const right_loc = {
+            top: card_stack.loc.top,
+            left: card_stack.loc.left + offset,
+        };
+
+        return [
+            new CardStack(left_board_cards, left_loc),
+            new CardStack(right_right_board_cards, right_loc),
+        ];
     }
 
     left_merge(other_stack: CardStack): CardStack | undefined {
@@ -1363,8 +1388,20 @@ class PhysicalBoardCard {
         DragDropHelper.accept_click({
             div: this.card_span,
             on_click() {
-                console.log("click", board_card.card.str(), card_index);
-                // EventManager.split_stack(card_location);
+                const stacks_to_add = card_stack.split(card_index);
+                if (stacks_to_add !== undefined) {
+                    const game_event: GameEvent = {
+                        board_event: {
+                            stacks_to_remove: [card_stack],
+                            stacks_to_add,
+                        },
+                        hand_cards_to_remove: [],
+                    };
+                    console.log("click", board_card.card.str(), game_event);
+                    // EventManager.split_stack(card_location);
+                } else {
+                    // tell them clicks do nothing;
+                }
             },
         });
     }
