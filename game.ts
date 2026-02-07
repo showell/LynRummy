@@ -1385,6 +1385,7 @@ class PhysicalHandCard {
         DragDropHelper.enable_drag({
             div,
             handle_dragstart(): void {
+                StatusBar.update_text("Drag to the board.");
                 PhysicalBoard.display_mergeable_stacks_for_card(hand_card);
             },
             handle_ordinary_move(): void {
@@ -1590,6 +1591,9 @@ class PhysicalCardStack {
         DragDropHelper.enable_drag({
             div,
             handle_dragstart(): void {
+                StatusBar.update_text(
+                    "Drag to the edge of a stack or any empty space.",
+                );
                 PhysicalBoard.display_mergeable_stacks_for(card_stack);
             },
             handle_ordinary_move() {
@@ -1941,9 +1945,7 @@ class EventManagerSingleton {
 
     move_stack(game_event: GameEvent): void {
         TheGame.process_event(game_event);
-        StatusBar.update_text(
-            "Organizing the board is a key part of the game!",
-        );
+        StatusBar.update_text("Moved!");
     }
 
     drop_stack_on_stack(game_event: GameEvent): void {
