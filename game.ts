@@ -1906,8 +1906,12 @@ class BoardAreaSingleton {
 
         div.append(render_board_heading());
         div.append(render_board_advice());
+
+        if (!CurrentBoard.is_clean()) {
+            div.append(new UndoButton().dom());
+        }
+
         div.append(PhysicalBoard.dom());
-        // div.append(UndoButton.dom());
     }
 }
 
@@ -1921,25 +1925,12 @@ class PhysicalGame {
         EventManager = new EventManagerSingleton();
         PlayerArea = new PlayerAreaSingleton(TheGame.players, player_area);
         BoardArea = new BoardAreaSingleton(board_area);
-        this.build_physical_game();
+        PhysicalBoard = new PhysicalBoardSingleton();
+        BoardArea.populate();
+        PlayerArea.populate();
         StatusBar.update_text(
             "Begin game. You can drag and drop hand cards or board piles to piles or empty spaces on the board.",
         );
-    }
-
-    // ACTION
-    rollback_moves_to_last_clean_state() {
-        TheGame.rollback_moves_to_last_clean_state();
-        this.build_physical_game();
-    }
-
-    build_physical_game(): void {
-        const players = TheGame.players;
-
-        PhysicalBoard = new PhysicalBoardSingleton();
-
-        PlayerArea.populate();
-        BoardArea.populate();
     }
 
     get_physical_hand(): PhysicalHand {
@@ -1964,9 +1955,7 @@ class CompleteTurnButton {
     }
 }
 
-let UndoButton: UndoButtonSingleton;
-
-class UndoButtonSingleton {
+class UndoButton {
     button: HTMLElement;
 
     constructor() {
@@ -1975,12 +1964,6 @@ class UndoButtonSingleton {
             EventManager.undo_mistakes();
         });
         this.button = button;
-        this.button.hidden = true;
-        if (CurrentBoard.is_clean()) {
-            this.button.hidden = true;
-        } else {
-            this.button.hidden = false;
-        }
     }
 
     dom(): HTMLElement {
@@ -2106,7 +2089,11 @@ class EventManagerSingleton {
     }
 
     undo_mistakes(): void {
-        // TODO
+        TheGame.rollback_moves_to_last_clean_state();
+        StatusBar.update_text("PHEW!");
+        DragDropHelper.reset_internal_data_structures();
+        PlayerArea.populate();
+        BoardArea.populate();
     }
 
     split_stack(game_event: GameEvent): void {
@@ -2124,6 +2111,8 @@ class EventManagerSingleton {
     move_stack(game_event: GameEvent): void {
         TheGame.process_event(game_event);
         StatusBar.update_text("Moved!");
+
+        TheGame.maybe_update_snapshot();
     }
 
     // This function works for both dragging board stacks
