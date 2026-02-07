@@ -1344,7 +1344,6 @@ class PhysicalBoardCard {
 
         const self = this;
 
-        /*
         DragDropHelper.accept_click({
             div: this.card_span,
             on_click() {
@@ -1352,7 +1351,6 @@ class PhysicalBoardCard {
                 // EventManager.split_stack(card_location);
             },
         });
-        */
     }
 
     dom(): HTMLElement {
@@ -2096,6 +2094,10 @@ class DragDropHelperSingleton {
         let orig_top = 0;
         let orig_left = 0;
 
+        function dist_squared(e: PointerEvent) {
+            return (orig_x - e.clientX) ** 2 + (orig_y - e.clientY) ** 2;
+        }
+
         function start_move(e: PointerEvent) {
             orig_x = e.clientX;
             orig_y = e.clientY;
@@ -2165,6 +2167,10 @@ class DragDropHelperSingleton {
 
             move_div(e);
 
+            if (dist_squared(e) > 1) {
+                active_click_key = undefined;
+            }
+
             const hovered_target = get_hovered_target();
 
             if (hovered_target !== undefined) {
@@ -2199,6 +2205,10 @@ class DragDropHelperSingleton {
                 active_target = undefined;
             }
 
+            if (dist_squared(e) > 1) {
+                active_click_key = undefined;
+            }
+
             div.releasePointerCapture(e.pointerId);
 
             const elements = document.elementsFromPoint(
@@ -2206,19 +2216,14 @@ class DragDropHelperSingleton {
                 e.clientY,
             ) as HTMLElement[];
 
-            // First assume it's a click or long press.
-            for (const element of elements) {
-                if (element.dataset.click_key) {
-                    if (active_click_key === element.dataset.click_key) {
-                        const on_click =
-                            this.on_click_callbacks.get(active_click_key);
-                        if (on_click !== undefined) {
-                            on_click();
-                            active_click_key = undefined;
-                            handle_dragend();
-                            return;
-                        }
-                    }
+            // Clicks take precedence
+            if (active_click_key) {
+                const on_click = this.on_click_callbacks.get(active_click_key);
+                if (on_click !== undefined) {
+                    on_click();
+                    active_click_key = undefined;
+                    handle_dragend();
+                    return;
                 }
             }
 
