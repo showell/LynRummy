@@ -505,7 +505,7 @@ class CardStack {
 
     left_merge(other_stack: CardStack): CardStack | undefined {
         const loc = {
-            left: this.loc.left - CARD_WIDTH * other_stack.size(),
+            left: this.loc.left - (CARD_WIDTH + 6) * other_stack.size(),
             top: this.loc.top,
         };
 
