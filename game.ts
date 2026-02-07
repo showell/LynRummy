@@ -1479,7 +1479,7 @@ class PhysicalCardStack {
                     },
                     hand_cards_to_remove: [],
                 };
-                TheGame.process_event(game_event);
+                EventManager.drop_stack_on_stack(game_event);
             },
         });
     }
@@ -1512,7 +1512,7 @@ class PhysicalCardStack {
                     },
                     hand_cards_to_remove: [],
                 };
-                TheGame.process_event(game_event);
+                EventManager.drop_stack_on_stack(game_event);
             },
         });
     }
@@ -1775,6 +1775,7 @@ class PhysicalGame {
         const { player_area, board_area } = info;
 
         TheGame = new Game();
+        EventManager = new EventManagerSingleton();
         PlayerArea = new PlayerAreaSingleton(TheGame.players, player_area);
         BoardArea = new BoardAreaSingleton(board_area);
         this.build_physical_game();
@@ -1853,6 +1854,27 @@ class EventManagerSingleton {
 
     undo_mistakes(): void {
         // TODO
+    }
+
+    drop_stack_on_stack(game_event: GameEvent): void {
+        TheGame.process_event(game_event);
+
+        const merged_stack = game_event.board_event.stacks_to_add[0];
+        const size = merged_stack.size();
+
+        if (size >= 8) {
+            SoundEffects.play_bark_sound();
+            StatusBar.update_text("Look at you go!");
+        } else if (size >= 3) {
+            SoundEffects.play_ding_sound();
+            StatusBar.update_text("Combined!");
+        } else {
+            StatusBar.update_text("Nice, but where's the third card?");
+        }
+
+        TheGame.maybe_update_snapshot();
+
+        // PlayerArea/BoardArea get updated elsewhere
     }
 }
 
