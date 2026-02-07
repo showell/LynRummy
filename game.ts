@@ -2021,7 +2021,7 @@ class EventManagerSingleton {
                 // rid of all the cards in their hand.
                 SoundEffects.play_bark_sound();
                 Popup.show({
-                    content: `You are the first person to play all their cards!
+                    content: `You are the first person to play all their cards!\
                         \n\
                         \nThat earns you a 1500 point bonus.\
                         \n\
