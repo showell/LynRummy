@@ -1429,7 +1429,7 @@ class PhysicalCardStack {
     }
 
     style_for_hover(div: HTMLElement): void {
-        div.style.backgroundColor = "pink";
+        div.style.backgroundColor = "cyan";
     }
 
     maybe_prep_left_stack_merge(other_stack: CardStack): void {
