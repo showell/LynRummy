@@ -508,12 +508,13 @@ class CardStack {
         );
     }
 
-    split(card_index: number): CardStack[] | undefined {
+    split(card_index: number): CardStack[] {
         const card_stack = this;
         const board_cards = card_stack.board_cards;
 
+        // our caller already checks this
         if (board_cards.length === 1) {
-            return undefined;
+            throw new Error("unexpected");
         }
 
         let left_count = card_index;
@@ -1388,20 +1389,21 @@ class PhysicalBoardCard {
         DragDropHelper.accept_click({
             div: this.card_span,
             on_click() {
-                const stacks_to_add = card_stack.split(card_index);
-                if (stacks_to_add !== undefined) {
-                    const game_event: GameEvent = {
-                        board_event: {
-                            stacks_to_remove: [card_stack],
-                            stacks_to_add,
-                        },
-                        hand_cards_to_remove: [],
-                    };
-                    console.log("click", board_card.card.str(), game_event);
-                    // EventManager.split_stack(card_location);
-                } else {
-                    // tell them clicks do nothing;
+                if (card_stack.size() === 1) {
+                    StatusBar.update_text(
+                        "Clicking here does nothing. Maybe you want to drag it instead?",
+                    );
+                    return;
                 }
+                const stacks_to_add = card_stack.split(card_index);
+                const game_event: GameEvent = {
+                    board_event: {
+                        stacks_to_remove: [card_stack],
+                        stacks_to_add,
+                    },
+                    hand_cards_to_remove: [],
+                };
+                EventManager.split_stack(game_event);
             },
         });
     }
@@ -1875,6 +1877,13 @@ class EventManagerSingleton {
 
     undo_mistakes(): void {
         // TODO
+    }
+
+    split_stack(game_event: GameEvent): void {
+        TheGame.process_event(game_event);
+        StatusBar.update_text(
+            "Split! Moves like this can be tricky, even for experts. You have the undo button if you need it.",
+        );
     }
 
     drop_stack_on_stack(game_event: GameEvent): void {
