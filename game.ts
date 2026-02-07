@@ -509,13 +509,7 @@ class CardStack {
             top: this.loc.top,
         };
 
-        const new_stack = CardStack.maybe_merge(other_stack, this, loc);
-
-        if (new_stack === undefined) {
-            return undefined;
-        }
-
-        return new_stack;
+        return CardStack.maybe_merge(other_stack, this, loc);
     }
 
     right_merge(other_stack: CardStack): CardStack | undefined {
@@ -524,13 +518,7 @@ class CardStack {
             top: this.loc.top,
         };
 
-        const new_stack = CardStack.maybe_merge(this, other_stack, loc);
-
-        if (new_stack === undefined) {
-            return undefined;
-        }
-
-        return new_stack;
+        return CardStack.maybe_merge(this, other_stack, loc);
     }
 
     static maybe_merge(
