@@ -1403,13 +1403,6 @@ class PhysicalHandCard {
                 };
                 TheGame.process_event(game_event);
             },
-            handle_dragend(): void {
-                /*
-                HandCardDragAction.end_drag_hand_card();
-                */
-                PlayerArea.populate();
-                BoardArea.populate();
-            },
         });
     }
 
@@ -1634,10 +1627,6 @@ class PhysicalCardStack {
                     hand_cards_to_release: [],
                 };
                 EventManager.move_stack(game_event);
-            },
-            handle_dragend(): void {
-                PlayerArea.populate();
-                BoardArea.populate();
             },
         });
     }
@@ -2240,7 +2229,7 @@ class DragDropHelperSingleton {
         this.on_click_callbacks = new Map();
     }
 
-    reset(): void {
+    reset_internal_data_structures(): void {
         this.on_click_callbacks.clear();
         this.drop_targets.clear();
     }
@@ -2248,11 +2237,9 @@ class DragDropHelperSingleton {
     enable_drag(info: {
         div: HTMLElement;
         handle_dragstart: () => void;
-        handle_dragend: () => void;
         handle_ordinary_move: () => void;
     }): void {
-        const { div, handle_dragstart, handle_dragend, handle_ordinary_move } =
-            info;
+        const { div, handle_dragstart, handle_ordinary_move } = info;
         const self = this;
 
         div.draggable = true;
@@ -2369,43 +2356,23 @@ class DragDropHelperSingleton {
             }
         });
 
-        div.addEventListener("pointerup", (e) => {
-            e.preventDefault();
-            dragging = false;
-            drag_started = false;
-
+        function process_pointerup(): void {
             if (active_target) {
                 active_target.on_leave();
                 active_target = undefined;
             }
 
-            if (dist_squared(e) > 1) {
-                active_click_key = undefined;
-            }
-
-            div.releasePointerCapture(e.pointerId);
-
-            const elements = document.elementsFromPoint(
-                e.clientX,
-                e.clientY,
-            ) as HTMLElement[];
-
             // Clicks take precedence
             if (active_click_key) {
-                const on_click = this.on_click_callbacks.get(active_click_key);
+                const on_click = self.on_click_callbacks.get(active_click_key);
                 if (on_click !== undefined) {
                     on_click();
-                    active_click_key = undefined;
-                    handle_dragend();
                     return;
                 }
             }
 
-            active_click_key = undefined;
-
             if (!inside_board(div)) {
                 StatusBar.update_text("DON'T TAKE CARDS OFF THE BOARD!");
-                handle_dragend();
                 return;
             }
 
@@ -2416,8 +2383,34 @@ class DragDropHelperSingleton {
             } else {
                 handle_ordinary_move();
             }
+        }
 
-            handle_dragend();
+        div.addEventListener("pointerup", (e) => {
+            e.preventDefault();
+
+            if (dist_squared(e) > 1) {
+                active_click_key = undefined;
+            }
+
+            div.releasePointerCapture(e.pointerId);
+
+            process_pointerup();
+
+            // Order is import here! Clear our maps,
+            // but BEFORE we re-draw the world.
+            self.reset_internal_data_structures();
+
+            // Now when we re-draw the world, the clickable
+            // objects will re-register for clicks.
+            PlayerArea.populate();
+            BoardArea.populate();
+
+            // We kind of don't need this after re-drawing
+            // the world, but I'm paranoid.
+            dragging = false;
+            drag_started = false;
+            active_click_key = undefined;
+            active_target = undefined;
         });
     }
 
@@ -2612,7 +2605,7 @@ class MainGamePage {
 }
 
 function test() {
-    console.log("V2 IN THE HOUSE!");
+    console.log("V2 COMING SOON!");
 }
 
 test(); // runs in node
