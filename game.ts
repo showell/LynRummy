@@ -1350,22 +1350,20 @@ class PhysicalHandCard {
 
 class PhysicalBoardCard {
     board_card: BoardCard;
-    card: Card;
     card_span: HTMLElement;
 
-    constructor(board_card: BoardCard) {
+    constructor(card_stack: CardStack, card_index: number) {
+        const board_card = card_stack.board_cards[card_index];
+        const card_span = render_playing_card(board_card.card);
+
         this.board_card = board_card;
-        this.card = board_card.card;
-        this.card_span = render_playing_card(this.card);
-
+        this.card_span = card_span;
         this.update_state_styles();
-
-        const self = this;
 
         DragDropHelper.accept_click({
             div: this.card_span,
             on_click() {
-                console.log("click", self.card.str());
+                console.log("click", board_card.card.str(), card_index);
                 // EventManager.split_stack(card_location);
             },
         });
@@ -1389,27 +1387,12 @@ class PhysicalBoardCard {
     }
 }
 
-function build_physical_board_cards(
-    board_cards: BoardCard[],
-): PhysicalBoardCard[] {
-    // TODO: inline this
-    const physical_board_cards: PhysicalBoardCard[] = [];
-
-    for (const board_card of board_cards) {
-        const physical_board_card = new PhysicalBoardCard(board_card);
-        physical_board_cards.push(physical_board_card);
-    }
-
-    return physical_board_cards;
-}
-
 function pixels(num: number): string {
     return `${num}px`;
 }
 
 class PhysicalCardStack {
     stack: CardStack;
-    physical_board_cards: PhysicalBoardCard[];
     div: HTMLElement;
     left_wing: HTMLElement;
     right_wing: HTMLElement;
@@ -1417,11 +1400,12 @@ class PhysicalCardStack {
     constructor(stack: CardStack) {
         this.stack = stack;
 
-        this.physical_board_cards = build_physical_board_cards(
-            stack.board_cards,
-        );
+        const card_spans = [];
 
-        const card_spans = this.physical_board_cards.map((psc) => psc.dom());
+        for (let i = 0; i < stack.board_cards.length; ++i) {
+            const physical_board_card = new PhysicalBoardCard(stack, i);
+            card_spans.push(physical_board_card.dom());
+        }
 
         const left_wing = render_wing();
         const right_wing = render_wing();
