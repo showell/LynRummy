@@ -1342,14 +1342,17 @@ class PhysicalBoardCard {
 
         this.update_state_styles();
 
+        const self = this;
+
         /*
         DragDropHelper.accept_click({
             div: this.card_span,
             on_click() {
-                EventManager.split_stack(card_location);
+                console.log("click", self.card.str());
+                // EventManager.split_stack(card_location);
             },
         });
-       */
+        */
     }
 
     dom(): HTMLElement {
@@ -2057,6 +2060,7 @@ class DragDropHelperSingleton {
         div.style.touchAction = "none";
 
         let dragging = false;
+        let drag_started = false;
         let active_click_key: string | undefined;
         let active_target: DropTarget | undefined;
         let orig_x = 0;
@@ -2100,12 +2104,24 @@ class DragDropHelperSingleton {
                 }
             }
 
-            handle_dragstart();
+            // We defer handle_dragstart until the pointer moves.
 
             start_move(e);
 
             div.setPointerCapture(e.pointerId);
         });
+
+        function inside(e1: HTMLElement, e2: HTMLElement): boolean {
+            const rect1 = e1.getBoundingClientRect();
+            const rect2 = e2.getBoundingClientRect();
+
+            return (
+                rect1.left > rect2.left &&
+                rect1.right < rect2.right &&
+                rect1.top > rect2.top &&
+                rect1.bottom < rect2.bottom
+            );
+        }
 
         function overlap(e1: HTMLElement, e2: HTMLElement) {
             const rect1 = e1.getBoundingClientRect();
@@ -2142,6 +2158,11 @@ class DragDropHelperSingleton {
         div.addEventListener("pointermove", (e) => {
             if (!dragging) return false;
 
+            if (!drag_started) {
+                handle_dragstart();
+                drag_started = true;
+            }
+
             move_div(e);
 
             const hovered_target = get_hovered_target();
@@ -2171,6 +2192,7 @@ class DragDropHelperSingleton {
         div.addEventListener("pointerup", (e) => {
             e.preventDefault();
             dragging = false;
+            drag_started = false;
 
             if (active_target) {
                 active_target.on_leave();
@@ -2201,6 +2223,13 @@ class DragDropHelperSingleton {
             }
 
             active_click_key = undefined;
+
+            if (!inside(div, PhysicalBoard.dom())) {
+                console.info("off the table");
+                StatusBar.update_text("DON'T TAKE CARDS OFF THE TABLE!");
+                handle_dragend();
+                return;
+            }
 
             const hovered_target = get_hovered_target();
 
