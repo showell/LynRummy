@@ -2020,6 +2020,34 @@ DRAG AND DROP vvvv
 
 ***********************************************/
 
+function inside(e1: HTMLElement, e2: HTMLElement): boolean {
+    const rect1 = e1.getBoundingClientRect();
+    const rect2 = e2.getBoundingClientRect();
+
+    return (
+        rect1.left > rect2.left &&
+        rect1.right < rect2.right &&
+        rect1.top > rect2.top &&
+        rect1.bottom < rect2.bottom
+    );
+}
+
+function overlap(e1: HTMLElement, e2: HTMLElement) {
+    const rect1 = e1.getBoundingClientRect();
+    const rect2 = e2.getBoundingClientRect();
+
+    // Check if the rectangles do NOT overlap in any direction
+    // If none of these conditions are true, the rectangles MUST overlap
+    const overlap = !(
+        rect1.right < rect2.left ||
+        rect1.left > rect2.right ||
+        rect1.bottom < rect2.top ||
+        rect1.top > rect2.bottom
+    );
+
+    return overlap;
+}
+
 type DropTarget = {
     div: HTMLElement;
     on_over: () => void;
@@ -2084,6 +2112,22 @@ class DragDropHelperSingleton {
             div.style.top = pixels(orig_top + e.clientY - orig_y);
         }
 
+        function get_hovered_target(): DropTarget | undefined {
+            const elements = document.querySelectorAll(".drop_target") as any;
+
+            for (const element of elements) {
+                if (overlap(div, element)) {
+                    const drop_key = element.dataset.drop_key;
+                    const hovered_target = self.drop_targets.get(drop_key);
+
+                    if (hovered_target !== undefined) {
+                        return hovered_target;
+                    }
+                }
+            }
+            return undefined;
+        }
+
         div.addEventListener("pointerdown", (e) => {
             e.preventDefault();
 
@@ -2110,50 +2154,6 @@ class DragDropHelperSingleton {
 
             div.setPointerCapture(e.pointerId);
         });
-
-        function inside(e1: HTMLElement, e2: HTMLElement): boolean {
-            const rect1 = e1.getBoundingClientRect();
-            const rect2 = e2.getBoundingClientRect();
-
-            return (
-                rect1.left > rect2.left &&
-                rect1.right < rect2.right &&
-                rect1.top > rect2.top &&
-                rect1.bottom < rect2.bottom
-            );
-        }
-
-        function overlap(e1: HTMLElement, e2: HTMLElement) {
-            const rect1 = e1.getBoundingClientRect();
-            const rect2 = e2.getBoundingClientRect();
-
-            // Check if the rectangles do NOT overlap in any direction
-            // If none of these conditions are true, the rectangles MUST overlap
-            const overlap = !(
-                rect1.right < rect2.left ||
-                rect1.left > rect2.right ||
-                rect1.bottom < rect2.top ||
-                rect1.top > rect2.bottom
-            );
-
-            return overlap;
-        }
-
-        function get_hovered_target(): DropTarget | undefined {
-            const elements = document.querySelectorAll(".drop_target") as any;
-
-            for (const element of elements) {
-                if (overlap(div, element)) {
-                    const drop_key = element.dataset.drop_key;
-                    const hovered_target = self.drop_targets.get(drop_key);
-
-                    if (hovered_target !== undefined) {
-                        return hovered_target;
-                    }
-                }
-            }
-            return undefined;
-        }
 
         div.addEventListener("pointermove", (e) => {
             if (!dragging) return false;
@@ -2225,7 +2225,6 @@ class DragDropHelperSingleton {
             active_click_key = undefined;
 
             if (!inside(div, PhysicalBoard.dom())) {
-                console.info("off the table");
                 StatusBar.update_text("DON'T TAKE CARDS OFF THE TABLE!");
                 handle_dragend();
                 return;
