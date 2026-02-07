@@ -527,9 +527,9 @@ class CardStack {
         const right_right_board_cards = board_cards.slice(left_count);
 
         const left_loc = card_stack.loc;
-        const offset = left_count * (CARD_WIDTH + 6) + CARD_WIDTH + 10;
+        const offset = left_count * (CARD_WIDTH + 6) + CARD_WIDTH + 15;
         const right_loc = {
-            top: card_stack.loc.top,
+            top: card_stack.loc.top - 2,
             left: card_stack.loc.left + offset,
         };
 
@@ -1464,13 +1464,15 @@ class PhysicalCardStack {
         return this.div;
     }
 
-    style_as_mergeable(div: HTMLElement): void {
-        div.style.backgroundColor = "hsl(105, 72.70%, 87.10%)";
-        div.style.width = pixels(CARD_WIDTH);
+    style_as_mergeable(wing_div: HTMLElement): void {
+        this.div.style.backgroundColor = "hsl(105, 72.70%, 87.10%)";
+        wing_div.style.backgroundColor = "hsl(105, 72.70%, 87.10%)";
+        wing_div.style.width = pixels(CARD_WIDTH);
     }
 
-    style_for_hover(div: HTMLElement): void {
-        div.style.backgroundColor = "cyan";
+    style_for_hover(wing_div: HTMLElement): void {
+        this.div.style.backgroundColor = "cyan";
+        wing_div.style.backgroundColor = "cyan";
     }
 
     maybe_prep_left_stack_merge(other_stack: CardStack): void {
