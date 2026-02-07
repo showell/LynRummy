@@ -517,20 +517,57 @@ class CardStack {
             throw new Error("unexpected");
         }
 
-        let left_count = card_index;
-
-        if (left_count + 1 <= board_cards.length / 2) {
-            left_count += 1;
+        if (card_index + 1 <= board_cards.length / 2) {
+            return this.left_split(card_index + 1);
+        } else {
+            return this.right_split(card_index);
         }
+    }
+
+    left_split(left_count: number): CardStack[] {
+        const card_stack = this;
+        const board_cards = card_stack.board_cards;
 
         const left_board_cards = board_cards.slice(0, left_count);
         const right_right_board_cards = board_cards.slice(left_count);
 
-        const left_loc = card_stack.loc;
-        const offset = left_count * (CARD_WIDTH + 6) + CARD_WIDTH + 15;
+        const left_side_offset = -2;
+        const right_side_offset = left_count * (CARD_WIDTH + 6) + 8;
+
+        const left_loc = {
+            top: card_stack.loc.top - 4,
+            left: card_stack.loc.left + left_side_offset,
+        };
+
         const right_loc = {
-            top: card_stack.loc.top - 2,
-            left: card_stack.loc.left + offset,
+            top: card_stack.loc.top,
+            left: card_stack.loc.left + right_side_offset,
+        };
+
+        return [
+            new CardStack(left_board_cards, left_loc),
+            new CardStack(right_right_board_cards, right_loc),
+        ];
+    }
+
+    right_split(left_count: number): CardStack[] {
+        const card_stack = this;
+        const board_cards = card_stack.board_cards;
+
+        const left_board_cards = board_cards.slice(0, left_count);
+        const right_right_board_cards = board_cards.slice(left_count);
+
+        const left_side_offset = -8;
+        const right_side_offset = left_count * (CARD_WIDTH + 6) + 4;
+
+        const left_loc = {
+            top: card_stack.loc.top,
+            left: card_stack.loc.left + left_side_offset,
+        };
+
+        const right_loc = {
+            top: card_stack.loc.top - 4,
+            left: card_stack.loc.left + right_side_offset,
         };
 
         return [
@@ -924,7 +961,7 @@ class Player {
 function initial_board(): Board {
     function stack(row: number, sig: string): CardStack {
         const col = (row * 8) % 5;
-        const loc = { top: 6 + row * 50, left: 40 + col * 50 };
+        const loc = { top: 16 + row * 48, left: 40 + col * 50 };
         return CardStack.from(sig, OriginDeck.DECK_ONE, loc);
     }
 
