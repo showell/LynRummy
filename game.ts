@@ -1341,6 +1341,9 @@ function render_undo_button(): HTMLElement {
     button.style.backgroundColor = button_color();
     button.style.color = "white";
     button.innerText = "Undo mistakes";
+    button.style.position = "absolute";
+    button.style.top = 0;
+    button.style.right = 0;
     return button;
 }
 
@@ -1891,6 +1894,7 @@ class BoardAreaSingleton {
 
     constructor(board_area: HTMLElement) {
         this.div = board_area;
+        this.div.style.position = "relative";
     }
 
     dom(): HTMLElement {
