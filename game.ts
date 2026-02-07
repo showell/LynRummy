@@ -1401,7 +1401,7 @@ class PhysicalHandCard {
                     },
                     hand_cards_to_release: [hand_card],
                 };
-                TheGame.process_event(game_event);
+                EventManager.place_hand_card_on_board(game_event);
             },
         });
     }
@@ -1574,7 +1574,7 @@ class PhysicalCardStack {
                 self.style_as_mergeable(wing_div);
             },
             on_drop() {
-                EventManager.drop_stack_on_stack(game_event);
+                EventManager.process_game_event(game_event);
             },
         });
     }
@@ -1594,7 +1594,7 @@ class PhysicalCardStack {
                 self.style_as_mergeable(wing_div);
             },
             on_drop() {
-                EventManager.drop_stack_on_stack(game_event);
+                EventManager.process_game_event(game_event);
             },
         });
     }
@@ -1954,12 +1954,20 @@ class EventManagerSingleton {
         );
     }
 
+    place_hand_card_on_board(game_event: GameEvent): void {
+        TheGame.process_event(game_event);
+        StatusBar.update_text("On the board!");
+    }
+
     move_stack(game_event: GameEvent): void {
         TheGame.process_event(game_event);
         StatusBar.update_text("Moved!");
     }
 
-    drop_stack_on_stack(game_event: GameEvent): void {
+    // This function works for both dragging board stacks
+    // and dragging hand cards to an existing board stack.
+
+    process_game_event(game_event: GameEvent): void {
         TheGame.process_event(game_event);
 
         const merged_stack = game_event.board_event.stacks_to_add[0];
