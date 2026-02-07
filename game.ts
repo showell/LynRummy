@@ -974,8 +974,8 @@ class Player {
 
 function initial_board(): Board {
     function stack(row: number, sig: string): CardStack {
-        const col = (row * 8) % 5;
-        const loc = { top: 16 + row * 48, left: 40 + col * 50 };
+        const col = (row * 3 + 1) % 5;
+        const loc = { top: 20 + row * 60, left: 40 + col * 30 };
         return CardStack.from(sig, OriginDeck.DECK_ONE, loc);
     }
 
@@ -985,9 +985,7 @@ function initial_board(): Board {
         stack(2, "2H,3H,4H"),
         stack(3, "7S,7D,7C"),
         stack(4, "AC,AD,AH"),
-        stack(5, "2C,3D,4C,5H"),
-        stack(6, "6S"),
-        stack(7, "QS"),
+        stack(5, "2C,3D,4C,5H,6S"),
     ];
 
     return new Board(stacks);
