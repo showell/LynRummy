@@ -1189,7 +1189,6 @@ function set_common_card_styles(node: HTMLElement): void {
     node.style.display = "inline-block";
     node.style.height = "40px";
     node.style.padding = "1px";
-    node.style.margin = "1px";
     node.style.userSelect = "none";
     node.style.textAlign = "center";
     node.style.verticalAlign = "center";
@@ -1364,6 +1363,7 @@ class PhysicalHandCard {
         this.hand_card = hand_card;
         this.card = hand_card.card;
         this.card_span = render_playing_card(this.card);
+        this.card_span.style.margin = "3px";
         this.card_span.style.cursor = "grab";
         this.allow_dragging();
         this.update_state_styles();
@@ -1480,7 +1480,11 @@ class PhysicalCardStack {
 
         for (let i = 0; i < stack.board_cards.length; ++i) {
             const physical_board_card = new PhysicalBoardCard(stack, i);
-            card_spans.push(physical_board_card.dom());
+            const card_span = physical_board_card.dom();
+            if (i !== 0) {
+                card_span.style.marginLeft = "2px";
+            }
+            card_spans.push(card_span);
         }
 
         const left_wing = render_wing();
@@ -1710,7 +1714,7 @@ class PhysicalPlayer {
         this.physical_hand = new PhysicalHand(player.hand);
         this.complete_turn_button = new CompleteTurnButton();
         this.div = document.createElement("div");
-        this.div.style.minWidth = "200px";
+        this.div.style.minWidth = "250px";
         this.div.style.paddingBottom = "15px";
         this.div.style.borderBottom = "1px #000080 solid";
     }
