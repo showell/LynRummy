@@ -1305,7 +1305,8 @@ function render_board(): HTMLElement {
 
 function render_board_advice(): HTMLElement {
     const div = document.createElement("div");
-    div.innerText = "Grab piles to move them. Click on piles to break them up.";
+    div.innerText =
+        "Drag piles to move them or merge them. Click on piles to break them up.";
     div.style.fontSize = "12px";
     div.style.marginTop = "1px";
     return div;
@@ -1535,6 +1536,36 @@ class PhysicalCardStack {
             return;
         }
 
+        const game_event: GameEvent = {
+            board_event: {
+                stacks_to_remove: [this.stack, other_stack],
+                stacks_to_add: [new_stack],
+            },
+            hand_cards_to_release: [],
+        };
+
+        this.prep_left_merge(game_event);
+    }
+
+    maybe_prep_right_stack_merge(other_stack: CardStack): void {
+        const new_stack = this.stack.right_merge(other_stack);
+
+        if (new_stack === undefined) {
+            return;
+        }
+
+        const game_event: GameEvent = {
+            board_event: {
+                stacks_to_remove: [this.stack, other_stack],
+                stacks_to_add: [new_stack],
+            },
+            hand_cards_to_release: [],
+        };
+
+        this.prep_right_merge(game_event);
+    }
+
+    prep_left_merge(game_event: GameEvent): void {
         const self = this;
         const wing_div = this.left_wing;
 
@@ -1550,25 +1581,12 @@ class PhysicalCardStack {
                 self.style_as_mergeable(wing_div);
             },
             on_drop() {
-                const game_event: GameEvent = {
-                    board_event: {
-                        stacks_to_remove: [self.stack, other_stack],
-                        stacks_to_add: [new_stack],
-                    },
-                    hand_cards_to_release: [],
-                };
                 EventManager.drop_stack_on_stack(game_event);
             },
         });
     }
 
-    maybe_prep_right_stack_merge(other_stack: CardStack): void {
-        const new_stack = this.stack.right_merge(other_stack);
-
-        if (new_stack === undefined) {
-            return;
-        }
-
+    prep_right_merge(game_event: GameEvent): void {
         const self = this;
         const wing_div = this.right_wing;
 
@@ -1583,13 +1601,6 @@ class PhysicalCardStack {
                 self.style_as_mergeable(wing_div);
             },
             on_drop() {
-                const game_event: GameEvent = {
-                    board_event: {
-                        stacks_to_remove: [self.stack, other_stack],
-                        stacks_to_add: [new_stack],
-                    },
-                    hand_cards_to_release: [],
-                };
                 EventManager.drop_stack_on_stack(game_event);
             },
         });
