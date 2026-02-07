@@ -71,7 +71,7 @@ type BoardEvent = {
 
 type GameEvent = {
     board_event: BoardEvent;
-    hand_cards_to_remove: CardStack[];
+    hand_cards_to_release: HandCard[];
 };
 
 function is_pair_of_dups(card1: Card, card2: Card): boolean {
@@ -630,11 +630,10 @@ class CardStack {
         return new CardStack(board_cards, loc);
     }
 
-    static from_hand_card(hand_card: HandCard): CardStack {
+    static from_hand_card(hand_card: HandCard, loc: BoardLocation): CardStack {
         const board_card = BoardCard.from_hand_card(hand_card);
-        const dummy_loc = { top: 0, left: 0 };
 
-        return new CardStack([board_card], dummy_loc);
+        return new CardStack([board_card], loc);
     }
 }
 
@@ -1120,7 +1119,10 @@ class Game {
 
     process_event(game_event: GameEvent): void {
         CurrentBoard.process_event(game_event.board_event);
-        // TODO: hand cards
+
+        for (const hand_card of game_event.hand_cards_to_release) {
+            ActivePlayer.release_card(hand_card);
+        }
     }
 }
 
@@ -1389,7 +1391,16 @@ class PhysicalHandCard {
                 PhysicalBoard.display_mergeable_stacks_for_card(hand_card);
             },
             handle_ordinary_move(): void {
-                // TODO
+                const loc = loc_on_board(div);
+                const new_stack = CardStack.from_hand_card(hand_card, loc);
+                const game_event = {
+                    board_event: {
+                        stacks_to_remove: [],
+                        stacks_to_add: [new_stack],
+                    },
+                    hand_cards_to_release: [hand_card],
+                };
+                TheGame.process_event(game_event);
             },
             handle_dragend(): void {
                 /*
@@ -1439,7 +1450,7 @@ class PhysicalBoardCard {
                         stacks_to_remove: [card_stack],
                         stacks_to_add,
                     },
-                    hand_cards_to_remove: [],
+                    hand_cards_to_release: [],
                 };
                 EventManager.split_stack(game_event);
             },
@@ -1544,7 +1555,7 @@ class PhysicalCardStack {
                         stacks_to_remove: [self.stack, other_stack],
                         stacks_to_add: [new_stack],
                     },
-                    hand_cards_to_remove: [],
+                    hand_cards_to_release: [],
                 };
                 EventManager.drop_stack_on_stack(game_event);
             },
@@ -1577,7 +1588,7 @@ class PhysicalCardStack {
                         stacks_to_remove: [self.stack, other_stack],
                         stacks_to_add: [new_stack],
                     },
-                    hand_cards_to_remove: [],
+                    hand_cards_to_release: [],
                 };
                 EventManager.drop_stack_on_stack(game_event);
             },
@@ -1609,7 +1620,7 @@ class PhysicalCardStack {
                         stacks_to_remove: [card_stack],
                         stacks_to_add: [new_stack],
                     },
-                    hand_cards_to_remove: [],
+                    hand_cards_to_release: [],
                 };
                 EventManager.move_stack(game_event);
             },
@@ -2157,6 +2168,18 @@ class PopupSingleton {
 DRAG AND DROP vvvv
 
 ***********************************************/
+
+function loc_on_board(e1: HTMLElement): BoardLocation {
+    const e2 = PhysicalBoard.dom();
+
+    const rect1 = e1.getBoundingClientRect();
+    const rect2 = e2.getBoundingClientRect();
+
+    return {
+        left: rect1.left - rect2.left,
+        top: rect1.top - rect2.top,
+    };
+}
 
 function inside_board(e1: HTMLElement): boolean {
     const e2 = PhysicalBoard.dom();
