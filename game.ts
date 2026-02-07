@@ -456,11 +456,13 @@ class CardStack {
     board_cards: BoardCard[]; // Order does matter here!
     stack_type: CardStackType;
     loc: BoardLocation;
+    _deleted: boolean;
 
     constructor(board_cards: BoardCard[], loc: BoardLocation) {
         this.board_cards = board_cards;
         this.stack_type = this.get_stack_type();
         this.loc = loc;
+        this._deleted = false;
     }
 
     clone(): CardStack {
@@ -502,18 +504,25 @@ class CardStack {
     }
 
     left_merge(other_stack: CardStack): CardStack | undefined {
-        const new_stack = CardStack.merge(other_stack, this);
+        const loc = {
+            left: this.loc.left - CARD_WIDTH * other_stack.size(),
+            top: this.loc.top,
+        };
+
+        const new_stack = CardStack.maybe_merge(other_stack, this, loc);
 
         if (new_stack === undefined) {
             return undefined;
         }
 
-        new_stack.loc.left -= CARD_WIDTH * other_stack.size();
-
         return new_stack;
     }
 
-    static merge(s1: CardStack, s2: CardStack): CardStack | undefined {
+    static maybe_merge(
+        s1: CardStack,
+        s2: CardStack,
+        loc: BoardLocation,
+    ): CardStack | undefined {
         if (s1.equals(s2)) {
             // This is mostly to prevent us from literally trying
             // to merge our own stack on top of itself. But there's
@@ -525,7 +534,7 @@ class CardStack {
 
         const new_stack = new CardStack(
             [...s1.board_cards, ...s2.board_cards],
-            s1.loc,
+            loc,
         );
         if (new_stack.problematic()) {
             return undefined;
@@ -589,8 +598,15 @@ class Board {
         return result;
     }
 
-    add_stack(card_stack: CardStack): void {
-        this.card_stacks.push(card_stack);
+    update(info: { add: CardStack; remove: CardStack[] }): void {
+        const { add, remove } = info;
+        this.card_stacks.push(add);
+
+        for (const card_stack of remove) {
+            card_stack._deleted = true;
+        }
+
+        this.card_stacks = this.card_stacks.filter((stack) => !stack._deleted);
     }
 
     score(): number {
@@ -1434,7 +1450,10 @@ class PhysicalCardStack {
                 self.style_as_mergeable(wing_div);
             },
             on_drop() {
-                CurrentBoard.add_stack(new_stack);
+                CurrentBoard.update({
+                    add: new_stack,
+                    remove: [self.stack, other_stack],
+                });
                 /*
                 if (HandCardDragAction.in_progress()) {
                     console.log("hand -> stack");
@@ -2169,18 +2188,14 @@ class DragDropHelperSingleton {
 
             active_click_key = undefined;
 
-            // Now look for the drag.
-            for (const element of elements) {
-                if (element.dataset.drop_key) {
-                    const drop_key = element.dataset.drop_key;
-                    const target = this.drop_targets.get(drop_key);
-                    if (target) {
-                        target.on_drop();
-                    }
-                }
+            const hovered_target = get_hovered_target();
+
+            if (hovered_target) {
+                hovered_target.on_drop();
+            } else {
+                handle_ordinary_move();
             }
 
-            handle_ordinary_move();
             handle_dragend();
         });
     }
