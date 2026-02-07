@@ -2034,7 +2034,7 @@ class EventManagerSingleton {
                 const turn_score = ActivePlayer.get_turn_score();
                 // Only play this for the first time a player gets
                 // rid of all the cards in their hand.
-                SoundEffects.play_victory_sound();
+                SoundEffects.play_bark_sound();
                 Popup.show({
                     content: `You are the first person to play all their cards!
                         \n\
@@ -2137,10 +2137,7 @@ class EventManagerSingleton {
         const merged_stack = game_event.board_event.stacks_to_add[0];
         const size = merged_stack.size();
 
-        if (size >= 8) {
-            SoundEffects.play_bark_sound();
-            StatusBar.update_text("Look at you go!");
-        } else if (size >= 3) {
+        if (size >= 3) {
             SoundEffects.play_ding_sound();
             StatusBar.update_text("Combined!");
         } else {
@@ -2786,9 +2783,6 @@ class SoundEffectsSingleton {
     purr: HTMLAudioElement;
     bark: HTMLAudioElement;
     ding: HTMLAudioElement;
-    good_job: HTMLAudioElement;
-    welcome: HTMLAudioElement;
-    victory: HTMLAudioElement;
 
     constructor() {
         // It might be overkill to pre-load these, but I can't
@@ -2796,15 +2790,9 @@ class SoundEffectsSingleton {
         this.ding = document.createElement("audio");
         this.purr = document.createElement("audio");
         this.bark = document.createElement("audio");
-        this.good_job = document.createElement("audio");
-        this.welcome = document.createElement("audio");
-        this.victory = document.createElement("audio");
         this.ding.src = "ding.mp3";
         this.purr.src = "purr.mp3";
         this.bark.src = "bark.mp3";
-        this.good_job.src = "steve.m4a";
-        this.welcome.src = "welcome.mp3";
-        this.victory.src = "victory.mp3";
     }
 
     play_ding_sound() {
@@ -2817,14 +2805,6 @@ class SoundEffectsSingleton {
 
     play_bark_sound() {
         this.bark.play();
-    }
-
-    play_good_job_sound() {
-        this.good_job.play();
-    }
-
-    play_victory_sound() {
-        this.victory.play();
     }
 }
 
