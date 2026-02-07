@@ -1593,13 +1593,23 @@ class PhysicalCardStack {
                 PhysicalBoard.display_mergeable_stacks_for(card_stack);
             },
             handle_ordinary_move() {
-                card_stack.loc.left = parseFloat(div.style.left);
-                card_stack.loc.top = parseFloat(div.style.top);
+                // We now make a very similar model stack with
+                // a new location rather than mutating the stack.
+                const loc = {
+                    left: parseFloat(div.style.left),
+                    top: parseFloat(div.style.top),
+                };
+                const new_stack = new CardStack(card_stack.board_cards, loc);
+                const game_event = {
+                    board_event: {
+                        stacks_to_remove: [card_stack],
+                        stacks_to_add: [new_stack],
+                    },
+                    hand_cards_to_remove: [],
+                };
+                EventManager.move_stack(game_event);
             },
             handle_dragend(): void {
-                /*
-                CardStackDragAction.end_drag_stack();
-                */
                 PlayerArea.populate();
                 BoardArea.populate();
             },
@@ -1926,6 +1936,13 @@ class EventManagerSingleton {
         TheGame.process_event(game_event);
         StatusBar.update_text(
             "Split! Moves like this can be tricky, even for experts. You have the undo button if you need it.",
+        );
+    }
+
+    move_stack(game_event: GameEvent): void {
+        TheGame.process_event(game_event);
+        StatusBar.update_text(
+            "Organizing the board is a key part of the game!",
         );
     }
 
