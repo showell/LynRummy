@@ -702,6 +702,21 @@ class Board {
 
         return true;
     }
+
+    // This is called after the player's turn ends.
+    age_cards(): void {
+        for (const board_card of this.get_cards()) {
+            switch (board_card.state) {
+                case BoardCardState.FRESHLY_PLAYED_BY_LAST_PLAYER:
+                    board_card.state = BoardCardState.FIRMLY_ON_BOARD;
+                    break;
+                case BoardCardState.FRESHLY_PLAYED:
+                    board_card.state =
+                        BoardCardState.FRESHLY_PLAYED_BY_LAST_PLAYER;
+                    break;
+            }
+        }
+    }
 }
 
 /***********************************************
@@ -1979,7 +1994,117 @@ let EventManager: EventManagerSingleton;
 
 class EventManagerSingleton {
     maybe_complete_turn(): void {
-        // TODO
+        const self = this;
+
+        const turn_result = TheGame.complete_turn();
+
+        switch (turn_result) {
+            case CompleteTurnResult.FAILURE:
+                SoundEffects.play_purr_sound();
+                Popup.show({
+                    content: `The board is not clean!\
+                        \n\n(nor is my litter box)\
+                        \n\nUse the "Undo mistakes" button if you need to.`,
+                    confirm_button_text: "Oy vey, ok",
+                    type: "warning",
+                    admin: Admin.ANGRY_CAT,
+                    callback() {},
+                });
+                return;
+
+            case CompleteTurnResult.SUCCESS_BUT_NEEDS_CARDS:
+                SoundEffects.play_purr_sound();
+                Popup.show({
+                    content:
+                        "Sorry you couldn't find a move.\
+                        \n\
+                        \nI'm going back to my nap!\
+                        \n\
+                        \nYou will get 3 new cards on your next hand.",
+                    type: "warning",
+                    confirm_button_text: "Ok",
+                    admin: Admin.OLIVER,
+                    callback() {
+                        continue_on_to_next_turn();
+                    },
+                });
+                break;
+
+            case CompleteTurnResult.SUCCESS_AS_VICTOR: {
+                const turn_score = ActivePlayer.get_turn_score();
+                // Only play this for the first time a player gets
+                // rid of all the cards in their hand.
+                SoundEffects.play_victory_sound();
+                Popup.show({
+                    content: `You are the first person to play all their cards!
+                        \n\
+                        \nThat earns you a 1500 point bonus.
+                        \n\
+                        \nYou got ${turn_score} points for this turn.\
+                        \n\
+                        \nYou will get five more cards on the next turn.\
+                        \n\
+                        \nKeep winning!`,
+                    type: "success",
+                    admin: Admin.STEVE,
+                    confirm_button_text: "Continue dominating",
+                    callback() {
+                        continue_on_to_next_turn();
+                    },
+                });
+                break;
+            }
+
+            case CompleteTurnResult.SUCCESS_WITH_HAND_EMPTIED: {
+                const turn_score = ActivePlayer.get_turn_score();
+                Popup.show({
+                    content: `Good job!\
+                    \n\
+                    \nYour scored ${turn_score} for this turn!!\
+                    \n\
+                    \nWe will deal you 5 more cards if you get back on the road.`,
+                    admin: Admin.STEVE,
+                    confirm_button_text: "Back on the road!",
+                    callback() {
+                        continue_on_to_next_turn();
+                    },
+                    type: "success",
+                });
+                break;
+            }
+
+            case CompleteTurnResult.SUCCESS:
+                const turn_score = ActivePlayer.get_turn_score();
+
+                Popup.show({
+                    content: `The board is growing!\
+                         \n\
+                         \nYou receive ${turn_score} points for this turn!`,
+                    type: "success",
+                    confirm_button_text: "Go to next player",
+                    admin: Admin.STEVE,
+                    callback() {
+                        continue_on_to_next_turn();
+                    },
+                });
+                break;
+        }
+
+        function continue_on_to_next_turn() {
+            CurrentBoard.age_cards();
+            TheGame.advance_turn_to_next_player();
+            ActivePlayer.start_turn();
+
+            TheGame.update_snapshot();
+
+            DragDropHelper.reset_internal_data_structures();
+            PlayerArea.populate();
+            BoardArea.populate();
+
+            StatusBar.update_text(
+                `${ActivePlayer.name}, you may begin your turn.`,
+            );
+        }
     }
 
     undo_mistakes(): void {
@@ -2662,8 +2787,6 @@ class SoundEffectsSingleton {
     bark: HTMLAudioElement;
     ding: HTMLAudioElement;
     good_job: HTMLAudioElement;
-    nice: HTMLAudioElement;
-    heard_nice: boolean;
     welcome: HTMLAudioElement;
     victory: HTMLAudioElement;
 
@@ -2674,15 +2797,12 @@ class SoundEffectsSingleton {
         this.purr = document.createElement("audio");
         this.bark = document.createElement("audio");
         this.good_job = document.createElement("audio");
-        this.nice = document.createElement("audio");
         this.welcome = document.createElement("audio");
         this.victory = document.createElement("audio");
         this.ding.src = "ding.mp3";
         this.purr.src = "purr.mp3";
         this.bark.src = "bark.mp3";
         this.good_job.src = "steve.m4a";
-        this.nice.src = "nice.m4a";
-        this.heard_nice = false;
         this.welcome.src = "welcome.mp3";
         this.victory.src = "victory.mp3";
     }
@@ -2701,13 +2821,6 @@ class SoundEffectsSingleton {
 
     play_good_job_sound() {
         this.good_job.play();
-    }
-
-    play_nice_sound() {
-        if (!this.heard_nice) {
-            this.nice.play();
-            this.heard_nice = true;
-        }
     }
 
     play_victory_sound() {
