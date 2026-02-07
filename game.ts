@@ -2680,6 +2680,7 @@ let SoundEffects: SoundEffectsSingleton;
 
 // This is the entry point for static/index.html
 function gui() {
+    document.title = `${suit_emoji_str(Suit.DIAMOND)} Lyn Rummy ${suit_emoji_str(Suit.HEART)}`;
     DragDropHelper = new DragDropHelperSingleton();
     Popup = new PopupSingleton();
     SoundEffects = new SoundEffectsSingleton();
