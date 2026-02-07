@@ -858,7 +858,7 @@ class Player {
 function initial_board(): Board {
     function stack(row: number, sig: string): CardStack {
         const col = (row * 8) % 5;
-        const loc = { top: 5 + row * 50, left: 20 + col * 50 };
+        const loc = { top: 6 + row * 50, left: 40 + col * 50 };
         return CardStack.from(sig, OriginDeck.DECK_ONE, loc);
     }
 
@@ -1279,6 +1279,9 @@ class PhysicalHandCard {
             handle_dragstart(): void {
                 PhysicalBoard.display_mergeable_stacks_for_card(hand_card);
             },
+            handle_ordinary_move(): void {
+                // TODO
+            },
             handle_dragend(): void {
                 /*
                 HandCardDragAction.end_drag_hand_card();
@@ -1461,6 +1464,10 @@ class PhysicalCardStack {
             div,
             handle_dragstart(): void {
                 PhysicalBoard.display_mergeable_stacks_for(card_stack);
+            },
+            handle_ordinary_move() {
+                card_stack.loc.left = parseFloat(div.style.left);
+                card_stack.loc.top = parseFloat(div.style.top);
             },
             handle_dragend(): void {
                 /*
@@ -2002,8 +2009,10 @@ class DragDropHelperSingleton {
         div: HTMLElement;
         handle_dragstart: () => void;
         handle_dragend: () => void;
+        handle_ordinary_move: () => void;
     }): void {
-        const { div, handle_dragstart, handle_dragend } = info;
+        const { div, handle_dragstart, handle_dragend, handle_ordinary_move } =
+            info;
         const self = this;
 
         div.draggable = true;
@@ -2167,6 +2176,7 @@ class DragDropHelperSingleton {
                 }
             }
 
+            handle_ordinary_move();
             handle_dragend();
         });
     }
