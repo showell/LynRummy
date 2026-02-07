@@ -518,6 +518,21 @@ class CardStack {
         return new_stack;
     }
 
+    right_merge(other_stack: CardStack): CardStack | undefined {
+        const loc = {
+            left: this.loc.left,
+            top: this.loc.top,
+        };
+
+        const new_stack = CardStack.maybe_merge(this, other_stack, loc);
+
+        if (new_stack === undefined) {
+            return undefined;
+        }
+
+        return new_stack;
+    }
+
     static maybe_merge(
         s1: CardStack,
         s2: CardStack,
@@ -1454,25 +1469,35 @@ class PhysicalCardStack {
                     add: new_stack,
                     remove: [self.stack, other_stack],
                 });
-                /*
-                if (HandCardDragAction.in_progress()) {
-                    console.log("hand -> stack");
-                    EventManager.merge_hand_card_to_board_stack(
-                        self.stack_location,
-                    );
-                }
+            },
+        });
+    }
 
-                if (CardStackDragAction.in_progress()) {
-                    console.log("stack -> stack");
-                    const source_location =
-                        CardStackDragAction.get_dragged_stack_location();
-                    const target_location = self.stack_location;
-                    EventManager.drop_stack_on_stack({
-                        source_location,
-                        target_location,
-                    });
-                }
-                */
+    maybe_prep_right_stack_merge(other_stack: CardStack): void {
+        const new_stack = this.stack.right_merge(other_stack);
+
+        if (new_stack === undefined) {
+            return;
+        }
+
+        const self = this;
+        const wing_div = this.right_wing;
+
+        self.style_as_mergeable(wing_div);
+
+        DragDropHelper.accept_drop({
+            div: wing_div,
+            on_over() {
+                self.style_for_hover(wing_div);
+            },
+            on_leave() {
+                self.style_as_mergeable(wing_div);
+            },
+            on_drop() {
+                CurrentBoard.update({
+                    add: new_stack,
+                    remove: [self.stack, other_stack],
+                });
             },
         });
     }
@@ -1524,6 +1549,7 @@ class PhysicalBoardSingleton {
     display_mergeable_stacks_for(card_stack: CardStack): void {
         for (const physical_card_stack of this.physical_card_stacks) {
             physical_card_stack.maybe_prep_left_stack_merge(card_stack);
+            physical_card_stack.maybe_prep_right_stack_merge(card_stack);
         }
     }
 
