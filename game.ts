@@ -890,6 +890,7 @@ class Player {
     active: boolean;
     show: boolean;
     hand: Hand;
+    num_drawn: number;
     total_score: number;
     player_turn?: PlayerTurn;
 
@@ -897,6 +898,7 @@ class Player {
         this.name = info.name;
         this.active = false;
         this.show = false;
+        this.num_drawn = 0;
         this.hand = new Hand();
         this.total_score = 0;
     }
@@ -909,6 +911,7 @@ class Player {
     start_turn(): void {
         this.show = true;
         this.active = true;
+        this.num_drawn = 0; // only used after end_turn
         this.player_turn = new PlayerTurn();
     }
 
@@ -965,7 +968,12 @@ class Player {
 
     take_cards_from_deck(cnt: number): void {
         const cards = TheDeck.take_from_top(cnt);
+        this.num_drawn = cards.length;
         this.hand.add_cards(cards, HandCardState.FRESHLY_DRAWN);
+    }
+
+    cards_drawn_for_next_turn(): string {
+        return pluralize(this.num_drawn, "more card");
     }
 
     roll_back_num_cards_played(num_cards_played: number): void {
@@ -1192,6 +1200,11 @@ function shuffle(array: any[]) {
         [array[i], array[j]] = [array[j], array[i]];
     }
     return array;
+}
+
+function pluralize(count: number, noun: string) {
+    const s = count === 1 ? "" : "s";
+    return `${count} ${noun}${s}`;
 }
 
 /***********************************************
@@ -2022,13 +2035,13 @@ class EventManagerSingleton {
 
             case CompleteTurnResult.SUCCESS_BUT_NEEDS_CARDS:
                 SoundEffects.play_purr_sound();
+                const cards = ActivePlayer.cards_drawn_for_next_turn();
                 Popup.show({
-                    content:
-                        "Sorry you couldn't find a move.\
+                    content: `Sorry you couldn't find a move.\
                         \n\
                         \nI'm going back to my nap!\
                         \n\
-                        \nThe dealer has given you 3 new cards for your next turn.",
+                        \nWe have dealt you ${cards} for your next turn.`,
                     type: "warning",
                     confirm_button_text: "Ok",
                     admin: Admin.OLIVER,
@@ -2043,6 +2056,8 @@ class EventManagerSingleton {
                 // Only play this for the first time a player gets
                 // rid of all the cards in their hand.
                 SoundEffects.play_bark_sound();
+
+                const cards = ActivePlayer.cards_drawn_for_next_turn();
                 Popup.show({
                     content: `You are the first person to play all their cards!\
                         \n\
@@ -2050,7 +2065,7 @@ class EventManagerSingleton {
                         \n\
                         \nYou got ${turn_score} points for this turn.\
                         \n\
-                        \nThe dealer has given you five more cards for your next turn.\
+                        \nWe have dealt your ${cards} for your next turn.\
                         \n\
                         \nKeep winning!`,
                     type: "success",
@@ -2065,6 +2080,8 @@ class EventManagerSingleton {
 
             case CompleteTurnResult.SUCCESS_WITH_HAND_EMPTIED: {
                 const turn_score = ActivePlayer.get_turn_score();
+                const cards = ActivePlayer.cards_drawn_for_next_turn();
+
                 Popup.show({
                     content: `Good job!\
                     \n\
@@ -2072,7 +2089,7 @@ class EventManagerSingleton {
                     \n\
                     \nWe gave you a bonus for emptying your hand.\
                     \n\
-                    \nThe dealer has dealt you 5 more cards.`,
+                    \nWe have dealt you ${cards} for your next turn.`,
                     admin: Admin.STEVE,
                     confirm_button_text: "Back on the road!",
                     callback() {
@@ -2812,7 +2829,7 @@ class MainGamePage {
 }
 
 function test() {
-    console.log("V2 COMING SOON!");
+    console.log("begin");
 }
 
 test(); // runs in node
