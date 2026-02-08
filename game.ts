@@ -1343,6 +1343,14 @@ function render_board_heading(): HTMLElement {
     return heading;
 }
 
+function style_player_name(name: HTMLElement): void {
+    name.style.fontWeight = "bold";
+    name.style.fontSize = "19px";
+    name.style.marginTop = "20";
+    name.style.marginBottom = "5px";
+    name.style.color = heading_color();
+}
+
 function render_hand_advice(): HTMLElement {
     const div = document.createElement("div");
     div.innerText = "Drag individual cards to the board.";
@@ -1876,15 +1884,13 @@ class PhysicalPlayer {
         const div = this.div;
         div.innerHTML = "";
 
-        const name = document.createElement("div");
-        name.innerText = player.name;
-        name.style.fontWeight = "bold";
-        name.style.fontSize = "19px";
-        name.style.marginTop = "20";
-        name.style.marginBottom = "5px";
-        name.style.color = heading_color();
+        const name = new EditableText(player.name, (player_name) => {
+            player.name = player_name;
+        });
+        const name_div = name.dom();
+        style_player_name(name_div);
 
-        div.append(name);
+        div.append(name_div);
         div.append(this.score());
 
         if (this.player.show) {
@@ -2200,6 +2206,122 @@ class EventManagerSingleton {
         TheGame.maybe_update_snapshot();
 
         // PlayerArea/BoardArea get updated elsewhere
+    }
+}
+
+/***********************************************
+
+GENERIC WIDGETS vvvv
+
+***********************************************/
+
+class EditableText {
+    div: HTMLElement;
+    text_div: HTMLElement;
+    edit_div?: HTMLElement;
+    edit_input?: HTMLInputElement;
+    val: string;
+    set_callback: (new_val: string) => void;
+
+    constructor(val: string, set_callback: (new_val: string) => void) {
+        const self = this;
+        this.val = val;
+        this.set_callback = set_callback;
+
+        const div = document.createElement("div");
+        this.div = div;
+        div.style.display = "flex";
+
+        const text_div = document.createElement("div");
+        this.text_div = text_div;
+        text_div.innerText = val;
+        text_div.title = "click to edit";
+        text_div.style.userSelect = "none";
+        text_div.style.cursor = "pointer";
+
+        text_div.addEventListener("click", () => {
+            self.edit_text();
+        });
+
+        div.append(text_div);
+    }
+
+    dom(): HTMLElement {
+        return this.div;
+    }
+
+    make_edit_input(): HTMLInputElement {
+        const self = this;
+        const input = document.createElement("input");
+
+        input.type = "text";
+        input.value = self.val;
+        input.style.width = "100px";
+
+        return input;
+    }
+
+    save_button(): HTMLElement {
+        const self = this;
+
+        const button = document.createElement("button");
+        button.style.cursor = "pointer";
+        button.style.backgroundColor = "green";
+        button.style.color = "white";
+        button.style.padding = "1px";
+        button.style.marginLeft = "3px";
+        button.style.fontSize = "10px";
+        button.innerText = "save";
+
+        button.addEventListener("click", () => {
+            self.maybe_save();
+        });
+
+        return button;
+    }
+
+    maybe_save(): void {
+        const self = this;
+
+        const div = self.div;
+        const edit_div = self.edit_div!;
+        const edit_input = self.edit_input!;
+        const text_div = self.text_div;
+
+        const new_val = edit_input.value;
+
+        if (new_val) {
+            self.set_callback(new_val);
+            self.val = new_val;
+        }
+
+        edit_div.remove();
+        div.innerHTML = "";
+        text_div.innerText = self.val;
+        div.append(text_div);
+    }
+
+    edit_text(): void {
+        const self = this;
+        const div = this.div;
+
+        const edit_div = document.createElement("document");
+        edit_div.style.display = "flex";
+
+        const edit_input = self.make_edit_input();
+
+        const save_button = self.save_button();
+
+        edit_div.append(edit_input);
+        div.innerHTML = "";
+        div.append(edit_div);
+        div.append(save_button);
+
+        edit_input.focus();
+        edit_input.select();
+
+        this.edit_input = edit_input;
+        this.edit_div = edit_div;
     }
 }
 
