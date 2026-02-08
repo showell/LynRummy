@@ -991,7 +991,7 @@ function initial_board(): Board {
         stack(2, "2H,3H,4H"),
         stack(3, "7S,7D,7C"),
         stack(4, "AC,AD,AH"),
-        stack(5, "2C,3D,4C,5H,6S"),
+        stack(5, "2C,3D,4C,5H,6S,7H"),
     ];
 
     return new Board(stacks);
@@ -1290,6 +1290,13 @@ function render_player_advice(): HTMLElement {
     const div = document.createElement("div");
     div.innerText = `
         Play as both players to maximize the fun!`;
+    return div;
+}
+
+function render_deck_size(): HTMLElement {
+    const div = document.createElement("div");
+    div.innerText = `
+        There are ${TheDeck.size()} cards left in the deck.`;
     return div;
 }
 
@@ -1892,6 +1899,7 @@ class PlayerAreaSingleton {
             physical_player.populate();
             div.append(physical_player.dom());
         }
+        div.append(render_deck_size());
         div.append(render_player_advice());
     }
 }
