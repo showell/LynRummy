@@ -1404,7 +1404,7 @@ class PhysicalHandCard {
         DragDropHelper.enable_drag({
             div,
             handle_dragstart(): void {
-                StatusBar.update_text("Drag to the board.");
+                StatusBar.inform("Drag to the board.");
                 PhysicalBoard.display_mergeable_stacks_for_card(hand_card);
             },
             handle_ordinary_move(): void {
@@ -1449,7 +1449,7 @@ class PhysicalBoardCard {
             div: this.card_span,
             on_click() {
                 if (card_stack.size() === 1) {
-                    StatusBar.update_text(
+                    StatusBar.scold(
                         "Clicking here does nothing. Maybe you want to drag it instead?",
                     );
                     return;
@@ -1662,7 +1662,7 @@ class PhysicalCardStack {
         DragDropHelper.enable_drag({
             div,
             handle_dragstart(): void {
-                StatusBar.update_text(
+                StatusBar.inform(
                     "Drag to the edge of a stack or any empty space.",
                 );
                 PhysicalBoard.display_mergeable_stacks_for(card_stack);
@@ -1932,7 +1932,7 @@ class PhysicalGame {
         PhysicalBoard = new PhysicalBoardSingleton();
         BoardArea.populate();
         PlayerArea.populate();
-        StatusBar.update_text(
+        StatusBar.inform(
             "Begin game. You can drag and drop hand cards or board piles to piles or empty spaces on the board.",
         );
     }
@@ -2086,15 +2086,13 @@ class EventManagerSingleton {
             PlayerArea.populate();
             BoardArea.populate();
 
-            StatusBar.update_text(
-                `${ActivePlayer.name}, you may begin your turn.`,
-            );
+            StatusBar.inform(`${ActivePlayer.name}, you may begin your turn.`);
         }
     }
 
     undo_mistakes(): void {
         TheGame.rollback_moves_to_last_clean_state();
-        StatusBar.update_text("PHEW!");
+        StatusBar.inform("PHEW!");
         DragDropHelper.reset_internal_data_structures();
         PlayerArea.populate();
         BoardArea.populate();
@@ -2102,19 +2100,19 @@ class EventManagerSingleton {
 
     split_stack(game_event: GameEvent): void {
         TheGame.process_event(game_event);
-        StatusBar.update_text(
+        StatusBar.inform(
             "Split! Moves like this can be tricky, even for experts. You have the undo button if you need it.",
         );
     }
 
     place_hand_card_on_board(game_event: GameEvent): void {
         TheGame.process_event(game_event);
-        StatusBar.update_text("On the board!");
+        StatusBar.inform("On the board!");
     }
 
     move_stack(game_event: GameEvent): void {
         TheGame.process_event(game_event);
-        StatusBar.update_text("Moved!");
+        StatusBar.inform("Moved!");
 
         TheGame.maybe_update_snapshot();
     }
@@ -2130,9 +2128,9 @@ class EventManagerSingleton {
 
         if (size >= 3) {
             SoundEffects.play_ding_sound();
-            StatusBar.update_text("Combined!");
+            StatusBar.celebrate("Combined!");
         } else {
-            StatusBar.update_text("Nice, but where's the third card?");
+            StatusBar.scold("Nice, but where's the third card?");
         }
 
         TheGame.maybe_update_snapshot();
@@ -2532,7 +2530,7 @@ class DragDropHelperSingleton {
             }
 
             if (!inside_board(div)) {
-                StatusBar.update_text("DON'T TAKE CARDS OFF THE BOARD!");
+                StatusBar.scold("DON'T TAKE CARDS OFF THE BOARD!");
                 return;
             }
 
@@ -2611,7 +2609,6 @@ class StatusBarSingleton {
     make_text_div() {
         const text_div = document.createElement("div");
         text_div.style.fontSize = "15px";
-        text_div.style.color = "#31708f";
         return text_div;
     }
 
@@ -2619,7 +2616,18 @@ class StatusBarSingleton {
         return this.div;
     }
 
-    update_text(text: string) {
+    scold(text: string) {
+        this.text_div.style.color = "red";
+        this.text_div.innerText = text;
+    }
+
+    celebrate(text: string) {
+        this.text_div.style.color = "green";
+        this.text_div.innerText = text;
+    }
+
+    inform(text: string) {
+        this.text_div.style.color = "#31708f";
         this.text_div.innerText = text;
     }
 }
