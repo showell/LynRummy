@@ -896,6 +896,7 @@ class Player {
     constructor(info: { name: string }) {
         this.name = info.name;
         this.active = false;
+        this.show = false;
         this.hand = new Hand();
         this.total_score = 0;
     }
@@ -2438,13 +2439,32 @@ class DragDropHelperSingleton {
             return (orig_x - e.clientX) ** 2 + (orig_y - e.clientY) ** 2;
         }
 
-        function start_move(e: PointerEvent) {
+        function maybe_get_active_click_key(
+            e: PointerEvent,
+        ): string | undefined {
+            const elements = document.elementsFromPoint(
+                e.clientX,
+                e.clientY,
+            ) as HTMLElement[];
+
+            for (const element of elements) {
+                if (element.dataset.click_key) {
+                    return element.dataset.click_key;
+                }
+            }
+
+            return undefined;
+        }
+
+        function record_coordinates(e: PointerEvent): void {
             orig_x = e.clientX;
             orig_y = e.clientY;
 
             orig_left = div.offsetLeft;
             orig_top = div.offsetTop;
+        }
 
+        function start_move(e: PointerEvent) {
             div.style.position = "absolute";
             div.style.zIndex = "2";
         }
@@ -2479,28 +2499,20 @@ class DragDropHelperSingleton {
 
             self.drop_targets.clear();
 
-            const elements = document.elementsFromPoint(
-                e.clientX,
-                e.clientY,
-            ) as HTMLElement[];
-
-            for (const element of elements) {
-                if (element.dataset.click_key) {
-                    active_click_key = element.dataset.click_key;
-                }
-            }
-
-            // We defer handle_dragstart until the pointer moves.
-
-            start_move(e);
+            active_click_key = maybe_get_active_click_key(e);
 
             div.setPointerCapture(e.pointerId);
+
+            // We defer moving the div and calling handle_dragstart
+            // until the pointer moves.
+            record_coordinates(e);
         });
 
         div.addEventListener("pointermove", (e) => {
             if (!dragging) return false;
 
             if (!drag_started) {
+                start_move(e);
                 handle_dragstart();
                 drag_started = true;
             }
@@ -2551,7 +2563,9 @@ class DragDropHelperSingleton {
             }
 
             if (!inside_board(div)) {
-                StatusBar.scold("DON'T TAKE CARDS OFF THE BOARD!");
+                StatusBar.scold(
+                    "DON'T TOUCH THE CARDS UNLESS YOU ARE GONNA PUT THEM ON THE BOARD!",
+                );
                 return;
             }
 
