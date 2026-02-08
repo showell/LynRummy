@@ -1307,10 +1307,28 @@ function render_player_advice(): HTMLElement {
     return div;
 }
 
+function render_deck_empty(): HTMLElement {
+    const div = document.createElement("div");
+
+    const p1 = document.createElement("p");
+    p1.innerText = `You have played the entire deck (two decks, actually)!`;
+    p1.style.fontWeight = "bold";
+
+    const p2 = document.createElement("p");
+    p2.innerText = `You can keep trying to score even with empty hands\
+        by organizing the board.  Or just reload the browser to start\
+        a new game.`;
+
+    div.append(p1);
+    div.append(p2);
+    return div;
+}
+
 function render_deck_size(): HTMLElement {
     const div = document.createElement("div");
+    const cards = pluralize(TheDeck.size(), "more card");
     div.innerText = `
-        There are ${TheDeck.size()} cards left in the deck.`;
+        The deck has ${cards}.`;
     return div;
 }
 
@@ -1915,7 +1933,11 @@ class PlayerAreaSingleton {
             physical_player.populate();
             div.append(physical_player.dom());
         }
-        div.append(render_deck_size());
+        if (TheDeck.size() === 0) {
+            div.append(render_deck_empty());
+        } else {
+            div.append(render_deck_size());
+        }
         div.append(render_player_advice());
     }
 }
