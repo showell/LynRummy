@@ -1310,6 +1310,8 @@ function render_player_advice(): HTMLElement {
 function render_deck_empty(): HTMLElement {
     const div = document.createElement("div");
 
+    div.style.maxWidth = "300px";
+
     const p1 = document.createElement("p");
     p1.innerText = `You have played the entire deck (two decks, actually)!`;
     p1.style.fontWeight = "bold";
