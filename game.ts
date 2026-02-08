@@ -888,6 +888,7 @@ let ActivePlayer: Player;
 class Player {
     name: string;
     active: boolean;
+    show: boolean;
     hand: Hand;
     total_score: number;
     player_turn?: PlayerTurn;
@@ -905,6 +906,7 @@ class Player {
     }
 
     start_turn(): void {
+        this.show = true;
         this.active = true;
         this.player_turn = new PlayerTurn();
     }
@@ -939,6 +941,10 @@ class Player {
         this.total_score += this.get_turn_score();
 
         return turn_result;
+    }
+
+    stop_showing() {
+        this.show = false;
     }
 
     release_card(hand_card: HandCard) {
@@ -1114,6 +1120,7 @@ class Game {
     }
 
     advance_turn_to_next_player(): void {
+        ActivePlayer.stop_showing();
         this.current_player_index =
             (this.current_player_index + 1) % this.players.length;
 
@@ -1839,10 +1846,12 @@ class PhysicalPlayer {
         div.append(name);
         div.append(this.score());
 
-        if (this.player.active) {
+        if (this.player.show) {
             div.append(this.physical_hand.dom());
-            div.append(render_hand_advice());
-            div.append(this.complete_turn_button.dom());
+            if (this.player.active) {
+                div.append(render_hand_advice());
+                div.append(this.complete_turn_button.dom());
+            }
         } else {
             div.append(this.card_count());
         }
@@ -1983,6 +1992,8 @@ class EventManagerSingleton {
 
         const turn_result = TheGame.complete_turn();
 
+        PlayerArea.populate();
+
         switch (turn_result) {
             case CompleteTurnResult.FAILURE:
                 SoundEffects.play_purr_sound();
@@ -2005,7 +2016,7 @@ class EventManagerSingleton {
                         \n\
                         \nI'm going back to my nap!\
                         \n\
-                        \nYou will get 3 new cards on your next hand.",
+                        \nThe dealer has given you 3 new cards for your next turn.",
                     type: "warning",
                     confirm_button_text: "Ok",
                     admin: Admin.OLIVER,
@@ -2027,7 +2038,7 @@ class EventManagerSingleton {
                         \n\
                         \nYou got ${turn_score} points for this turn.\
                         \n\
-                        \nYou will get five more cards on the next turn.\
+                        \nThe dealer has given you five more cards for your next turn.\
                         \n\
                         \nKeep winning!`,
                     type: "success",
@@ -2047,7 +2058,9 @@ class EventManagerSingleton {
                     \n\
                     \nYour scored ${turn_score} for this turn!!\
                     \n\
-                    \nWe will deal you 5 more cards if you get back on the road.`,
+                    \nWe gave you a bonus for emptying your hand.\
+                    \n\
+                    \nThe dealer has dealt you 5 more cards.`,
                     admin: Admin.STEVE,
                     confirm_button_text: "Back on the road!",
                     callback() {
