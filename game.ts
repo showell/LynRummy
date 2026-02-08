@@ -1346,6 +1346,7 @@ function render_complete_turn_button(): HTMLElement {
     button.style.backgroundColor = button_color();
     button.style.color = "white";
     button.style.marginRight = "5px";
+    button.style.cursor = "pointer";
     button.innerText = "Complete turn";
     return button;
 }
@@ -1359,6 +1360,7 @@ function render_undo_button(): HTMLElement {
     button.style.position = "absolute";
     button.style.top = "0";
     button.style.right = "0";
+    button.style.cursor = "pointer";
     return button;
 }
 
@@ -1461,7 +1463,7 @@ class PhysicalBoardCard {
         this.update_state_styles();
 
         DragDropHelper.accept_click({
-            div: this.card_span,
+            div: card_span,
             on_click() {
                 if (card_stack.size() === 1) {
                     StatusBar.scold(
@@ -1966,6 +1968,7 @@ class CompleteTurnButton {
 
     constructor() {
         const button = render_complete_turn_button();
+
         button.addEventListener("click", () => {
             EventManager.maybe_complete_turn();
         });
