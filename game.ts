@@ -2513,6 +2513,7 @@ class DragDropHelperSingleton {
 
             if (!drag_started) {
                 start_move(e);
+                div.style.cursor = "grabbing";
                 handle_dragstart();
                 drag_started = true;
             }
