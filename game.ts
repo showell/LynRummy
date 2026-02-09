@@ -733,8 +733,12 @@ class Deck {
     // remotely matters at our scale.
     cards: Card[];
 
-    constructor() {
-        this.cards = build_full_double_deck();
+    constructor(cards: Card[]) {
+        this.cards = cards;
+    }
+
+    clone() {
+        return new Deck([...this.cards]);
     }
 
     str(): string {
@@ -1089,7 +1093,7 @@ class Game {
     has_victor_already: boolean;
 
     constructor() {
-        TheDeck = new Deck();
+        TheDeck = new Deck(build_full_double_deck());
 
         CurrentBoard = initial_board();
         // remove initial cards from deck
@@ -1222,9 +1226,13 @@ let GameEventTracker: GameEventTrackerSingleton;
 
 class GameEventTrackerSingleton {
     game_events: GameEvent[];
+    orig_deck: Deck;
+    orig_board: Board;
 
     constructor() {
         this.game_events = [];
+        this.orig_deck = TheDeck.clone();
+        this.orig_board = CurrentBoard.clone();
     }
 
     push_event(game_event: GameEvent) {
@@ -1232,6 +1240,14 @@ class GameEventTrackerSingleton {
     }
 
     replay(): void {
+        /*
+        TheDeck = this.orig_deck;
+        CurrentBoard = this.orig_board;
+        */
+
+        console.log(this.orig_deck);
+        console.log(this.orig_board);
+
         for (const game_event of this.game_events) {
             console.log(game_event);
         }
