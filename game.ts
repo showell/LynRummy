@@ -446,10 +446,11 @@ class BoardCard {
         return this.card.str();
     }
 
-    static from(label: string, origin_deck: OriginDeck): BoardCard {
+    static pull_from_deck(label: string, origin_deck: OriginDeck): BoardCard {
         const value = value_for(label[0]);
         const suit = suit_for(label[1]);
         const card = new Card(value, suit, origin_deck);
+        TheDeck.pull_card_from_deck(card);
         return new BoardCard(card, BoardCardState.FIRMLY_ON_BOARD);
     }
 
@@ -624,14 +625,14 @@ class CardStack {
         return new_stack;
     }
 
-    static from(
+    static pull_from_deck(
         shorthand: string,
         origin_deck: OriginDeck,
         loc: BoardLocation,
     ): CardStack {
         const card_labels = shorthand.split(",");
         const board_cards = card_labels.map((label) =>
-            BoardCard.from(label, origin_deck),
+            BoardCard.pull_from_deck(label, origin_deck),
         );
         return new CardStack(board_cards, loc);
     }
@@ -1014,7 +1015,7 @@ function initial_board(): Board {
     function stack(row: number, sig: string): CardStack {
         const col = (row * 3 + 1) % 5;
         const loc = { top: 20 + row * 60, left: 40 + col * 30 };
-        return CardStack.from(sig, OriginDeck.DECK_ONE, loc);
+        return CardStack.pull_from_deck(sig, OriginDeck.DECK_ONE, loc);
     }
 
     const stacks = [
@@ -1116,10 +1117,6 @@ class Game {
         TheDeck = new Deck(build_full_double_deck());
 
         CurrentBoard = initial_board();
-        // remove initial cards from deck
-        for (const board_card of CurrentBoard.get_cards()) {
-            TheDeck.pull_card_from_deck(board_card.card);
-        }
 
         GameEventTracker = new GameEventTrackerSingleton();
 
