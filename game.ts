@@ -1274,12 +1274,14 @@ class GameEventTrackerSingleton {
     replay(): void {
         const self = this;
 
+        StatusBar.scold("REPLAY RUNNING! Just watch, don't touch, please.");
+
         function show(): void {
             PlayerArea.populate();
             BoardArea.populate();
         }
 
-        const interval = 300;
+        const interval = 150;
 
         const game_events = this.game_events;
 
@@ -1299,6 +1301,7 @@ class GameEventTrackerSingleton {
         function step() {
             if (i >= game_events.length) {
                 self.replay_in_progress = false;
+                StatusBar.celebrate("REPLAY FINISHED! You may resume playing.");
                 return;
             }
 
