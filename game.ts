@@ -2063,7 +2063,7 @@ class EventManagerSingleton {
                 });
                 return;
 
-            case CompleteTurnResult.SUCCESS_BUT_NEEDS_CARDS:
+            case CompleteTurnResult.SUCCESS_BUT_NEEDS_CARDS: {
                 const turn_score = ActivePlayer.get_turn_score();
                 SoundEffects.play_purr_sound();
                 const cards = ActivePlayer.cards_drawn_for_next_turn();
@@ -2083,6 +2083,7 @@ class EventManagerSingleton {
                     },
                 });
                 break;
+            }
 
             case CompleteTurnResult.SUCCESS_AS_VICTOR: {
                 const turn_score = ActivePlayer.get_turn_score();
