@@ -2064,12 +2064,15 @@ class EventManagerSingleton {
                 return;
 
             case CompleteTurnResult.SUCCESS_BUT_NEEDS_CARDS:
+                const turn_score = ActivePlayer.get_turn_score();
                 SoundEffects.play_purr_sound();
                 const cards = ActivePlayer.cards_drawn_for_next_turn();
                 Popup.show({
                     content: `Sorry you couldn't find a move.\
                         \n\
                         \nI'm going back to my nap!\
+                        \n\
+                        \nYou scored ${turn_score} points for your turn.\
                         \n\
                         \nWe have dealt you ${cards} for your next turn.`,
                     type: "warning",
