@@ -61,7 +61,8 @@ enum CompleteTurnResult {
 
 enum GameEventType {
     PLAYER_ACTION,
-    // I will add another for turn completion eventually.
+    MAYBE_COMPLETE_TURN,
+    ADVANCE_TURN,
 }
 
 type BoardLocation = {
@@ -916,8 +917,8 @@ class Player {
     total_score: number;
     player_turn?: PlayerTurn;
 
-    constructor(info: { name: string }) {
-        this.name = info.name;
+    constructor(name: string) {
+        this.name = name;
         this.active = false;
         this.show = false;
         this.num_drawn = 0;
@@ -1069,16 +1070,16 @@ class PlayerGroupSingleton {
     players: Player[];
     current_player_index: number;
 
-    constructor() {
-        this.players = [
-            new Player({ name: "Susan" }),
-            new Player({ name: "Lyn" }),
-        ];
+    constructor(player_names: string[]) {
+        this.players = player_names.map((name) => new Player(name));
 
         this.deal_cards();
         this.current_player_index = 0;
         ActivePlayer = this.players[0];
-        ActivePlayer.start_turn();
+    }
+
+    get_player_names(): string[] {
+        return this.players.map((player) => player.name);
     }
 
     deal_cards() {
@@ -1107,6 +1108,7 @@ class Game {
         num_cards_played: number;
         hand_cards: HandCard[];
         board: Board;
+        game_events: GameEvent[];
     };
     has_victor_already: boolean;
 
@@ -1119,14 +1121,15 @@ class Game {
             TheDeck.pull_card_from_deck(board_card.card);
         }
 
-        PlayerGroup = new PlayerGroupSingleton();
+        GameEventTracker = new GameEventTrackerSingleton();
+
+        PlayerGroup = new PlayerGroupSingleton(["Susan", "Lyn"]);
+        ActivePlayer.start_turn();
 
         this.has_victor_already = false;
 
         // This initializes the snapshot for the first turn.
         this.update_snapshot();
-
-        GameEventTracker = new GameEventTrackerSingleton();
     }
 
     declares_me_victor(): boolean {
@@ -1148,6 +1151,7 @@ class Game {
                 hand_card.clone(),
             ),
             board: CurrentBoard.clone(),
+            game_events: [...GameEventTracker.game_events],
         };
     }
 
@@ -1165,6 +1169,7 @@ class Game {
         ActivePlayer.roll_back_num_cards_played(snapshot.num_cards_played);
         ActivePlayer.hand.hand_cards = snapshot.hand_cards;
         CurrentBoard = snapshot.board;
+        GameEventTracker.game_events = snapshot.game_events;
 
         // Even though we are now on the SAME snapshot (by definition),
         // we still need to re-clone it, so that subsequent moves
@@ -1173,12 +1178,15 @@ class Game {
     }
 
     advance_turn_to_next_player(): void {
+        GameEventTracker.push_event(new GameEvent(GameEventType.ADVANCE_TURN));
         CurrentBoard.age_cards();
         PlayerGroup.advance_turn();
     }
 
-    complete_turn(): CompleteTurnResult {
-        GameEventTracker.replay(); // just here for testing for now
+    maybe_complete_turn(): CompleteTurnResult {
+        GameEventTracker.push_event(
+            new GameEvent(GameEventType.MAYBE_COMPLETE_TURN),
+        );
 
         // We return failure so that Angry Cat can complain
         // about the dirty board.
@@ -1201,6 +1209,8 @@ class Game {
         for (const hand_card of player_action.hand_cards_to_release) {
             ActivePlayer.release_card(hand_card);
         }
+
+        this.maybe_update_snapshot();
     }
 }
 
@@ -1243,32 +1253,77 @@ class PlayerAction {
 let GameEventTracker: GameEventTrackerSingleton;
 
 class GameEventTrackerSingleton {
+    replay_in_progress: boolean;
     game_events: GameEvent[];
     orig_deck: Deck;
     orig_board: Board;
 
     constructor() {
+        this.replay_in_progress = false;
         this.game_events = [];
         this.orig_deck = TheDeck.clone();
         this.orig_board = CurrentBoard.clone();
     }
 
     push_event(game_event: GameEvent) {
-        this.game_events.push(game_event);
+        if (!this.replay_in_progress) {
+            this.game_events.push(game_event);
+        }
     }
 
     replay(): void {
-        /*
-        TheDeck = this.orig_deck;
-        CurrentBoard = this.orig_board;
-        */
+        const self = this;
 
-        console.log(this.orig_deck);
-        console.log(this.orig_board);
-
-        for (const game_event of this.game_events) {
-            console.log(game_event);
+        function show(): void {
+            PlayerArea.populate();
+            BoardArea.populate();
         }
+
+        const interval = 300;
+
+        const game_events = this.game_events;
+
+        this.replay_in_progress = true;
+
+        const player_names = PlayerGroup.get_player_names();
+
+        TheDeck = this.orig_deck.clone();
+        CurrentBoard = this.orig_board.clone();
+        PlayerGroup = new PlayerGroupSingleton(player_names);
+        show();
+        ActivePlayer.start_turn();
+        setTimeout(show, interval);
+
+        let i = 0;
+
+        function step() {
+            if (i >= game_events.length) {
+                self.replay_in_progress = false;
+                return;
+            }
+
+            const game_event = game_events[i];
+
+            switch (game_event.type) {
+                case GameEventType.PLAYER_ACTION:
+                    TheGame.process_player_action(game_event.player_action!);
+                    break;
+
+                case GameEventType.MAYBE_COMPLETE_TURN:
+                    TheGame.maybe_complete_turn();
+                    break;
+
+                case GameEventType.ADVANCE_TURN:
+                    TheGame.advance_turn_to_next_player();
+                    break;
+            }
+            show();
+            i += 1;
+
+            setTimeout(step, interval);
+        }
+
+        setTimeout(step, interval);
     }
 }
 
@@ -1278,9 +1333,9 @@ class GameEvent {
     // never mutate anything.
 
     type: GameEventType;
-    player_action: PlayerAction;
+    player_action?: PlayerAction;
 
-    constructor(type: GameEventType, player_action: PlayerAction) {
+    constructor(type: GameEventType, player_action?: PlayerAction) {
         this.type = type;
         this.player_action = player_action;
     }
@@ -1523,9 +1578,22 @@ function render_complete_turn_button(): HTMLElement {
     return button;
 }
 
+function render_replay_button(): HTMLElement {
+    const button = document.createElement("button");
+    button.classList.add("button", "replay-button");
+    button.style.backgroundColor = "green";
+    button.style.color = "white";
+    button.innerText = "Replay game";
+    button.style.position = "absolute";
+    button.style.top = "0";
+    button.style.right = "0";
+    button.style.cursor = "pointer";
+    return button;
+}
+
 function render_undo_button(): HTMLElement {
     const button = document.createElement("button");
-    button.classList.add("button", "reset-button");
+    button.classList.add("button", "undo-button");
     button.style.backgroundColor = button_color();
     button.style.color = "white";
     button.innerText = "Undo mistakes";
@@ -2034,26 +2102,23 @@ class PhysicalPlayer {
 let PlayerArea: PlayerAreaSingleton;
 
 class PlayerAreaSingleton {
-    physical_players: PhysicalPlayer[];
     div: HTMLElement;
+    physical_players?: PhysicalPlayer[];
 
-    constructor(players: Player[], player_area: HTMLElement) {
+    constructor(player_area: HTMLElement) {
         this.div = player_area;
-        this.physical_players = players.map(
-            (player) => new PhysicalPlayer(player),
-        );
     }
 
     get_physical_hand_for_player(player_index: number): PhysicalHand {
-        return this.physical_players[player_index].physical_hand;
-    }
-
-    get_physical_player(player_index: number): PhysicalPlayer {
-        return this.physical_players[player_index];
+        return this.physical_players![player_index].physical_hand;
     }
 
     populate(): void {
         const div = this.div;
+
+        this.physical_players = PlayerGroup.players.map(
+            (player) => new PhysicalPlayer(player),
+        );
 
         div.innerHTML = "";
         for (const physical_player of this.physical_players) {
@@ -2093,7 +2158,10 @@ class BoardAreaSingleton {
         div.append(render_board_heading());
         div.append(render_board_advice());
 
-        if (!CurrentBoard.is_clean()) {
+        // TODO: make ReplayButton always visible.
+        if (CurrentBoard.is_clean()) {
+            div.append(new ReplayButton().dom());
+        } else {
             div.append(new UndoButton().dom());
         }
 
@@ -2109,9 +2177,8 @@ class PhysicalGame {
 
         TheGame = new Game();
         EventManager = new EventManagerSingleton();
-        PlayerArea = new PlayerAreaSingleton(PlayerGroup.players, player_area);
+        PlayerArea = new PlayerAreaSingleton(player_area);
         BoardArea = new BoardAreaSingleton(board_area);
-        PhysicalBoard = new PhysicalBoardSingleton();
         BoardArea.populate();
         PlayerArea.populate();
         StatusBar.inform(
@@ -2133,6 +2200,22 @@ class CompleteTurnButton {
 
         button.addEventListener("click", () => {
             EventManager.maybe_complete_turn();
+        });
+        this.button = button;
+    }
+
+    dom(): HTMLElement {
+        return this.button;
+    }
+}
+
+class ReplayButton {
+    button: HTMLElement;
+
+    constructor() {
+        const button = render_replay_button();
+        button.addEventListener("click", () => {
+            GameEventTracker.replay();
         });
         this.button = button;
     }
@@ -2164,7 +2247,7 @@ class EventManagerSingleton {
     maybe_complete_turn(): void {
         const self = this;
 
-        const turn_result = TheGame.complete_turn();
+        const turn_result = TheGame.maybe_complete_turn();
 
         PlayerArea.populate();
 
@@ -2306,8 +2389,6 @@ class EventManagerSingleton {
     move_stack(player_action: PlayerAction): void {
         TheGame.process_player_action(player_action);
         StatusBar.inform("Moved!");
-
-        TheGame.maybe_update_snapshot();
     }
 
     // This function works for both dragging board stacks
@@ -2325,8 +2406,6 @@ class EventManagerSingleton {
         } else {
             StatusBar.scold("Nice, but where's the third card?");
         }
-
-        TheGame.maybe_update_snapshot();
 
         // PlayerArea/BoardArea get updated elsewhere
     }
@@ -3096,7 +3175,7 @@ class MainGamePage {
 }
 
 function test() {
-    console.log("Survive and advance!");
+    console.log("replay yo!");
 }
 
 test(); // runs in node
