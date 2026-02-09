@@ -59,6 +59,11 @@ enum CompleteTurnResult {
     FAILURE,
 }
 
+enum GameEventType {
+    PLAYER_ACTION,
+    // I will add another for turn completion eventually.
+}
+
 type BoardLocation = {
     top: number;
     left: number;
@@ -67,11 +72,6 @@ type BoardLocation = {
 type BoardEvent = {
     stacks_to_remove: CardStack[];
     stacks_to_add: CardStack[];
-};
-
-type GameEvent = {
-    board_event: BoardEvent;
-    hand_cards_to_release: HandCard[];
 };
 
 function is_pair_of_dups(card1: Card, card2: Card): boolean {
@@ -1155,6 +1155,47 @@ class Game {
     }
 }
 
+class GameEvent {
+    // This is just a glorified struct! Callers are allowed
+    // to directly reference anything they want, but they should
+    // never mutate anything.
+
+    type: GameEventType;
+    board_event: BoardEvent;
+    hand_cards_to_release: HandCard[];
+
+    constructor(info: {
+        type: GameEventType;
+        board_event: BoardEvent;
+        hand_cards_to_release: HandCard[];
+    }) {
+        this.type = info.type;
+        this.board_event = info.board_event;
+        this.hand_cards_to_release = info.hand_cards_to_release;
+    }
+
+    static board_action(board_event: BoardEvent): GameEvent {
+        return new GameEvent({
+            type: GameEventType.PLAYER_ACTION,
+            board_event,
+            hand_cards_to_release: [],
+        });
+    }
+
+    static hand_card_action(info: {
+        board_event: BoardEvent;
+        hand_cards_to_release: HandCard[];
+    }) {
+        const { board_event, hand_cards_to_release } = info;
+
+        return new GameEvent({
+            type: GameEventType.PLAYER_ACTION,
+            board_event,
+            hand_cards_to_release,
+        });
+    }
+}
+
 function has_duplicate_cards(cards: Card[]): boolean {
     function any_dup_card(card: Card, rest: Card[]): boolean {
         if (rest.length === 0) {
@@ -1468,13 +1509,13 @@ class PhysicalHandCard {
             handle_ordinary_move(): void {
                 const loc = loc_on_board(div);
                 const new_stack = CardStack.from_hand_card(hand_card, loc);
-                const game_event = {
+                const game_event = GameEvent.hand_card_action({
                     board_event: {
                         stacks_to_remove: [],
                         stacks_to_add: [new_stack],
                     },
                     hand_cards_to_release: [hand_card],
-                };
+                });
                 EventManager.place_hand_card_on_board(game_event);
             },
         });
@@ -1513,13 +1554,10 @@ class PhysicalBoardCard {
                     return;
                 }
                 const stacks_to_add = card_stack.split(card_index);
-                const game_event: GameEvent = {
-                    board_event: {
-                        stacks_to_remove: [card_stack],
-                        stacks_to_add,
-                    },
-                    hand_cards_to_release: [],
-                };
+                const game_event = GameEvent.board_action({
+                    stacks_to_remove: [card_stack],
+                    stacks_to_add,
+                });
                 EventManager.split_stack(game_event);
             },
         });
@@ -1605,13 +1643,13 @@ class PhysicalCardStack {
             return;
         }
 
-        const game_event: GameEvent = {
+        const game_event = GameEvent.hand_card_action({
             board_event: {
                 stacks_to_remove: [this.stack],
                 stacks_to_add: [new_stack],
             },
             hand_cards_to_release: [hand_card],
-        };
+        });
 
         this.prep_left_merge(game_event);
     }
@@ -1625,13 +1663,13 @@ class PhysicalCardStack {
             return;
         }
 
-        const game_event: GameEvent = {
+        const game_event = GameEvent.hand_card_action({
             board_event: {
                 stacks_to_remove: [this.stack],
                 stacks_to_add: [new_stack],
             },
             hand_cards_to_release: [hand_card],
-        };
+        });
 
         this.prep_right_merge(game_event);
     }
@@ -1643,13 +1681,10 @@ class PhysicalCardStack {
             return;
         }
 
-        const game_event: GameEvent = {
-            board_event: {
-                stacks_to_remove: [this.stack, other_stack],
-                stacks_to_add: [new_stack],
-            },
-            hand_cards_to_release: [],
-        };
+        const game_event = GameEvent.board_action({
+            stacks_to_remove: [this.stack, other_stack],
+            stacks_to_add: [new_stack],
+        });
 
         this.prep_left_merge(game_event);
     }
@@ -1661,13 +1696,10 @@ class PhysicalCardStack {
             return;
         }
 
-        const game_event: GameEvent = {
-            board_event: {
-                stacks_to_remove: [this.stack, other_stack],
-                stacks_to_add: [new_stack],
-            },
-            hand_cards_to_release: [],
-        };
+        const game_event = GameEvent.board_action({
+            stacks_to_remove: [this.stack, other_stack],
+            stacks_to_add: [new_stack],
+        });
 
         this.prep_right_merge(game_event);
     }
@@ -1733,13 +1765,10 @@ class PhysicalCardStack {
                     top: parseFloat(div.style.top),
                 };
                 const new_stack = new CardStack(card_stack.board_cards, loc);
-                const game_event = {
-                    board_event: {
-                        stacks_to_remove: [card_stack],
-                        stacks_to_add: [new_stack],
-                    },
-                    hand_cards_to_release: [],
-                };
+                const game_event = GameEvent.board_action({
+                    stacks_to_remove: [card_stack],
+                    stacks_to_add: [new_stack],
+                });
                 EventManager.move_stack(game_event);
             },
         });
