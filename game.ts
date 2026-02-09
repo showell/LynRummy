@@ -1129,11 +1129,13 @@ class Game {
     }
 
     advance_turn_to_next_player(): void {
+        CurrentBoard.age_cards();
         ActivePlayer.stop_showing();
         this.current_player_index =
             (this.current_player_index + 1) % this.players.length;
 
         ActivePlayer = this.players[this.current_player_index];
+        ActivePlayer.start_turn();
     }
 
     complete_turn(): CompleteTurnResult {
@@ -2181,9 +2183,7 @@ class EventManagerSingleton {
         }
 
         function continue_on_to_next_turn() {
-            CurrentBoard.age_cards();
             TheGame.advance_turn_to_next_player();
-            ActivePlayer.start_turn();
 
             TheGame.update_snapshot();
 
@@ -3008,7 +3008,7 @@ class MainGamePage {
 }
 
 function test() {
-    console.log("begin");
+    console.log("All respect to Martin Fowler!");
 }
 
 test(); // runs in node
