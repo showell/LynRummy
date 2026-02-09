@@ -457,17 +457,19 @@ class BoardCard {
     }
 }
 
+function locs_equal(loc1: BoardLocation, loc2: BoardLocation) {
+    return loc1.top === loc2.top && loc1.left === loc2.left;
+}
+
 class CardStack {
     board_cards: BoardCard[]; // Order does matter here!
     stack_type: CardStackType;
     loc: BoardLocation;
-    _deleted: boolean;
 
     constructor(board_cards: BoardCard[], loc: BoardLocation) {
         this.board_cards = board_cards;
         this.stack_type = this.get_stack_type();
         this.loc = loc;
-        this._deleted = false;
     }
 
     clone(): CardStack {
@@ -494,7 +496,10 @@ class CardStack {
 
     equals(other_stack: CardStack) {
         // Cheat and compare strings.
-        return this.str() === other_stack.str();
+        return (
+            this.str() === other_stack.str() &&
+            locs_equal(this.loc, other_stack.loc)
+        );
     }
 
     incomplete(): boolean {
@@ -676,15 +681,28 @@ class Board {
     process_event(board_event: BoardEvent): void {
         const { stacks_to_remove, stacks_to_add } = board_event;
 
-        for (const card_stack of stacks_to_remove) {
-            card_stack._deleted = true;
+        function need_to_remove(stack: CardStack) {
+            for (const remove_stack of stacks_to_remove) {
+                if (stack.equals(remove_stack)) {
+                    return true;
+                }
+            }
+            return false;
         }
 
-        this.card_stacks = this.card_stacks.filter((stack) => !stack._deleted);
+        const new_stacks = [];
+
+        for (const card_stack of this.card_stacks) {
+            if (!need_to_remove(card_stack)) {
+                new_stacks.push(card_stack);
+            }
+        }
 
         for (const stack of stacks_to_add) {
-            this.card_stacks.push(stack);
+            new_stacks.push(stack);
         }
+
+        this.card_stacks = new_stacks;
     }
 
     score(): number {
