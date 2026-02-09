@@ -2110,7 +2110,7 @@ class EventManagerSingleton {
                     confirm_button_text: "Ok",
                     admin: Admin.OLIVER,
                     callback() {
-                        continue_on_to_next_turn();
+                        self.advance_turn();
                     },
                 });
                 break;
@@ -2137,7 +2137,7 @@ class EventManagerSingleton {
                     admin: Admin.STEVE,
                     confirm_button_text: "Continue dominating",
                     callback() {
-                        continue_on_to_next_turn();
+                        self.advance_turn();
                     },
                 });
                 break;
@@ -2158,7 +2158,7 @@ class EventManagerSingleton {
                     admin: Admin.STEVE,
                     confirm_button_text: "Back on the road!",
                     callback() {
-                        continue_on_to_next_turn();
+                        self.advance_turn();
                     },
                     type: "success",
                 });
@@ -2176,23 +2176,23 @@ class EventManagerSingleton {
                     confirm_button_text: "Go to next player",
                     admin: Admin.STEVE,
                     callback() {
-                        continue_on_to_next_turn();
+                        self.advance_turn();
                     },
                 });
                 break;
         }
+    }
 
-        function continue_on_to_next_turn() {
-            TheGame.advance_turn_to_next_player();
+    advance_turn() {
+        TheGame.advance_turn_to_next_player();
 
-            TheGame.update_snapshot();
+        TheGame.update_snapshot();
 
-            DragDropHelper.reset_internal_data_structures();
-            PlayerArea.populate();
-            BoardArea.populate();
+        DragDropHelper.reset_internal_data_structures();
+        PlayerArea.populate();
+        BoardArea.populate();
 
-            StatusBar.inform(`${ActivePlayer.name}, you may begin your turn.`);
-        }
+        StatusBar.inform(`${ActivePlayer.name}, you may begin your turn.`);
     }
 
     undo_mistakes(): void {
@@ -3008,7 +3008,7 @@ class MainGamePage {
 }
 
 function test() {
-    console.log("All respect to Martin Fowler!");
+    console.log("Survive and advance!");
 }
 
 test(); // runs in node
