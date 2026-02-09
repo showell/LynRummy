@@ -1041,9 +1041,42 @@ class ScoreSingleton {
 
 let Score = new ScoreSingleton();
 
-class Game {
+let PlayerGroup: PlayerGroupSingleton;
+
+class PlayerGroupSingleton {
     players: Player[];
     current_player_index: number;
+
+    constructor() {
+        this.players = [
+            new Player({ name: "Susan" }),
+            new Player({ name: "Lyn" }),
+        ];
+
+        this.deal_cards();
+        this.current_player_index = 0;
+        ActivePlayer = this.players[0];
+        ActivePlayer.start_turn();
+    }
+
+    deal_cards() {
+        for (const player of this.players) {
+            const cards = TheDeck.take_from_top(15);
+            player.hand.add_cards(cards, HandCardState.NORMAL);
+        }
+    }
+
+    advance_turn(): void {
+        ActivePlayer.stop_showing();
+        this.current_player_index =
+            (this.current_player_index + 1) % this.players.length;
+
+        ActivePlayer = this.players[this.current_player_index];
+        ActivePlayer.start_turn();
+    }
+}
+
+class Game {
     // The first snapshot will be initialized after
     // the first player starts their turn.
     // We will then update the snapshot at any
@@ -1056,23 +1089,17 @@ class Game {
     has_victor_already: boolean;
 
     constructor() {
-        this.players = [
-            new Player({ name: "Susan" }),
-            new Player({ name: "Lyn" }),
-        ];
-        this.has_victor_already = false;
         TheDeck = new Deck();
-        CurrentBoard = initial_board();
 
+        CurrentBoard = initial_board();
         // remove initial cards from deck
         for (const board_card of CurrentBoard.get_cards()) {
             TheDeck.pull_card_from_deck(board_card.card);
         }
 
-        this.deal_cards();
-        this.current_player_index = 0;
-        ActivePlayer = this.players[0];
-        ActivePlayer.start_turn();
+        PlayerGroup = new PlayerGroupSingleton();
+
+        this.has_victor_already = false;
 
         // This initializes the snapshot for the first turn.
         this.update_snapshot();
@@ -1123,21 +1150,9 @@ class Game {
         this.update_snapshot();
     }
 
-    deal_cards() {
-        for (const player of this.players) {
-            const cards = TheDeck.take_from_top(15);
-            player.hand.add_cards(cards, HandCardState.NORMAL);
-        }
-    }
-
     advance_turn_to_next_player(): void {
         CurrentBoard.age_cards();
-        ActivePlayer.stop_showing();
-        this.current_player_index =
-            (this.current_player_index + 1) % this.players.length;
-
-        ActivePlayer = this.players[this.current_player_index];
-        ActivePlayer.start_turn();
+        PlayerGroup.advance_turn();
     }
 
     complete_turn(): CompleteTurnResult {
@@ -2060,7 +2075,7 @@ class PhysicalGame {
 
         TheGame = new Game();
         EventManager = new EventManagerSingleton();
-        PlayerArea = new PlayerAreaSingleton(TheGame.players, player_area);
+        PlayerArea = new PlayerAreaSingleton(PlayerGroup.players, player_area);
         BoardArea = new BoardAreaSingleton(board_area);
         PhysicalBoard = new PhysicalBoardSingleton();
         BoardArea.populate();
@@ -2071,7 +2086,7 @@ class PhysicalGame {
     }
 
     get_physical_hand(): PhysicalHand {
-        const index = TheGame.current_player_index;
+        const index = PlayerGroup.current_player_index;
         return PlayerArea.get_physical_hand_for_player(index);
     }
 }
