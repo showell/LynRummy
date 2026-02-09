@@ -1148,37 +1148,39 @@ class Game {
         return turn_result;
     }
 
-    process_event(game_event: GameEvent): void {
-        CurrentBoard.process_event(game_event.board_event);
+    process_player_action(player_action: PlayerAction): void {
+        const game_event = new GameEvent(
+            GameEventType.PLAYER_ACTION,
+            player_action,
+        );
+        console.log("game event", game_event);
 
-        for (const hand_card of game_event.hand_cards_to_release) {
+        CurrentBoard.process_event(player_action.board_event);
+
+        for (const hand_card of player_action.hand_cards_to_release) {
             ActivePlayer.release_card(hand_card);
         }
     }
 }
 
-class GameEvent {
+class PlayerAction {
     // This is just a glorified struct! Callers are allowed
     // to directly reference anything they want, but they should
     // never mutate anything.
 
-    type: GameEventType;
     board_event: BoardEvent;
     hand_cards_to_release: HandCard[];
 
     constructor(info: {
-        type: GameEventType;
         board_event: BoardEvent;
         hand_cards_to_release: HandCard[];
     }) {
-        this.type = info.type;
         this.board_event = info.board_event;
         this.hand_cards_to_release = info.hand_cards_to_release;
     }
 
-    static board_action(board_event: BoardEvent): GameEvent {
-        return new GameEvent({
-            type: GameEventType.PLAYER_ACTION,
+    static board_action(board_event: BoardEvent): PlayerAction {
+        return new PlayerAction({
             board_event,
             hand_cards_to_release: [],
         });
@@ -1190,11 +1192,24 @@ class GameEvent {
     }) {
         const { board_event, hand_cards_to_release } = info;
 
-        return new GameEvent({
-            type: GameEventType.PLAYER_ACTION,
+        return new PlayerAction({
             board_event,
             hand_cards_to_release,
         });
+    }
+}
+
+class GameEvent {
+    // This is just a glorified struct! Callers are allowed
+    // to directly reference anything they want, but they should
+    // never mutate anything.
+
+    type: GameEventType;
+    player_action: PlayerAction;
+
+    constructor(type: GameEventType, player_action: PlayerAction) {
+        this.type = type;
+        this.player_action = player_action;
     }
 }
 
@@ -1511,14 +1526,14 @@ class PhysicalHandCard {
             handle_ordinary_move(): void {
                 const loc = loc_on_board(div);
                 const new_stack = CardStack.from_hand_card(hand_card, loc);
-                const game_event = GameEvent.hand_card_action({
+                const player_action = PlayerAction.hand_card_action({
                     board_event: {
                         stacks_to_remove: [],
                         stacks_to_add: [new_stack],
                     },
                     hand_cards_to_release: [hand_card],
                 });
-                EventManager.place_hand_card_on_board(game_event);
+                EventManager.place_hand_card_on_board(player_action);
             },
         });
     }
@@ -1556,11 +1571,11 @@ class PhysicalBoardCard {
                     return;
                 }
                 const stacks_to_add = card_stack.split(card_index);
-                const game_event = GameEvent.board_action({
+                const player_action = PlayerAction.board_action({
                     stacks_to_remove: [card_stack],
                     stacks_to_add,
                 });
-                EventManager.split_stack(game_event);
+                EventManager.split_stack(player_action);
             },
         });
     }
@@ -1645,7 +1660,7 @@ class PhysicalCardStack {
             return;
         }
 
-        const game_event = GameEvent.hand_card_action({
+        const player_action = PlayerAction.hand_card_action({
             board_event: {
                 stacks_to_remove: [this.stack],
                 stacks_to_add: [new_stack],
@@ -1653,7 +1668,7 @@ class PhysicalCardStack {
             hand_cards_to_release: [hand_card],
         });
 
-        this.prep_left_merge(game_event);
+        this.prep_left_merge(player_action);
     }
 
     maybe_prep_right_hand_card_merge(hand_card: HandCard): void {
@@ -1665,7 +1680,7 @@ class PhysicalCardStack {
             return;
         }
 
-        const game_event = GameEvent.hand_card_action({
+        const player_action = PlayerAction.hand_card_action({
             board_event: {
                 stacks_to_remove: [this.stack],
                 stacks_to_add: [new_stack],
@@ -1673,7 +1688,7 @@ class PhysicalCardStack {
             hand_cards_to_release: [hand_card],
         });
 
-        this.prep_right_merge(game_event);
+        this.prep_right_merge(player_action);
     }
 
     maybe_prep_left_stack_merge(other_stack: CardStack): void {
@@ -1683,12 +1698,12 @@ class PhysicalCardStack {
             return;
         }
 
-        const game_event = GameEvent.board_action({
+        const player_action = PlayerAction.board_action({
             stacks_to_remove: [this.stack, other_stack],
             stacks_to_add: [new_stack],
         });
 
-        this.prep_left_merge(game_event);
+        this.prep_left_merge(player_action);
     }
 
     maybe_prep_right_stack_merge(other_stack: CardStack): void {
@@ -1698,15 +1713,15 @@ class PhysicalCardStack {
             return;
         }
 
-        const game_event = GameEvent.board_action({
+        const player_action = PlayerAction.board_action({
             stacks_to_remove: [this.stack, other_stack],
             stacks_to_add: [new_stack],
         });
 
-        this.prep_right_merge(game_event);
+        this.prep_right_merge(player_action);
     }
 
-    prep_left_merge(game_event: GameEvent): void {
+    prep_left_merge(player_action: PlayerAction): void {
         const self = this;
         const wing_div = this.left_wing;
 
@@ -1722,12 +1737,12 @@ class PhysicalCardStack {
                 self.style_as_mergeable(wing_div);
             },
             on_drop() {
-                EventManager.process_game_event(game_event);
+                EventManager.process_merge(player_action);
             },
         });
     }
 
-    prep_right_merge(game_event: GameEvent): void {
+    prep_right_merge(player_action: PlayerAction): void {
         const self = this;
         const wing_div = this.right_wing;
 
@@ -1742,7 +1757,7 @@ class PhysicalCardStack {
                 self.style_as_mergeable(wing_div);
             },
             on_drop() {
-                EventManager.process_game_event(game_event);
+                EventManager.process_merge(player_action);
             },
         });
     }
@@ -1767,11 +1782,11 @@ class PhysicalCardStack {
                     top: parseFloat(div.style.top),
                 };
                 const new_stack = new CardStack(card_stack.board_cards, loc);
-                const game_event = GameEvent.board_action({
+                const player_action = PlayerAction.board_action({
                     stacks_to_remove: [card_stack],
                     stacks_to_add: [new_stack],
                 });
-                EventManager.move_stack(game_event);
+                EventManager.move_stack(player_action);
             },
         });
     }
@@ -2203,20 +2218,20 @@ class EventManagerSingleton {
         BoardArea.populate();
     }
 
-    split_stack(game_event: GameEvent): void {
-        TheGame.process_event(game_event);
+    split_stack(player_action: PlayerAction): void {
+        TheGame.process_player_action(player_action);
         StatusBar.inform(
             "Split! Moves like this can be tricky, even for experts. You have the undo button if you need it.",
         );
     }
 
-    place_hand_card_on_board(game_event: GameEvent): void {
-        TheGame.process_event(game_event);
+    place_hand_card_on_board(player_action: PlayerAction): void {
+        TheGame.process_player_action(player_action);
         StatusBar.inform("On the board!");
     }
 
-    move_stack(game_event: GameEvent): void {
-        TheGame.process_event(game_event);
+    move_stack(player_action: PlayerAction): void {
+        TheGame.process_player_action(player_action);
         StatusBar.inform("Moved!");
 
         TheGame.maybe_update_snapshot();
@@ -2225,10 +2240,10 @@ class EventManagerSingleton {
     // This function works for both dragging board stacks
     // and dragging hand cards to an existing board stack.
 
-    process_game_event(game_event: GameEvent): void {
-        TheGame.process_event(game_event);
+    process_merge(player_action: PlayerAction): void {
+        TheGame.process_player_action(player_action);
 
-        const merged_stack = game_event.board_event.stacks_to_add[0];
+        const merged_stack = player_action.board_event.stacks_to_add[0];
         const size = merged_stack.size();
 
         if (size >= 3) {
