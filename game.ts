@@ -1076,6 +1076,8 @@ class Game {
 
         // This initializes the snapshot for the first turn.
         this.update_snapshot();
+
+        GameEventTracker = new GameEventTrackerSingleton();
     }
 
     declares_me_victor(): boolean {
@@ -1139,6 +1141,8 @@ class Game {
     }
 
     complete_turn(): CompleteTurnResult {
+        GameEventTracker.replay(); // just here for testing for now
+
         // We return failure so that Angry Cat can complain
         // about the dirty board.
         if (!CurrentBoard.is_clean()) return CompleteTurnResult.FAILURE;
@@ -1153,7 +1157,7 @@ class Game {
             GameEventType.PLAYER_ACTION,
             player_action,
         );
-        console.log("game event", game_event);
+        GameEventTracker.push_event(game_event);
 
         CurrentBoard.process_event(player_action.board_event);
 
@@ -1196,6 +1200,26 @@ class PlayerAction {
             board_event,
             hand_cards_to_release,
         });
+    }
+}
+
+let GameEventTracker: GameEventTrackerSingleton;
+
+class GameEventTrackerSingleton {
+    game_events: GameEvent[];
+
+    constructor() {
+        this.game_events = [];
+    }
+
+    push_event(game_event: GameEvent) {
+        this.game_events.push(game_event);
+    }
+
+    replay(): void {
+        for (const game_event of this.game_events) {
+            console.log(game_event);
+        }
     }
 }
 
