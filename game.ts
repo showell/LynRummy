@@ -2083,7 +2083,7 @@ class PhysicalPlayer {
         const div = this.div;
         div.innerHTML = "";
 
-        const name = new EditableText(player.name, (player_name) => {
+        const name = editable_text(player.name, (player_name) => {
             player.name = player_name;
         });
         const name_div = name.dom();
@@ -2534,6 +2534,16 @@ class EditableText {
         this.edit_input = edit_input;
         this.edit_div = edit_div;
     }
+}
+
+function editable_text(val: string, set_callback: (new_val: string) => void) {
+    const widget = new EditableText(val, set_callback);
+
+    return {
+        dom() {
+            return widget.dom();
+        },
+    };
 }
 
 /***********************************************
