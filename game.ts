@@ -1305,6 +1305,7 @@ class GameEventTrackerSingleton {
         function step() {
             if (i >= game_events.length) {
                 self.replay_in_progress = false;
+                show();
                 StatusBar.celebrate("REPLAY FINISHED! You may resume playing.");
                 return;
             }
@@ -2165,11 +2166,12 @@ class BoardAreaSingleton {
         div.append(render_board_heading());
         div.append(render_board_advice());
 
-        // TODO: make ReplayButton always visible.
-        if (CurrentBoard.is_clean()) {
-            div.append(new ReplayButton().dom());
-        } else {
-            div.append(new UndoButton().dom());
+        if (!GameEventTracker.replay_in_progress) {
+            if (CurrentBoard.is_clean()) {
+                div.append(new ReplayButton().dom());
+            } else {
+                div.append(new UndoButton().dom());
+            }
         }
 
         div.append(PhysicalBoard.dom());
