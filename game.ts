@@ -446,6 +446,17 @@ class BoardCard {
         return this.card.str();
     }
 
+    static aged_state(state: BoardCardState): BoardCardState {
+        switch (state) {
+            case BoardCardState.FRESHLY_PLAYED_BY_LAST_PLAYER:
+                return BoardCardState.FIRMLY_ON_BOARD;
+            case BoardCardState.FRESHLY_PLAYED:
+                return BoardCardState.FRESHLY_PLAYED_BY_LAST_PLAYER;
+        }
+
+        return state;
+    }
+
     static pull_from_deck(label: string, origin_deck: OriginDeck): BoardCard {
         const value = value_for(label[0]);
         const suit = suit_for(label[1]);
@@ -603,15 +614,7 @@ class CardStack {
 
     age_cards(): void {
         for (const board_card of this.board_cards) {
-            switch (board_card.state) {
-                case BoardCardState.FRESHLY_PLAYED_BY_LAST_PLAYER:
-                    board_card.state = BoardCardState.FIRMLY_ON_BOARD;
-                    break;
-                case BoardCardState.FRESHLY_PLAYED:
-                    board_card.state =
-                        BoardCardState.FRESHLY_PLAYED_BY_LAST_PLAYER;
-                    break;
-            }
+            board_card.state = BoardCard.aged_state(board_card.state);
         }
     }
 
