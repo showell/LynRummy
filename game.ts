@@ -1107,6 +1107,8 @@ class PlayerGroupSingleton {
     }
 }
 
+let TheGame: Game;
+
 class Game {
     // The first snapshot will be initialized after
     // the first player starts their turn.
@@ -2177,8 +2179,6 @@ class BoardAreaSingleton {
         div.append(PhysicalBoard.dom());
     }
 }
-
-let TheGame: Game;
 
 class PhysicalGame {
     constructor(info: { player_area: HTMLElement; board_area: HTMLElement }) {
