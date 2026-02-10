@@ -601,6 +601,20 @@ class CardStack {
         return CardStack.maybe_merge(this, other_stack, loc);
     }
 
+    age_cards(): void {
+        for (const board_card of this.board_cards) {
+            switch (board_card.state) {
+                case BoardCardState.FRESHLY_PLAYED_BY_LAST_PLAYER:
+                    board_card.state = BoardCardState.FIRMLY_ON_BOARD;
+                    break;
+                case BoardCardState.FRESHLY_PLAYED:
+                    board_card.state =
+                        BoardCardState.FRESHLY_PLAYED_BY_LAST_PLAYER;
+                    break;
+            }
+        }
+    }
+
     static maybe_merge(
         s1: CardStack,
         s2: CardStack,
@@ -669,17 +683,6 @@ class Board {
         return card_stacks.map((card_stack) => card_stack.str()).join(" | ");
     }
 
-    get_cards(): BoardCard[] {
-        const result: BoardCard[] = [];
-        for (const card_stack of this.card_stacks) {
-            for (const board_card of card_stack.board_cards) {
-                result.push(board_card);
-            }
-        }
-
-        return result;
-    }
-
     process_event(board_event: BoardEvent): void {
         const { stacks_to_remove, stacks_to_add } = board_event;
 
@@ -725,16 +728,8 @@ class Board {
 
     // This is called after the player's turn ends.
     age_cards(): void {
-        for (const board_card of this.get_cards()) {
-            switch (board_card.state) {
-                case BoardCardState.FRESHLY_PLAYED_BY_LAST_PLAYER:
-                    board_card.state = BoardCardState.FIRMLY_ON_BOARD;
-                    break;
-                case BoardCardState.FRESHLY_PLAYED:
-                    board_card.state =
-                        BoardCardState.FRESHLY_PLAYED_BY_LAST_PLAYER;
-                    break;
-            }
+        for (const card_stack of this.card_stacks) {
+            card_stack.age_cards();
         }
     }
 }
