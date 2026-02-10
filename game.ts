@@ -446,6 +446,13 @@ class BoardCard {
         return this.card.str();
     }
 
+    static aged_from_prior_turn(board_card: BoardCard): BoardCard {
+        return new BoardCard(
+            board_card.card,
+            BoardCard.aged_state(board_card.state),
+        );
+    }
+
     static aged_state(state: BoardCardState): BoardCardState {
         switch (state) {
             case BoardCardState.FRESHLY_PLAYED_BY_LAST_PLAYER:
@@ -612,10 +619,12 @@ class CardStack {
         return CardStack.maybe_merge(this, other_stack, loc);
     }
 
-    age_cards(): void {
-        for (const board_card of this.board_cards) {
-            board_card.state = BoardCard.aged_state(board_card.state);
-        }
+    static aged_from_prior_turn(card_stack: CardStack): CardStack {
+        const board_cards = card_stack.board_cards;
+        const new_board_cards = board_cards.map((board_card) => {
+            return BoardCard.aged_from_prior_turn(board_card);
+        });
+        return new CardStack(new_board_cards, card_stack.loc);
     }
 
     static maybe_merge(
@@ -731,9 +740,9 @@ class Board {
 
     // This is called after the player's turn ends.
     age_cards(): void {
-        for (const card_stack of this.card_stacks) {
-            card_stack.age_cards();
-        }
+        this.card_stacks = this.card_stacks.map((card_stack) => {
+            return CardStack.aged_from_prior_turn(card_stack);
+        });
     }
 }
 
