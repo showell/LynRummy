@@ -1287,7 +1287,7 @@ class GameEventTrackerSingleton {
             BoardArea.populate();
         }
 
-        const interval = 150;
+        const interval = 1000;
 
         const game_events = this.game_events;
 
@@ -1593,7 +1593,7 @@ function render_replay_button(): HTMLElement {
     button.classList.add("button", "replay-button");
     button.style.backgroundColor = "green";
     button.style.color = "white";
-    button.innerText = "Replay game";
+    button.innerText = "Instant replay (entire game)";
     button.style.position = "absolute";
     button.style.top = "0";
     button.style.right = "0";
