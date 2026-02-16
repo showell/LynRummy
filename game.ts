@@ -1781,6 +1781,11 @@ class PhysicalCardStack {
         div.style.left = pixels(stack.loc.left);
         div.style.position = "absolute";
 
+        if (this.stack.incomplete()) {
+            div.style.border = "1px gray solid";
+            div.style.backgroundColor = "gray";
+        }
+
         this.div = div;
         this.left_wing = left_wing;
         this.right_wing = right_wing;
