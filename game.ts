@@ -1287,7 +1287,7 @@ class GameEventTrackerSingleton {
             BoardArea.populate();
         }
 
-        const interval = 200;
+        const interval = 100;
 
         const game_events = this.game_events;
 
