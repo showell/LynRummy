@@ -923,6 +923,7 @@ class Player {
     hand: Hand;
     num_drawn: number;
     total_score: number;
+    total_score_when_turn_started: number;
     player_turn?: PlayerTurn;
 
     constructor(name: string) {
@@ -932,6 +933,7 @@ class Player {
         this.num_drawn = 0;
         this.hand = new Hand();
         this.total_score = 0;
+        this.total_score_when_turn_started = 0;
     }
 
     get_turn_score(): number {
@@ -939,7 +941,16 @@ class Player {
         return this.player_turn.get_score();
     }
 
+    get_updated_score(): number {
+        if (CurrentBoard.is_clean() && this.player_turn && this.active) {
+            this.total_score =
+                this.total_score_when_turn_started + this.get_turn_score();
+        }
+        return this.total_score;
+    }
+
     start_turn(): void {
+        this.total_score_when_turn_started = this.total_score;
         this.show = true;
         this.active = true;
         this.num_drawn = 0; // only used after end_turn
@@ -970,10 +981,10 @@ class Player {
                 break;
         }
 
-        this.active = false;
+        // Make sure that the total score is current.
+        this.get_updated_score();
 
-        // Finally bump up the player's overall score.
-        this.total_score += this.get_turn_score();
+        this.active = false;
 
         return turn_result;
     }
@@ -1041,7 +1052,7 @@ class ScoreSingleton {
     stack_type_value(stack_type: CardStackType): number {
         switch (stack_type) {
             case CardStackType.PURE_RUN:
-                return 90;
+                return 100;
             case CardStackType.SET:
                 return 60;
             case CardStackType.RED_BLACK_RUN:
@@ -1066,7 +1077,10 @@ class ScoreSingleton {
     }
 
     for_cards_played(num: number) {
-        return 100 * num * num;
+        if (num === 0) return 0;
+        const actually_played_bonus = 200;
+        const progressive_points_for_played_cards = 100 * num * num;
+        return actually_played_bonus + progressive_points_for_played_cards;
     }
 }
 
@@ -2066,7 +2080,7 @@ class PhysicalPlayer {
     score(): HTMLElement {
         const div = document.createElement("div");
 
-        const score = this.player.total_score;
+        const score = this.player.get_updated_score();
 
         div.innerText = `Score: ${score}`;
         div.style.color = "maroon";
@@ -2382,7 +2396,7 @@ class EventManagerSingleton {
 
     undo_mistakes(): void {
         TheGame.rollback_moves_to_last_clean_state();
-        StatusBar.inform("PHEW!");
+        StatusBar.inform("We restored the game to its last clean state.");
         DragDropHelper.reset_internal_data_structures();
         PlayerArea.populate();
         BoardArea.populate();
@@ -2390,8 +2404,8 @@ class EventManagerSingleton {
 
     split_stack(player_action: PlayerAction): void {
         TheGame.process_player_action(player_action);
-        StatusBar.inform(
-            "Split! Moves like this can be tricky, even for experts. You have the undo button if you need it.",
+        StatusBar.scold(
+            "Be careful with splitting! Splits only pay off when you get more cards on the board or make prettier piles.",
         );
     }
 
