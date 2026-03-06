@@ -1,12 +1,12 @@
+This project has moved!
 
-See scripts/run-dev.sh to run a node server that will watch for
-changes to game.ts and compile it and serve it up.
+The Lyn Rummy game is now a plugin
+for the [Angry Cat chat app](https://github.com/showell/angry-cat).
 
-See https://showell.github.io/LynRummy/ for a live demo that uses
-GH Pages.  We have the GH action .github/workflows/lynrummy.yaml
-that builds out the JS from our TS files.  And then it should
-be a fairly simple exercise to make sure your repo serves up
-GH Pages based on this action.  Unfortunately, we don't have
-the exact steps written for that. (When we build this is a network
-game, we will probably need to start self-hosting the game
-anyway.)
+As of *March 2026* you can also run it in
+standalone mode [here](https://showell.github.io/angry-cat/LynRummy).
+
+The code that remains here represents the V1 project
+that was written in early 2026.
+
+There have been further improvements in the Angry Cat repo.
