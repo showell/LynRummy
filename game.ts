@@ -43,6 +43,7 @@ const enum CardStackType {
 enum HandCardState {
     NORMAL,
     FRESHLY_DRAWN,
+    BACK_FROM_BOARD,
 }
 
 enum BoardCardState {
@@ -65,6 +66,37 @@ enum GameEventType {
     ADVANCE_TURN,
 }
 
+export type JsonCard = {
+    value: CardValue;
+    suit: Suit;
+    origin_deck: OriginDeck;
+};
+
+export type JsonHandCard = {
+    card: JsonCard;
+    state: HandCardState;
+};
+
+export type JsonBoardCard = {
+    card: JsonCard;
+    state: BoardCardState;
+};
+
+export type JsonCardStack = {
+    board_cards: JsonBoardCard[];
+    loc: BoardLocation;
+};
+
+export type JsonPlayerAction = {
+    board_event: BoardEvent;
+    hand_cards_to_release: JsonHandCard[];
+};
+
+export type JsonGameEvent = {
+    type: GameEventType;
+    player_action: PlayerAction | undefined;
+};
+
 type BoardLocation = {
     top: number;
     left: number;
@@ -74,6 +106,8 @@ type BoardEvent = {
     stacks_to_remove: CardStack[];
     stacks_to_add: CardStack[];
 };
+
+type BroadcastCallback = (event: JsonGameEvent) => void;
 
 function is_pair_of_dups(card1: Card, card2: Card): boolean {
     // In a two-deck game, two cards can be both be
@@ -268,23 +302,6 @@ function suit_emoji_str(suit: Suit): string {
     }
 }
 
-function suit_str(suit: Suit): string {
-    switch (suit) {
-        case Suit.CLUB:
-            return "C";
-        case Suit.DIAMOND:
-            return "D";
-        case Suit.HEART:
-            return "H";
-        case Suit.SPADE:
-            return "S";
-    }
-}
-
-function deck_str(origin_deck: OriginDeck): string {
-    return origin_deck.toString();
-}
-
 function suit_for(label: string): Suit {
     switch (label) {
         case "C":
@@ -308,10 +325,6 @@ function card_color(suit: Suit): CardColor {
         case Suit.HEART:
             return CardColor.RED;
     }
-}
-
-function card_color_str(color: CardColor): string {
-    return color == CardColor.RED ? "red" : "black";
 }
 
 // Do this the non-fancy way.
@@ -350,7 +363,7 @@ function get_sorted_cards_for_suit(
     return suit_cards;
 }
 
-function build_full_double_deck(): Card[] {
+export function build_full_double_deck(): Card[] {
     // Returns a shuffled deck of 2 packs of normal cards.
 
     function suit_run(suit: Suit, origin_deck: OriginDeck) {
@@ -375,7 +388,7 @@ function build_full_double_deck(): Card[] {
     return shuffle(all_cards);
 }
 
-class Card {
+export class Card {
     suit: Suit;
     value: CardValue;
     color: CardColor;
@@ -386,6 +399,18 @@ class Card {
         this.suit = suit;
         this.origin_deck = origin_deck;
         this.color = card_color(suit);
+    }
+
+    toJSON(): JsonCard {
+        return {
+            value: this.value,
+            suit: this.suit,
+            origin_deck: this.origin_deck,
+        };
+    }
+
+    static from_json(json_card: JsonCard): Card {
+        return new Card(json_card.value, json_card.suit, json_card.origin_deck);
     }
 
     clone(): Card {
@@ -420,6 +445,17 @@ class HandCard {
         this.state = state;
     }
 
+    toJSON(): JsonHandCard {
+        return {
+            card: this.card,
+            state: this.state,
+        };
+    }
+
+    static from_json(json: JsonHandCard): HandCard {
+        return new HandCard(Card.from_json(json.card), json.state);
+    }
+
     clone(): HandCard {
         return new HandCard(this.card, this.state);
     }
@@ -436,6 +472,17 @@ class BoardCard {
     constructor(card: Card, state: BoardCardState) {
         this.card = card;
         this.state = state;
+    }
+
+    toJSON(): JsonBoardCard {
+        return {
+            card: this.card,
+            state: this.state,
+        };
+    }
+
+    static from_json(json: JsonBoardCard): BoardCard {
+        return new BoardCard(Card.from_json(json.card), json.state);
     }
 
     clone(): BoardCard {
@@ -490,6 +537,22 @@ class CardStack {
         this.board_cards = board_cards;
         this.stack_type = this.get_stack_type();
         this.loc = loc;
+    }
+
+    toJSON(): JsonCardStack {
+        return {
+            board_cards: this.board_cards,
+            loc: this.loc,
+        };
+    }
+
+    from_json(json: JsonCardStack): CardStack {
+        return new CardStack(
+            json.board_cards.map((board_card_json) =>
+                BoardCard.from_json(board_card_json),
+            ),
+            json.loc,
+        );
     }
 
     clone(): CardStack {
@@ -890,6 +953,11 @@ class PlayerTurn {
         this.cards_played_during_turn += 1;
     }
 
+    revoke_empty_hand_bonuses() {
+        this.empty_hand_bonus = 0;
+        this.victory_bonus = 0;
+    }
+
     update_score_for_empty_hand() {
         this.empty_hand_bonus = 1000;
 
@@ -991,6 +1059,19 @@ class Player {
 
     stop_showing() {
         this.show = false;
+    }
+
+    take_card_back(hand_card: HandCard) {
+        assert(this.player_turn !== undefined);
+        if (this.hand.is_empty()) {
+            this.player_turn.revoke_empty_hand_bonuses();
+        }
+
+        this.hand.add_cards([hand_card.card], HandCardState.BACK_FROM_BOARD);
+
+        // they get a bonus for playing a card
+        assert(this.player_turn !== undefined);
+        this.player_turn.update_score_after_move();
     }
 
     release_card(hand_card: HandCard) {
@@ -1124,32 +1205,10 @@ class PlayerGroupSingleton {
 let TheGame: Game;
 
 class Game {
-    // The first snapshot will be initialized after
-    // the first player starts their turn.
-    // We will then update the snapshot at any
-    // point the board is in a clean state.
-    snapshot?: {
-        num_cards_played: number;
-        hand_cards: HandCard[];
-        board: Board;
-        game_events: GameEvent[];
-    };
     has_victor_already: boolean;
 
     constructor() {
-        TheDeck = new Deck(build_full_double_deck());
-
-        CurrentBoard = initial_board();
-
-        GameEventTracker = new GameEventTrackerSingleton();
-
-        PlayerGroup = new PlayerGroupSingleton(["Susan", "Lyn"]);
-        ActivePlayer.start_turn();
-
         this.has_victor_already = false;
-
-        // This initializes the snapshot for the first turn.
-        this.update_snapshot();
     }
 
     declares_me_victor(): boolean {
@@ -1159,42 +1218,13 @@ class Game {
             return false; // there can only be one winner
         }
 
+        if (!CurrentBoard.is_clean()) {
+            return false;
+        }
+
         // We have a winner!
         this.has_victor_already = true;
         return true;
-    }
-
-    update_snapshot(): void {
-        this.snapshot = {
-            num_cards_played: ActivePlayer.get_num_cards_played(),
-            hand_cards: ActivePlayer.hand.hand_cards.map((hand_card) =>
-                hand_card.clone(),
-            ),
-            board: CurrentBoard.clone(),
-            game_events: [...GameEventTracker.game_events],
-        };
-    }
-
-    // We update the snapshot if the board is in a clean state after making
-    // some move.
-    maybe_update_snapshot() {
-        if (CurrentBoard.is_clean()) {
-            this.update_snapshot();
-        }
-    }
-
-    rollback_moves_to_last_clean_state(): void {
-        const snapshot = this.snapshot;
-        assert(snapshot !== undefined);
-        ActivePlayer.roll_back_num_cards_played(snapshot.num_cards_played);
-        ActivePlayer.hand.hand_cards = snapshot.hand_cards;
-        CurrentBoard = snapshot.board;
-        GameEventTracker.game_events = snapshot.game_events;
-
-        // Even though we are now on the SAME snapshot (by definition),
-        // we still need to re-clone it, so that subsequent moves
-        // don't corrupt it.
-        this.update_snapshot();
     }
 
     advance_turn_to_next_player(): void {
@@ -1229,8 +1259,18 @@ class Game {
         for (const hand_card of player_action.hand_cards_to_release) {
             ActivePlayer.release_card(hand_card);
         }
+    }
 
-        this.maybe_update_snapshot();
+    reverse_player_action(player_action: PlayerAction): void {
+        const orig_board_event = player_action.board_event;
+        CurrentBoard.process_event({
+            stacks_to_remove: orig_board_event.stacks_to_add,
+            stacks_to_add: orig_board_event.stacks_to_remove,
+        });
+
+        for (const hand_card of player_action.hand_cards_to_release) {
+            ActivePlayer.take_card_back(hand_card);
+        }
     }
 }
 
@@ -1248,6 +1288,22 @@ class PlayerAction {
     }) {
         this.board_event = info.board_event;
         this.hand_cards_to_release = info.hand_cards_to_release;
+    }
+
+    toJSON(): JsonPlayerAction {
+        return {
+            board_event: this.board_event,
+            hand_cards_to_release: this.hand_cards_to_release,
+        };
+    }
+
+    static from_json(json: JsonPlayerAction) {
+        const board_event = json.board_event;
+        const hand_cards_to_release = json.hand_cards_to_release.map(
+            (json_hand_card) => HandCard.from_json(json_hand_card),
+        );
+
+        return new PlayerAction({ board_event, hand_cards_to_release });
     }
 
     static board_action(board_event: BoardEvent): PlayerAction {
@@ -1274,21 +1330,46 @@ let GameEventTracker: GameEventTrackerSingleton;
 
 class GameEventTrackerSingleton {
     replay_in_progress: boolean;
-    game_events: GameEvent[];
+    json_game_events: JsonGameEvent[];
     orig_deck: Deck;
     orig_board: Board;
+    broadcast_callback: BroadcastCallback | undefined;
 
-    constructor() {
+    constructor(broadcast_callback: BroadcastCallback | undefined) {
+        this.broadcast_callback = broadcast_callback;
         this.replay_in_progress = false;
-        this.game_events = [];
+        this.json_game_events = [];
         this.orig_deck = TheDeck.clone();
         this.orig_board = CurrentBoard.clone();
     }
 
+    empty() {
+        return this.json_game_events.length === 0;
+    }
+
     push_event(game_event: GameEvent) {
         if (!this.replay_in_progress) {
-            this.game_events.push(game_event);
+            const json_game_event = game_event.toJSON();
+
+            this.json_game_events.push(json_game_event);
+
+            if (this.broadcast_callback) {
+                this.broadcast_callback(json_game_event);
+            }
         }
+    }
+
+    pop_player_action(): PlayerAction | undefined {
+        const json_game_event = this.json_game_events.pop();
+
+        if (json_game_event === undefined) {
+            console.error("no events to pop");
+            return undefined;
+        }
+
+        const game_event = GameEvent.from_json(json_game_event);
+
+        return game_event.player_action;
     }
 
     replay(): void {
@@ -1301,9 +1382,19 @@ class GameEventTrackerSingleton {
             BoardArea.populate();
         }
 
-        const interval = 100;
+        const game_events = this.json_game_events.map((json_game_event) => {
+            return GameEvent.from_json(json_game_event);
+        });
 
-        const game_events = this.game_events;
+        let interval = 1000;
+
+        if (game_events.length > 50) {
+            interval = 100;
+        } else if (game_events.length > 20) {
+            interval = 200;
+        } else if (game_events.length > 5) {
+            interval = 500;
+        }
 
         this.replay_in_progress = true;
 
@@ -1362,6 +1453,14 @@ class GameEvent {
     constructor(type: GameEventType, player_action?: PlayerAction) {
         this.type = type;
         this.player_action = player_action;
+    }
+
+    toJSON(): JsonGameEvent {
+        return { type: this.type, player_action: this.player_action };
+    }
+
+    static from_json(json: JsonGameEvent): GameEvent {
+        return new GameEvent(json.type, json.player_action);
     }
 }
 
@@ -1577,7 +1676,7 @@ function render_board(): HTMLElement {
     div.style.border = "1px solid #000080";
     div.style.borderRadius = "15px";
     div.style.position = "relative";
-    div.style.height = "600px";
+    div.style.height = "540px";
     div.style.marginTop = "8px";
     return div;
 }
@@ -1644,14 +1743,12 @@ function button_color() {
 
 ***********************************************/
 
-type ClickHandler = (e: MouseEvent) => void;
-
 function opponent_card_color(): string {
     return "lavender";
 }
 
 function new_card_color(): string {
-    return "violet";
+    return "cyan";
 }
 
 class PhysicalHandCard {
@@ -1678,7 +1775,6 @@ class PhysicalHandCard {
     }
 
     allow_dragging() {
-        const self = this;
         const div = this.card_span;
         const hand_card = this.hand_card;
 
@@ -1708,6 +1804,8 @@ class PhysicalHandCard {
 
         if (this.hand_card.state === HandCardState.FRESHLY_DRAWN) {
             span.style.backgroundColor = new_card_color();
+        } else if (this.hand_card.state === HandCardState.BACK_FROM_BOARD) {
+            span.style.backgroundColor = "yellow";
         } else {
             span.style.backgroundColor = "white";
         }
@@ -1817,8 +1915,8 @@ class PhysicalCardStack {
     }
 
     style_for_hover(wing_div: HTMLElement): void {
-        this.div.style.backgroundColor = "cyan";
-        wing_div.style.backgroundColor = "cyan";
+        this.div.style.backgroundColor = "mauve";
+        wing_div.style.backgroundColor = "mauve";
     }
 
     maybe_prep_left_hand_card_merge(hand_card: HandCard): void {
@@ -2122,6 +2220,11 @@ class PhysicalPlayer {
         }
     }
 
+    take_card_back(hand_card: HandCard) {
+        this.player.take_card_back(hand_card);
+        this.physical_hand.populate();
+    }
+
     release_card(hand_card: HandCard) {
         this.player.release_card(hand_card);
         this.physical_hand.populate();
@@ -2189,7 +2292,9 @@ class BoardAreaSingleton {
 
         if (!GameEventTracker.replay_in_progress) {
             if (CurrentBoard.is_clean()) {
-                div.append(new ReplayButton().dom());
+                if (!GameEventTracker.empty()) {
+                    div.append(new ReplayButton().dom());
+                }
             } else {
                 div.append(new UndoButton().dom());
             }
@@ -2200,11 +2305,12 @@ class BoardAreaSingleton {
 }
 
 class PhysicalGame {
-    constructor(info: { player_area: HTMLElement; board_area: HTMLElement }) {
+    constructor(info: {
+        player_area: HTMLElement;
+        board_area: HTMLElement;
+    }) {
         const { player_area, board_area } = info;
 
-        TheGame = new Game();
-        EventManager = new EventManagerSingleton();
         PlayerArea = new PlayerAreaSingleton(player_area);
         BoardArea = new BoardAreaSingleton(board_area);
         BoardArea.populate();
@@ -2385,8 +2491,6 @@ class EventManagerSingleton {
     advance_turn() {
         TheGame.advance_turn_to_next_player();
 
-        TheGame.update_snapshot();
-
         DragDropHelper.reset_internal_data_structures();
         PlayerArea.populate();
         BoardArea.populate();
@@ -2395,11 +2499,22 @@ class EventManagerSingleton {
     }
 
     undo_mistakes(): void {
-        TheGame.rollback_moves_to_last_clean_state();
-        StatusBar.inform("We restored the game to its last clean state.");
-        DragDropHelper.reset_internal_data_structures();
+        const player_action = GameEventTracker.pop_player_action();
+        if (!player_action) {
+            console.error("could not find player action to undo!");
+            return;
+        }
+
+        TheGame.reverse_player_action(player_action);
         PlayerArea.populate();
         BoardArea.populate();
+
+        // TODO: pop last event off stack and run it in reverse
+        if (CurrentBoard.is_clean()) {
+            StatusBar.celebrate("You are back with a clean board!");
+        } else {
+            StatusBar.scold("You still are in a bad state!");
+        }
     }
 
     split_stack(player_action: PlayerAction): void {
@@ -2868,7 +2983,7 @@ class DragDropHelperSingleton {
             orig_top = div.offsetTop;
         }
 
-        function start_move(e: PointerEvent) {
+        function start_move() {
             div.style.position = "absolute";
             div.style.zIndex = "2";
         }
@@ -2916,7 +3031,7 @@ class DragDropHelperSingleton {
             if (!dragging) return false;
 
             if (!drag_started) {
-                start_move(e);
+                start_move();
                 div.style.cursor = "grabbing";
                 handle_dragstart();
                 drag_started = true;
@@ -3076,12 +3191,12 @@ class MainGamePage {
     player_area!: HTMLElement;
     board_area!: HTMLElement;
 
-    constructor() {
+    constructor(container: HTMLElement) {
         const page = document.createElement("div");
         page.style.display = "flex";
         page.style.paddingLeft = "50px";
         page.style.paddingRight = "50px";
-        document.body.append(page);
+        container.append(page);
 
         const div = document.createElement("div");
         div.style.minWidth = "100%";
@@ -3095,8 +3210,6 @@ class MainGamePage {
     make_top_line(): HTMLElement {
         const top = document.createElement("div");
         const top_bar = this.make_top_bar();
-
-        StatusBar = new StatusBarSingleton();
 
         top.append(top_bar);
         top.append(StatusBar.dom());
@@ -3205,18 +3318,12 @@ class MainGamePage {
         const board_area = this.board_area;
 
         // simply creating the object starts the game!
-        const physical_game = new PhysicalGame({
+        new PhysicalGame({
             player_area: player_area,
             board_area: board_area,
         });
     }
 }
-
-function test() {
-    console.log("replay yo!");
-}
-
-test(); // runs in node
 
 class SoundEffectsSingleton {
     purr: HTMLAudioElement;
@@ -3250,13 +3357,41 @@ class SoundEffectsSingleton {
 // SINGLETONS get initialized in gui().
 let SoundEffects: SoundEffectsSingleton;
 
+export function get_title() {
+    return `${suit_emoji_str(Suit.DIAMOND)} Lyn Rummy ${suit_emoji_str(Suit.HEART)}`;
+}
+
+function set_title() {
+    document.title = get_title();
+}
+
 // This is the entry point for static/index.html
-function gui() {
-    document.title = `${suit_emoji_str(Suit.DIAMOND)} Lyn Rummy ${suit_emoji_str(Suit.HEART)}`;
+export function gui() {
+    set_title();
+    const container = document.body;
+    const deck_cards = build_full_double_deck();
+    const broadcast_callback = undefined;
+    start_game(deck_cards, container, broadcast_callback);
+}
+
+export function start_game(
+    deck_cards: Card[],
+    container: HTMLElement,
+    broadcast_callback: BroadcastCallback | undefined,
+) {
+    TheDeck = new Deck(deck_cards);
     DragDropHelper = new DragDropHelperSingleton();
     Popup = new PopupSingleton();
     SoundEffects = new SoundEffectsSingleton();
-    new MainGamePage();
+    StatusBar = new StatusBarSingleton();
+    EventManager = new EventManagerSingleton();
+    TheGame = new Game();
+    CurrentBoard = initial_board();
+    GameEventTracker = new GameEventTrackerSingleton(broadcast_callback);
+    PlayerGroup = new PlayerGroupSingleton(["Susan", "Lyn"]);
+    ActivePlayer.start_turn();
+
+    new MainGamePage(container);
 }
 
 function assert(
