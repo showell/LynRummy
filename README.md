@@ -10,3 +10,5 @@ The code that remains here represents the V1 project
 that was written in early 2026.
 
 There have been further improvements in the Angry Cat repo.
+
+Enjoy!
